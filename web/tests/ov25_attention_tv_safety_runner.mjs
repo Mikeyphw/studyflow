@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const root = new URL('../', import.meta.url);
+const sw = fs.readFileSync(new URL('service-worker.js', root), 'utf8');
+const relay = fs.readFileSync(new URL('scripts/tv_relay.mjs', root), 'utf8');
+assert.match(sw, /normalizeRouteHash/);
+assert.match(sw, /INTERNAL_ROUTES/);
+assert.match(sw, /showNotification/);
+assert.match(sw, /\.delete\(pending\.id\)/);
+assert.match(relay, /\/api\/tv\/pair/);
+assert.match(relay, /TV_PAIRING_CODE_LENGTH/);
+console.log('OV25 attention/TV safety runner: PASS');

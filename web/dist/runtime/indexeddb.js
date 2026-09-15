@@ -14,6 +14,8 @@ exports.RECOVERY_STATE_KEY = "recovery";
 function clone(value) { if (value == null)
     return value; const nativeClone = globalThis.structuredClone; if (typeof nativeClone === "function")
     return nativeClone(value); return JSON.parse(JSON.stringify(value)); }
+function revisionOf(value) { const revision = value === null || value === void 0 ? void 0 : value.revision; return Number.isInteger(revision) ? revision : null; }
+function durableWriteConflict(expected, actual) { return new Error(`IndexedDB state changed in another StudyFlow tab before this write committed (expected revision ${expected !== null && expected !== void 0 ? expected : "empty"}, found ${actual !== null && actual !== void 0 ? actual : "empty"}). Reload before writing again.`); }
 function requestResult(request) { return new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => { var _a; return reject((_a = request.error) !== null && _a !== void 0 ? _a : new Error("IndexedDB request failed")); }; }); }
 function transactionDone(transaction) { return new Promise((resolve, reject) => { transaction.oncomplete = () => resolve(); transaction.onerror = () => { var _a; return reject((_a = transaction.error) !== null && _a !== void 0 ? _a : new Error("IndexedDB transaction failed")); }; transaction.onabort = () => { var _a; return reject((_a = transaction.error) !== null && _a !== void 0 ? _a : new Error("IndexedDB transaction aborted")); }; }); }
 function idFactory() { var _a, _b, _c; return (_c = (_b = (_a = globalThis.crypto) === null || _a === void 0 ? void 0 : _a.randomUUID) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`; }
@@ -41,9 +43,18 @@ async function writeCurrentOnly(db, state) {
     tx.objectStore(exports.STATE_STORE).put(clone(state), exports.CURRENT_STATE_KEY);
     await transactionDone(tx);
 }
-async function writeStateWithRecovery(db, next, previous) {
+async function writeStateWithRecovery(db, next, previous, expectedRevision = revisionOf(previous)) {
     const tx = db.transaction(exports.STATE_STORE, "readwrite");
     const store = tx.objectStore(exports.STATE_STORE);
+    const current = await requestResult(store.get(exports.CURRENT_STATE_KEY));
+    const actualRevision = revisionOf(current !== null && current !== void 0 ? current : null);
+    if (expectedRevision !== null && actualRevision !== expectedRevision) {
+        try {
+            tx.abort();
+        }
+        catch { }
+        throw durableWriteConflict(expectedRevision, actualRevision);
+    }
     if (previous)
         store.put(clone(previous), exports.RECOVERY_STATE_KEY);
     store.put(clone(next), exports.CURRENT_STATE_KEY);
@@ -114,7 +125,7 @@ async function createIndexedDbPersistence({ indexedDBFactory = globalThis.indexe
             cache = candidate;
             if (status !== "migrated")
                 status = raw.schemaVersion === candidate.schemaVersion ? "loaded" : "migrated";
-            await writeStateWithRecovery(db, candidate, raw.schemaVersion === candidate.schemaVersion ? null : raw);
+            await writeStateWithRecovery(db, candidate, raw.schemaVersion === candidate.schemaVersion ? null : raw, null);
             if (status === "migrated" && (legacyRepository === null || legacyRepository === void 0 ? void 0 : legacyRepository.clear))
                 legacyRepository.clear();
         }
@@ -135,6 +146,7 @@ async function createIndexedDbPersistence({ indexedDBFactory = globalThis.indexe
     }
     let queue = Promise.resolve();
     let lastAsyncError = null;
+    let durableRevision = revisionOf(cache);
     const repository = {
         backend: "indexeddb",
         load() { return { status, state: clone(cache), reason }; },
@@ -144,22 +156,23 @@ async function createIndexedDbPersistence({ indexedDBFactory = globalThis.indexe
                 return { status: "invalid", reason: `Refused to save invalid state: ${errors[0]}` };
             const previous = clone(cache);
             const next = clone(state);
+            const expectedRevision = durableRevision;
             cache = next;
-            status = "loaded";
-            reason = null;
+            status = "pending";
+            reason = "IndexedDB write queued; durability is confirmed after the transaction commits.";
             lastAsyncError = null;
-            queue = queue.then(() => writeStateWithRecovery(db, next, previous)).catch((error) => { lastAsyncError = error; });
-            return { status: "saved", reason: null };
+            queue = queue.then(async () => { await writeStateWithRecovery(db, next, previous, expectedRevision); durableRevision = revisionOf(next); status = "loaded"; reason = null; }).catch((error) => { lastAsyncError = error; cache = previous; status = "conflict"; reason = error instanceof Error ? error.message : String(error); });
+            return { status: "pending", reason };
         },
         clear() {
             var _a;
             cache = null;
-            status = "empty";
-            reason = null;
+            status = "pending";
+            reason = "IndexedDB clear queued; durability is confirmed after the transaction commits.";
             lastAsyncError = null;
-            queue = queue.then(() => clearAll(db)).catch((error) => { lastAsyncError = error; });
+            queue = queue.then(async () => { await clearAll(db); durableRevision = null; status = "empty"; reason = null; }).catch((error) => { lastAsyncError = error; status = "conflict"; reason = error instanceof Error ? error.message : String(error); });
             (_a = legacyRepository === null || legacyRepository === void 0 ? void 0 : legacyRepository.clear) === null || _a === void 0 ? void 0 : _a.call(legacyRepository);
-            return { status: "cleared", reason: null };
+            return { status: "pending", reason };
         },
         async flush() { await queue; if (lastAsyncError)
             throw lastAsyncError; },

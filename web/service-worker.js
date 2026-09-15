@@ -15,6 +15,12 @@ const APP_SHELL = [
 const appShellUrls = new Set(APP_SHELL.map((path) => new URL(path, self.location.href).href));
 const ATTENTION_DB_NAME = "studyflow-attention-sw-v1";
 const ATTENTION_STORE_NAME = "pending";
+const INTERNAL_ROUTES = new Set(["#today", "#reviews", "#practice", "#progress", "#plan", "#session", "#schedule"]);
+function normalizeRouteHash(value) {
+  if (typeof value !== "string") return "#today";
+  const hash = value.trim();
+  return INTERNAL_ROUTES.has(hash) ? hash : "#today";
+}
 
 function openAttentionDb() {
   return new Promise((resolve, reject) => {
@@ -50,12 +56,6 @@ async function drainAttentionEvents() {
       request.onsuccess = () => resolve(request.result || []);
       request.onerror = () => reject(request.error || new Error("StudyFlow attention event read failed"));
     });
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(ATTENTION_STORE_NAME, "readwrite");
-      tx.objectStore(ATTENTION_STORE_NAME).clear();
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error || new Error("StudyFlow attention event clear failed"));
-    });
     db.close();
     return events;
   } catch { return []; }
@@ -78,7 +78,7 @@ function normalizePushPayload(data) {
     occurrence,
     title: typeof payload.title === "string" ? payload.title : "StudyFlow",
     body: typeof payload.body === "string" ? payload.body : "StudyFlow needs your attention.",
-    routeHash: typeof payload.routeHash === "string" ? payload.routeHash : "#today",
+    routeHash: normalizeRouteHash(payload.routeHash),
   };
 }
 
@@ -127,8 +127,6 @@ self.addEventListener("push", (event) => {
     occurredAtEpochMillis: Date.now(),
   };
   event.waitUntil((async () => {
-    await persistAttentionEvent(attentionEvent);
-    await broadcastAttentionEvent(attentionEvent);
     await self.registration.showNotification(payload.title, {
       body: payload.body,
       tag: payload.occurrence.occurrenceId,
@@ -138,13 +136,15 @@ self.addEventListener("push", (event) => {
       data: { occurrence: payload.occurrence, occurrenceId: payload.occurrence.occurrenceId, routeHash: payload.routeHash },
       actions: notificationActions(payload.occurrence),
     });
+    await persistAttentionEvent(attentionEvent);
+    await broadcastAttentionEvent(attentionEvent);
   })());
 });
 
 self.addEventListener("notificationclick", (event) => {
   const data = event.notification?.data || {};
   const occurrence = data.occurrence;
-  const routeHash = typeof data.routeHash === "string" ? data.routeHash : "#today";
+  const routeHash = normalizeRouteHash(data.routeHash);
   const action = event.action || "open";
   event.notification.close();
   const attentionEvent = { kind: "notification-click", occurrence, routeHash, action, occurredAtEpochMillis: Date.now() };
@@ -171,7 +171,7 @@ self.addEventListener("notificationclose", (event) => {
   const data = event.notification?.data || {};
   const occurrence = data.occurrence;
   if (!occurrence) return;
-  const attentionEvent = { kind: "notification-close", occurrence, routeHash: data.routeHash || "#today", occurredAtEpochMillis: Date.now() };
+  const attentionEvent = { kind: "notification-close", occurrence, routeHash: normalizeRouteHash(data.routeHash), occurredAtEpochMillis: Date.now() };
   event.waitUntil(Promise.all([persistAttentionEvent(attentionEvent), broadcastAttentionEvent(attentionEvent)]));
 });
 
@@ -180,6 +180,16 @@ self.addEventListener("message", (event) => {
   event.waitUntil((async () => {
     const events = await drainAttentionEvents();
     const target = event.source;
-    for (const pending of events) target?.postMessage?.({ type: "studyflow:attention-event", event: pending });
+    for (const pending of events) {
+      target?.postMessage?.({ type: "studyflow:attention-event", event: pending });
+      const db = await openAttentionDb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(ATTENTION_STORE_NAME, "readwrite");
+        tx.objectStore(ATTENTION_STORE_NAME).delete(pending.id);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("StudyFlow attention event acknowledgement failed"));
+      });
+      db.close();
+    }
   })());
 });

@@ -69,6 +69,9 @@ const pct = (v) => v == null ? "No data" : `${Math.round(v * 100)}%`;
 const clock = (ms) => { const n = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`; };
 const modes = [["EXAM_PLAN", "Concurso público"], ["PROGRAMMING_COURSE", "Programming course"], ["LANGUAGE_DECK", "Language deck"], ["READING_STUDY", "Reading study"], ["GENERAL_SKILL", "General skill"]];
 const isTvBrowserUi = () => typeof document !== "undefined" && document.documentElement.dataset.studyflowTv === "true";
+const isPromiseLike = (value) => Boolean(value && typeof value.then === "function");
+async function readBoundedFileText(file, maximumBytes, label) { (0, portable_1.assertPortableByteLength)(file.size, maximumBytes, label); return file.text(); }
+async function readBoundedFileBytes(file, maximumBytes, label) { (0, portable_1.assertPortableByteLength)(file.size, maximumBytes, label); return new Uint8Array(await file.arrayBuffer()); }
 function TvContinueElsewhere({ title: heading, detail }) { return React.createElement("article", { className: "card tv-continue-card", "data-tv-workflow": "continue-elsewhere" },
     React.createElement("p", { className: "eyebrow" }, "Remote-friendly mode"),
     React.createElement("h2", null, heading),
@@ -220,13 +223,18 @@ function App({ store, persistence, attentionRuntime }) {
     }
     else
         main.focus({ preventScroll: true }); }); return () => cancelAnimationFrame(id); }, [screen]);
-    React.useEffect(() => { const id = setInterval(() => tick(v => v + 1), 1000); return () => clearInterval(id); }, []);
+    React.useEffect(() => { if (store.getFocusSnapshot(new Date().toISOString()).status === "idle")
+        return; const id = setInterval(() => tick(v => v + 1), 1000); return () => clearInterval(id); }, [state.focus.status, state.focus.lastResumedAt, state.focus.endsAt]);
     React.useEffect(() => { if (!toast)
         return; const id = setTimeout(() => setToast(null), 2500); return () => clearTimeout(id); }, [toast]);
     React.useEffect(() => { const handle = (0, product_1.installDocumentLocalization)(state.preferences.locale); return () => handle.dispose(); }, [state.preferences.locale]);
     React.useEffect(() => { const id = setTimeout(() => { document.documentElement.dataset.studyflowInteractive = "ready"; }, 0); return () => { clearTimeout(id); delete document.documentElement.dataset.studyflowInteractive; }; }, []);
     const run = (fn, msg) => { try {
         const r = fn();
+        if (isPromiseLike(r)) {
+            return r.then((value) => { if (msg)
+                setToast(msg); return value; }).catch((e) => { setToast(e instanceof Error ? e.message : String(e)); return null; });
+        }
         if (msg)
             setToast(msg);
         return r;
@@ -986,7 +994,7 @@ function Plan({ state, store, tab, setTab, preview, setPreview, persistence, run
     const previewImport = () => run(() => { var _a; const next = store.previewPlanContentImport(importText, { format: importFormat, mode: importMode, target: importTarget, planName: importTarget === "new-plan" ? importPlanName : undefined, planMode: (_a = plan === null || plan === void 0 ? void 0 : plan.mode) !== null && _a !== void 0 ? _a : newPlanMode }); setContentPreview(next); return next; }, "Plan Content import preview generated.");
     const loadImportFile = async (e) => { var _a; const file = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0]; if (!file)
         return; try {
-        const source = await file.text();
+        const source = await readBoundedFileText(file, portable_1.MAX_PLAN_CONTENT_IMPORT_BYTES, "Plan Content import");
         setImportText(source);
         setImportFormat((0, content_import_1.detectPlanContentImportFormat)(file.name || file.type, source));
     }
@@ -1992,8 +2000,9 @@ function Library({ materials, store, persistence, run, tvReadOnly = false, contr
         onViewingClose();
     else
         setLocalViewing(null); };
-    const add = async (e) => { var _a; const file = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0]; if (!file || !persistence.attachments)
-        return; if (file.size > 50 * 1024 * 1024)
+    const add = async (e) => { var _a; const file = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0]; if (!file)
+        return; if (!persistence.attachments)
+        throw new Error("Attachment storage requires IndexedDB; file upload is disabled in compatibility storage."); if (file.size > 50 * 1024 * 1024)
         throw new Error("Attachment exceeds the 50 MiB local limit"); let meta = null; try {
         meta = await persistence.attachments.put(file);
         store.addMaterial({ title: file.name, kind: "file", attachmentId: meta.id, locator: `local-blob:${meta.id}`, mimeType: meta.mimeType, sizeBytes: meta.sizeBytes });
@@ -2012,9 +2021,10 @@ function Library({ materials, store, persistence, run, tvReadOnly = false, contr
                 React.createElement("div", null,
                     React.createElement("h2", null, "Local materials & reference provenance"),
                     React.createElement("p", { className: "muted" }, "Material Viewer opens local attachments by MIME without uploading them.")),
-                !tvReadOnly && React.createElement("label", { className: "button button-quiet file-button" },
+                !tvReadOnly && persistence.attachments && React.createElement("label", { className: "button button-quiet file-button" },
                     "Add file",
-                    React.createElement("input", { "aria-label": "Local material file", type: "file", onChange: (e) => add(e).catch(err => console.error(err)) }))),
+                    React.createElement("input", { "aria-label": "Local material file", type: "file", onChange: (e) => add(e).catch(err => console.error(err)) })),
+                !tvReadOnly && !persistence.attachments && React.createElement("p", { className: "muted" }, "File upload is disabled because this browser session has no IndexedDB attachment storage.")),
             React.createElement("p", { className: "muted" }, "Tracked edital references use the existing material record. StudyFlow warns after 90 days without re-verification; that is a product policy, not an edital rule."),
             tvReadOnly && React.createElement("p", { className: "tv-inline-note" }, "TV reference mode keeps Material Viewer available while upload, delete and provenance editing stay on phone/computer."),
             React.createElement("ul", { className: "activity-list" },
@@ -2026,7 +2036,8 @@ function Library({ materials, store, persistence, run, tvReadOnly = false, contr
                         !tvReadOnly && React.createElement(MaterialReferenceControls, { material: m, store: store, run: run })),
                     React.createElement("div", { className: "button-row" },
                         React.createElement("button", { className: "button button-quiet", type: "button", "data-tv-control-action": "OPEN", "data-tv-control-target": m.id, onClick: () => openViewing(m) }, "Open"),
-                        !tvReadOnly && !m.archived && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(() => store.deleteMaterial(m.id), "Material removed.") }, "Delete"))); }),
+                        !tvReadOnly && !m.archived && React.createElement("button", { className: "button button-quiet", type: "button", onClick: () => run(async () => { store.deleteMaterial(m.id); if (m.attachmentId && persistence.attachments)
+                                await persistence.attachments.delete(m.attachmentId); }, "Material removed and local blob cleaned.") }, "Delete"))); }),
                 !materials.length && React.createElement("li", null, "No local materials yet."))),
         viewing && React.createElement(MaterialViewer, { material: viewing, persistence: persistence, onClose: closeViewing }));
 }
@@ -3261,54 +3272,62 @@ function PortablePackageTools({ state, store, persistence, portable, setPortable
     catch (err) {
         setPortableStatus(err instanceof Error ? err.message : String(err));
     } };
-    const exportEncrypted = async () => { try {
-        if (exportPassword !== exportConfirm)
+    const exportEncrypted = async () => { const password = exportPassword; try {
+        if (password !== exportConfirm)
             throw new TypeError("Encrypted export passwords do not match");
-        if (exportPassword.length < encrypted_portable_1.ENCRYPTED_PORTABLE_MIN_PASSWORD_LENGTH)
+        if (password.length < encrypted_portable_1.ENCRYPTED_PORTABLE_MIN_PASSWORD_LENGTH)
             throw new TypeError(`Encrypted StudyFlow exports require at least ${encrypted_portable_1.ENCRYPTED_PORTABLE_MIN_PASSWORD_LENGTH} characters.`);
         setPortableStatus("Building and encrypting authenticated portable v2 package…");
         const pkg = await (0, portable_1.createPortablePackageV2)(state, persistence.attachments);
-        const bytes = await (0, encrypted_portable_1.encryptPortableText)((0, portable_1.serializePortablePackage)(pkg), exportPassword);
+        const bytes = await (0, encrypted_portable_1.encryptPortableText)((0, portable_1.serializePortablePackage)(pkg), password);
         downloadBytes(bytes, (0, encrypted_portable_1.encryptedPortableFilename)((0, portable_1.portablePackageFilename)(state)));
-        setExportPassword("");
-        setExportConfirm("");
         setPortableStatus("Encrypted portable v2 exported with AES-256-GCM + PBKDF2-HMAC-SHA256. The password is not stored.");
     }
     catch (err) {
         setPortableStatus(err instanceof Error ? err.message : String(err));
+    }
+    finally {
+        setExportPassword("");
+        setExportConfirm("");
     } };
     const exportLegacy = () => { const pkg = (0, portable_1.createPortablePackage)(state); downloadText(pkg); setPortableStatus("State-only portable v1 exported for backward compatibility."); };
     const parseText = async (text) => { var _a; const version = (0, portable_1.portablePackageVersion)(text); const parsed = version === 2 ? await (0, portable_1.parsePortablePackageV2)(text) : (0, portable_1.parsePortablePackage)(text); const next = (0, portable_1.buildPortableImportPreview)(state, parsed, { mode }); setPortable(next); setPortableStatus(`Portable v${version} preview · ${next.summary.add} add · ${next.summary.update} update · ${next.summary.remove} remove${((_a = next.attachmentRecords) === null || _a === void 0 ? void 0 : _a.length) ? ` · ${next.attachmentRecords.length} attachment payloads` : ""}.`); };
     const importData = async (e) => { var _a; const file = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0]; if (!file)
         return; try {
-        const bytes = new Uint8Array(await file.arrayBuffer());
+        (0, portable_1.assertPortableByteLength)(file.size, encrypted_portable_1.MAX_ENCRYPTED_PORTABLE_BYTES, "Portable import");
+        const bytes = await readBoundedFileBytes(file, encrypted_portable_1.MAX_ENCRYPTED_PORTABLE_BYTES, "Portable import");
         if ((0, encrypted_portable_1.isEncryptedPortableBytes)(bytes)) {
             setPortable(null);
             setEncryptedFile(file);
+            setImportPassword("");
             setPortableStatus("Encrypted package selected. Enter its password, then preview. No password is stored.");
             return;
         }
+        (0, portable_1.assertPortableByteLength)(file.size, portable_1.MAX_PORTABLE_V2_BYTES, "Portable JSON import");
         setEncryptedFile(null);
         await parseText(new TextDecoder().decode(bytes));
     }
     catch (err) {
         setPortable(null);
         setEncryptedFile(null);
+        setImportPassword("");
         setPortableStatus(err instanceof Error ? err.message : String(err));
     }
     finally {
         e.target.value = "";
     } };
     const previewEncrypted = async () => { if (!encryptedFile)
-        return; try {
-        const text = await (0, encrypted_portable_1.decryptPortableText)(await encryptedFile.arrayBuffer(), importPassword);
+        return; const password = importPassword; try {
+        const text = await (0, encrypted_portable_1.decryptPortableText)(await encryptedFile.arrayBuffer(), password);
         await parseText(text);
         setEncryptedFile(null);
-        setImportPassword("");
     }
     catch (err) {
         setPortable(null);
         setPortableStatus(err instanceof Error ? err.message : String(err));
+    }
+    finally {
+        setImportPassword("");
     } };
     const apply = async () => { var _a; if (!portable)
         return; try {
@@ -3326,14 +3345,14 @@ function PortablePackageTools({ state, store, persistence, portable, setPortable
         React.createElement("h2", null, "Portable package v2"),
         React.createElement("p", { className: "muted" }, "Full export includes attachment bytes, MIME metadata and SHA-256 checksums. Encrypted export wraps that complete package in an authenticated versioned envelope; the password never leaves this page or gets persisted."),
         React.createElement("div", { className: "button-row" },
-            React.createElement("button", { className: "button", type: "button", onClick: () => void exportFull() }, "Export full v2"),
+            React.createElement("button", { className: "button", type: "button", disabled: !persistence.attachments && state.materials.some(m => m.attachmentId), onClick: () => void exportFull() }, "Export full v2"),
             React.createElement("button", { className: "button button-quiet", type: "button", onClick: exportLegacy }, "Export state-only v1")),
         React.createElement("section", { className: "nested-panel" },
             React.createElement("h3", null, "Encrypted backup"),
             React.createElement("p", { className: "muted" }, "AES-256-GCM \u00B7 PBKDF2-HMAC-SHA256 \u00B7 210,000 iterations \u00B7 random 16-byte salt + 12-byte nonce \u00B7 authenticated envelope header. Password loss is unrecoverable."),
             React.createElement("input", { "aria-label": "Encrypted export password", type: "password", autoComplete: "new-password", minLength: encrypted_portable_1.ENCRYPTED_PORTABLE_MIN_PASSWORD_LENGTH, value: exportPassword, onChange: (e) => setExportPassword(e.target.value), placeholder: "Export password" }),
             React.createElement("input", { "aria-label": "Confirm encrypted export password", type: "password", autoComplete: "new-password", minLength: encrypted_portable_1.ENCRYPTED_PORTABLE_MIN_PASSWORD_LENGTH, value: exportConfirm, onChange: (e) => setExportConfirm(e.target.value), placeholder: "Confirm password" }),
-            React.createElement("button", { className: "button button-primary", type: "button", onClick: () => void exportEncrypted() }, "Export encrypted v2")),
+            React.createElement("button", { className: "button button-primary", type: "button", disabled: !persistence.attachments && state.materials.some(m => m.attachmentId), onClick: () => void exportEncrypted() }, "Export encrypted v2")),
         React.createElement("select", { "aria-label": "Portable import mode", value: mode, onChange: (e) => { setMode(e.target.value); setPortable(null); } },
             React.createElement("option", { value: "replace" }, "Replace current local state"),
             React.createElement("option", { value: "new-plan" }, "Import active package plan as new")),

@@ -24,7 +24,8 @@ def main():
     devtool = tomllib.loads((ROOT/'.devtool.toml').read_text(encoding='utf-8'))
     target_cfg = devtool.get('targets',{}).get('studyflow_quality',{})
     build = (ROOT/'build.gradle.kts').read_text(encoding='utf-8')
-    hook = (ROOT/'.devtool-artifact/validation/validate.sh').read_text(encoding='utf-8')
+    hook_path = ROOT/'.devtool-artifact/validation/validate.sh'
+    hook = hook_path.read_text(encoding='utf-8') if hook_path.is_file() else ''
     require(target_cfg, 'Devtool target studyflow_quality missing')
     require('tasks.register<Exec>("verifyOv30R2StudyflowQualityProperValidationSeal")' in build, 'Gradle task verifyOv30R2StudyflowQualityProperValidationSeal missing')
     require('commandLine("bash", "scripts/validate_ov30r2_studyflow_quality_proper_validation_seal.sh")' in build, 'Gradle task must call the target validation shell script')
@@ -33,6 +34,7 @@ def main():
     require((ROOT/'REMEDIATION_OV_30R2_STUDYFLOW_QUALITY_PROPER_VALIDATION_SEAL.md').is_file(), 'root validation seal missing')
     require((ROOT/'docs/remediation/OV30R2_STUDYFLOW_QUALITY_PROPER_VALIDATION_SEAL.md').is_file(), 'remediation validation seal doc missing')
     if os.environ.get('OV30R2_ACTIVE_TARGET') == 'studyflow_quality':
+        require(hook_path.is_file(), 'active Devtool artifact validation hook missing')
         require('./gradlew --no-daemon verifyOv30R2StudyflowQualityProperValidationSeal' in hook, 'active Devtool artifact validation hook must execute the proper target validation task')
 
     require('verifyOv30R2StudyflowQualityProperValidationSeal' in values(target_cfg), 'Devtool target studyflow_quality must include verifyOv30R2StudyflowQualityProperValidationSeal in tasks/validation phases')

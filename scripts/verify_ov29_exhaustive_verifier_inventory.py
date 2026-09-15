@@ -52,6 +52,15 @@ script_refs = set(re.findall(r'"scripts/([^"]+\.py)"', build)) | set(
     re.findall(r'commandLine\("bash", "scripts/([^"]+\.sh)"', build),
 )
 
+for script in sorted(script_refs):
+    if "" in script:
+        require(any((ROOT / "scripts").glob("verify_phase_*.py")), "dynamic phase verifier template has no concrete implementations")
+        continue
+    path = (ROOT / "web" / "scripts" / script) if script == "validate_web.py" else (ROOT / "scripts" / script)
+    require(path.is_file(), f"referenced verifier script is missing: {path.relative_to(ROOT)}")
+    if script.endswith(".sh"):
+        require(path.stat().st_mode & 0o111, f"shell verifier is not executable: {path.relative_to(ROOT)}")
+
 for task in REQUIRED_CMOV_TASKS + REQUIRED_DEBUG_TASKS:
     require(task in registered_tasks or task in build, f"missing registered verifier task {task}")
     require(task in build, f"verifier task {task} not wired into a gate")

@@ -81,6 +81,15 @@ function createBrowserRepository({ storage = resolveBrowserStorage(), key = expo
         } return result("cleared", { reason: null }); },
     };
 }
+function createUnavailableRepository(reasonText) {
+    return {
+        backend: "unavailable",
+        load() { return result("unavailable", { state: null, reason: reasonText }); },
+        save() { return result("unavailable", { reason: reasonText }); },
+        clear() { return result("unavailable", { reason: reasonText }); },
+        async flush() { throw new TypeError(reasonText); },
+    };
+}
 function unavailableAttachments(reason) {
     const fail = async () => { throw new TypeError(reason); };
     return { put: fail, get: fail, list: async () => [], delete: async () => { await fail(); }, clear: async () => undefined };
@@ -93,6 +102,7 @@ async function createBrowserPersistence({ storage = resolveBrowserStorage(), ind
         return await (0, indexeddb_1.createIndexedDbPersistence)({ indexedDBFactory, legacyRepository, now, dbName });
     }
     catch (error) {
-        return { backend: "localstorage", repository: legacyRepository, attachments: unavailableAttachments("Attachment storage is unavailable because IndexedDB failed to initialize."), fallbackReason: error instanceof Error ? error.message : String(error) };
+        const message = `IndexedDB failed to initialize; StudyFlow is running with persistence disabled instead of silently falling back: ${error instanceof Error ? error.message : String(error)}`;
+        return { backend: "unavailable", repository: createUnavailableRepository(message), attachments: unavailableAttachments("Attachment storage is unavailable because IndexedDB failed to initialize."), fallbackReason: message };
     }
 }

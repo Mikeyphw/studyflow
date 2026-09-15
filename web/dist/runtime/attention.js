@@ -274,9 +274,15 @@ function createBrowserAttentionEnvironment() {
         },
     };
 }
+function safeBrowserLocalStorage() { var _a; try {
+    return (_a = globalThis.localStorage) !== null && _a !== void 0 ? _a : null;
+}
+catch {
+    return null;
+} }
 class StudyFlowWebAttentionRuntime {
     constructor(store, peer, options = {}) {
-        var _a, _b;
+        var _a;
         this.store = store;
         this.peer = peer;
         this.running = false;
@@ -287,7 +293,7 @@ class StudyFlowWebAttentionRuntime {
         this.lastScanAtEpochMillis = null;
         this.lastSessionIds = new Set();
         this.environment = (_a = options.environment) !== null && _a !== void 0 ? _a : createBrowserAttentionEnvironment();
-        this.storage = options.storage === undefined ? ((_b = globalThis.localStorage) !== null && _b !== void 0 ? _b : null) : options.storage;
+        this.storage = options.storage === undefined ? safeBrowserLocalStorage() : options.storage;
         this.ledgerStorage = new sflp_link_1.StudyFlowBrowserAttentionLedgerStorage(`studyflow.attention.v1.${peer.identity.deviceId}`);
         this.pushRegistry = new StudyFlowWebPushRegistry(this.storage, this.environment);
         this.preferences = this.loadPreferences();

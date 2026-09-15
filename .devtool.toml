@@ -519,7 +519,7 @@ lint = [":app:lintRelease"]
 clean = ["clean"]
 
 [targets.studyflow_release.artifacts]
-required = false
+required = true
 external_verification = "auto"
 
 # Repository-wide style/source quality is intentionally isolated from routine client validation.

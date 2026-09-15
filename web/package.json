@@ -13,7 +13,8 @@
     "serve:tv": "npm run build && node scripts/serve_tv.mjs",
     "serve:tv:no-build": "node scripts/serve_tv.mjs",
     "ov30:target-seal": "python3 ../scripts/verify_ov30_studyflow_web_target_seal.py",
-    "ov30r2:proper-validation-seal": "python3 ../scripts/verify_ov30r2_studyflow_web_proper_validation_seal.py"
+    "ov30r2:proper-validation-seal": "python3 ../scripts/verify_ov30r2_studyflow_web_proper_validation_seal.py",
+    "verifyOv30R2StudyflowWebProperValidationSeal": "python3 ../scripts/verify_ov30r2_studyflow_web_proper_validation_seal.py"
   },
   "type": "module",
   "dependencies": {

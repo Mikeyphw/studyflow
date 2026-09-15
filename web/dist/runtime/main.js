@@ -44,7 +44,37 @@ const attention_1 = require("./attention");
 const tv_attention_1 = require("./tv_attention");
 const tvAdapter = (0, tv_1.installTvBrowserAdapter)();
 const sflpPeer = (0, sflp_link_1.installStudyFlowWebSflpPeer)(tvAdapter.resolution.enabled ? "web_tv" : "web");
-async function boot() { const node = document.getElementById("root"); if (!node)
-    throw new Error("StudyFlow React root is missing"); const persistence = await (0, storage_1.createBrowserPersistence)(); const store = state_1.createStudyStore({ repository: persistence.repository }); const attentionRuntime = sflpPeer ? new attention_1.StudyFlowWebAttentionRuntime(store, sflpPeer, { autoStart: true }) : null; const attentionBridge = attentionRuntime ? (0, attention_1.installStudyFlowWebAttentionBridge)(attentionRuntime) : null; const tvAttentionRuntime = tvAdapter.resolution.enabled && attentionRuntime ? new tv_attention_1.StudyFlowWebTvAttentionRuntime(attentionRuntime) : null; const tvAttentionBridge = tvAttentionRuntime ? (0, tv_attention_1.installStudyFlowWebTvAttentionBridge)(tvAttentionRuntime) : null; addEventListener("pagehide", () => { tvAttentionBridge === null || tvAttentionBridge === void 0 ? void 0 : tvAttentionBridge(); attentionBridge === null || attentionBridge === void 0 ? void 0 : attentionBridge.dispose(); attentionRuntime === null || attentionRuntime === void 0 ? void 0 : attentionRuntime.stop(); }, { once: true }); (0, client_1.createRoot)(node).render(React.createElement(App_1.App, { store, persistence, attentionRuntime })); }
-void boot().catch((error) => { const node = document.getElementById("root"); const message = error instanceof Error ? error.message : String(error); if (node)
-    node.textContent = `StudyFlow could not start: ${message}`; console.error(error); });
+async function boot() {
+    const node = document.getElementById("root");
+    if (!node)
+        throw new Error("StudyFlow React root is missing");
+    const persistence = await (0, storage_1.createBrowserPersistence)();
+    const store = state_1.createStudyStore({ repository: persistence.repository });
+    const attentionRuntime = sflpPeer ? new attention_1.StudyFlowWebAttentionRuntime(store, sflpPeer, { autoStart: true }) : null;
+    const attentionBridge = attentionRuntime ? (0, attention_1.installStudyFlowWebAttentionBridge)(attentionRuntime) : null;
+    const tvAttentionRuntime = tvAdapter.resolution.enabled && attentionRuntime ? new tv_attention_1.StudyFlowWebTvAttentionRuntime(attentionRuntime) : null;
+    const tvAttentionBridge = tvAttentionRuntime ? (0, tv_attention_1.installStudyFlowWebTvAttentionBridge)(tvAttentionRuntime) : null;
+    let terminalPageHide = false;
+    const onPageHide = (event) => {
+        attentionRuntime === null || attentionRuntime === void 0 ? void 0 : attentionRuntime.stop();
+        if (event.persisted)
+            return;
+        terminalPageHide = true;
+        tvAttentionBridge === null || tvAttentionBridge === void 0 ? void 0 : tvAttentionBridge();
+        attentionBridge === null || attentionBridge === void 0 ? void 0 : attentionBridge.dispose();
+    };
+    const onPageShow = (event) => {
+        if (event.persisted && !terminalPageHide)
+            attentionRuntime === null || attentionRuntime === void 0 ? void 0 : attentionRuntime.start();
+    };
+    addEventListener("pagehide", onPageHide);
+    addEventListener("pageshow", onPageShow);
+    (0, client_1.createRoot)(node).render(React.createElement(App_1.App, { store, persistence, attentionRuntime }));
+}
+void boot().catch((error) => {
+    const node = document.getElementById("root");
+    const message = error instanceof Error ? error.message : String(error);
+    if (node)
+        node.textContent = `StudyFlow could not start: ${message}`;
+    console.error(error);
+});
