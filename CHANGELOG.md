@@ -1,3 +1,9 @@
+## OV30R2 studyflow_android proper validation seal
+
+- Added first-class validation task `verifyOv30R2StudyflowAndroidProperValidationSeal` for `studyflow_android`.
+- Wired Devtool target validation so the seal can run during apply without `--no-validate`.
+- Added proper seal evidence documents for the target.
+
 ## 2026-09-15 — OV30 studyflow_parity target seal
 
 - Added a target-specific Overlay 30 of 30 seal for `studyflow_parity`: Parity aggregate terminal target seal.

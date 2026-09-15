@@ -1,181 +1,140 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_ov30_30h_studyflow_parity_target_seal_v1",
-  "target": "studyflow_parity",
-  "description": "Overlay 30 of 30 30H: Parity aggregate terminal target seal. Target-specific artifact per user preference.",
-  "commit_message": "OV30 studyflow_parity: add terminal target seal",
+  "name": "studyflow_ov30r2_30a_studyflow_android_proper_validation_seal_v2",
+  "target": "studyflow_android",
+  "description": "Overlay 30 of 30 R2 30A: proper validation task and target seal for studyflow_android.",
+  "commit_message": "OV30R2 studyflow_android: add proper validation task and seal",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV30 studyflow_parity: add terminal target seal"
+    "message": "OV30R2 studyflow_android: add proper validation task and seal"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "OV30 studyflow_parity: add terminal target seal"
+      "message": "OV30R2 studyflow_android: add proper validation task and seal"
     }
   },
   "baseline": {
     "repo": "studyflow",
-    "target": "studyflow_parity",
-    "expected_target_type": "mixed",
-    "previous_overlay": "studyflow_ov30_30g_studyflow_quality_target_seal_v1.tar",
+    "target": "studyflow_android",
+    "expected_target_type": "studyflow_android",
+    "previous_overlay": "studyflow_ov30_split_v1_applied",
     "roadmap_overlay": "30 of 30",
-    "sub_overlay": "30H",
-    "notes": "Built cumulatively from user-applied OV29. Overlay 30 is split so each Devtool target has its own overlay artifact."
+    "sub_overlay": "30A",
+    "notes": "Corrective R2 because OV30 v1 was applied with --no-validate; this overlay must be applied with normal validation."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov30_30h_studyflow_parity_target_seal_v1",
-    "target": "studyflow_parity",
+    "name": "studyflow_ov30r2_30a_studyflow_android_proper_validation_seal_v2",
+    "target": "studyflow_android",
     "sections": [
       {
-        "id": "target-terminal-seal",
-        "purpose": "Parity aggregate terminal target seal",
+        "id": "proper-validation-seal",
+        "purpose": "Android client validated target seal",
         "paths": [
           ".devtool-artifact/validation/validate.sh",
           ".devtool.toml",
           "CHANGELOG.md",
-          "REMEDIATION_OV_30_STUDYFLOW_PARITY_TARGET_SEAL.md",
+          "REMEDIATION_OV_30R2_STUDYFLOW_ANDROID_PROPER_VALIDATION_SEAL.md",
           "build.gradle.kts",
           "devtool-overlay.json",
-          "docs/remediation/OV30_STUDYFLOW_PARITY_TARGET_SEAL.md",
-          "docs/remediation/OV30_TARGET_OVERLAY_SPLIT.md",
-          "docs/roadmap/OV30_TARGET_OVERLAY_LEDGER.json",
-          "scripts/validate_ov30_all_target_overlay_split.sh",
-          "scripts/validate_ov30_studyflow_parity_target_seal.sh",
-          "scripts/verify_ov30_all_target_overlay_split.py",
-          "scripts/verify_ov30_studyflow_parity_target_seal.py"
+          "docs/remediation/OV30R2_STUDYFLOW_ANDROID_PROPER_VALIDATION_SEAL.md",
+          "scripts/validate_ov30r2_studyflow_android_proper_validation_seal.sh",
+          "scripts/verify_ov30r2_studyflow_android_proper_validation_seal.py"
         ]
       }
     ]
   },
   "findings": [
     {
-      "id": "OV30-30H",
+      "id": "OV30R2-30A",
       "severity": "HIGH",
       "status": "closed",
-      "summary": "studyflow_parity has an independent terminal target seal overlay."
+      "summary": "studyflow_android has a proper validation task, Devtool validation hook, target graph wiring, and seal evidence."
     }
   ],
   "validation": {
-    "entrypoint": "scripts/validate_ov30_studyflow_parity_target_seal.sh",
+    "entrypoint": "scripts/validate_ov30r2_studyflow_android_proper_validation_seal.sh",
     "devtool_entrypoint": ".devtool-artifact/validation/validate.sh",
+    "gradle_task": "verifyOv30R2StudyflowAndroidProperValidationSeal",
     "expected": [
-      "OV30_STUDYFLOW_PARITY_TARGET_SEAL: PASS"
+      "OV30R2_STUDYFLOW_ANDROID_PROPER_VALIDATION_SEAL: PASS"
     ]
   },
   "inventory": {
     "format": 1,
-    "count": 13,
+    "count": 8,
     "entries": [
       {
         "action": "modify",
         "path": ".devtool-artifact/validation/validate.sh",
         "mode": "0o755",
-        "sha256": "296400c6bcbe7bdd8cc9f34d1e9b595ddcc4347be0189dcae6ddd07fcca05cb8",
-        "size": 124,
+        "sha256": "30260b901c9f5e577504280d95395c5be329c169d1e8220c3711f61563c9008d",
+        "size": 175,
         "source_mode": "0o755",
-        "source_sha256": "3d50a9aff3701b7ed7692a8391f054a9d096b723b698307b7757238a156382d8",
-        "source_size": 125
+        "source_sha256": "296400c6bcbe7bdd8cc9f34d1e9b595ddcc4347be0189dcae6ddd07fcca05cb8",
+        "source_size": 124
       },
       {
         "action": "modify",
         "path": ".devtool.toml",
         "mode": "0o644",
-        "sha256": "9483ecb7db16e3b37e9a50de8e4880ed91c3a6f7b84974519aaa228cfa2fd8e0",
-        "size": 20383,
+        "sha256": "9c84efa723fffae5f2b9fcf304c6202822ff1b84ce0eed888b517f6c05356f28",
+        "size": 20487,
         "source_mode": "0o644",
-        "source_sha256": "aba7295dcef6d6c1b68f322886d41f1df01abb0c79fc0609e351ab4eb624bf52",
-        "source_size": 20227
+        "source_sha256": "9483ecb7db16e3b37e9a50de8e4880ed91c3a6f7b84974519aaa228cfa2fd8e0",
+        "source_size": 20383
       },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o644",
-        "sha256": "e3fba9c0af26f92de38c8982b2b31a958511eba306a68b31c572f4a92d871fe9",
-        "size": 88147,
+        "sha256": "05f2d425ff720118eba32910733cf15854b3ec82dbfd2bb9e604fb300786a678",
+        "size": 88459,
         "source_mode": "0o644",
-        "source_sha256": "a4d4a85115541c283700ae7da142a857c3676c4f6c316fd8680c96daf205f3b3",
-        "source_size": 87733
+        "source_sha256": "e3fba9c0af26f92de38c8982b2b31a958511eba306a68b31c572f4a92d871fe9",
+        "source_size": 88147
       },
       {
         "action": "add",
-        "path": "REMEDIATION_OV_30_STUDYFLOW_PARITY_TARGET_SEAL.md",
+        "path": "REMEDIATION_OV_30R2_STUDYFLOW_ANDROID_PROPER_VALIDATION_SEAL.md",
         "mode": "0o644",
-        "sha256": "efd730dae863a79dc181450e661ce387c3122ec0d1271aaf7dfded7dc32c009e",
-        "size": 547
+        "sha256": "1bd25dd694d0c2c9e475efb7c86805f76a16159ced1d76e0c4b3a76e22545327",
+        "size": 753
       },
       {
         "action": "modify",
         "path": "build.gradle.kts",
         "mode": "0o644",
-        "sha256": "d2c55a6db9bcbe8f5b27b9094142c772a523f09adbbb6a9cbdfdd73d20439650",
-        "size": 107075,
+        "sha256": "fcea551c918be3c2fbac20976bb7792d7d862eee54bce6190cd7db953fafb9aa",
+        "size": 107447,
         "source_mode": "0o644",
-        "source_sha256": "19cf457606b5c3fc90cc3cfe1c3d4191981c20f387fd96cb8be45169cd242297",
-        "source_size": 106413
+        "source_sha256": "d2c55a6db9bcbe8f5b27b9094142c772a523f09adbbb6a9cbdfdd73d20439650",
+        "source_size": 107075
       },
       {
-        "action": "modify",
-        "path": "devtool-overlay.json",
+        "action": "add",
+        "path": "docs/remediation/OV30R2_STUDYFLOW_ANDROID_PROPER_VALIDATION_SEAL.md",
         "mode": "0o644",
-        "sha256": "ea6b47d22518c0bfbae74ceb9cf77ba1a08a9504e50448615be9f9f07cfeb442",
-        "size": 5908,
-        "source_mode": "0o644",
-        "source_sha256": "79bd423991da254d50620afcf90dbc7fea8b88b0cfcfe609386e5b30dfccff50",
-        "source_size": 5116
+        "sha256": "ecbc666b72b6133091df2949143cd4f10ef244d66285bd74d3b48f07cbc1e285",
+        "size": 1080
       },
       {
         "action": "add",
-        "path": "docs/remediation/OV30_STUDYFLOW_PARITY_TARGET_SEAL.md",
-        "mode": "0o644",
-        "sha256": "823d3e604582ec5fa69d98f27e75ec3af338e04234212ac409843bbaed22f967",
-        "size": 852
-      },
-      {
-        "action": "add",
-        "path": "docs/remediation/OV30_TARGET_OVERLAY_SPLIT.md",
-        "mode": "0o644",
-        "sha256": "27d4afcac7b29b3af9c65ecbe90ce67bf78727448e6aea681ed1efeb149bf9be",
-        "size": 455
-      },
-      {
-        "action": "add",
-        "path": "docs/roadmap/OV30_TARGET_OVERLAY_LEDGER.json",
-        "mode": "0o644",
-        "sha256": "8bda45858bb655382e74e0e8a09f387c7f0c42fadabbfaed3484c3a3bdd68589",
-        "size": 2952
-      },
-      {
-        "action": "add",
-        "path": "scripts/validate_ov30_all_target_overlay_split.sh",
+        "path": "scripts/validate_ov30r2_studyflow_android_proper_validation_seal.sh",
         "mode": "0o755",
-        "sha256": "ad7fd5d0dbe861f2887d5741d20007eddc926cfe83c3632f6e385fd272a53935",
-        "size": 118
+        "sha256": "df9aac7b10225ea9555b47443601a6c2b7afa7915ca3c070b7478fb73f934434",
+        "size": 136
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov30_studyflow_parity_target_seal.sh",
+        "path": "scripts/verify_ov30r2_studyflow_android_proper_validation_seal.py",
         "mode": "0o755",
-        "sha256": "766673a0a2ba887efa01d33ae209bf256f443360f8d386cc5e8e63b67c8833d9",
-        "size": 122
-      },
-      {
-        "action": "add",
-        "path": "scripts/verify_ov30_all_target_overlay_split.py",
-        "mode": "0o755",
-        "sha256": "9577d3bf65466f43f64dbff6f0f88357f785a479ba6f944bcdcf6ab49b8a3bc9",
-        "size": 3876
-      },
-      {
-        "action": "add",
-        "path": "scripts/verify_ov30_studyflow_parity_target_seal.py",
-        "mode": "0o755",
-        "sha256": "48c09a42b558ea53db71210e8037b2335343a899e71a4cb92dfbc52731118cdf",
-        "size": 2833
+        "sha256": "8b554c103efaf77493255369d77b6dd0b62f938a5ddaf8955c3a10c4f2d5fb83",
+        "size": 2512
       }
     ]
   }

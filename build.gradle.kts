@@ -2668,3 +2668,11 @@ tasks.register<Exec>("verifyOv30AllTargetOverlaySplit") {
     commandLine("python3", "scripts/verify_ov30_all_target_overlay_split.py")
 }
 
+// OV30R2 — OV30R2 studyflow_android proper validation seal.
+tasks.register<Exec>("verifyOv30R2StudyflowAndroidProperValidationSeal") {
+    group = "verification"
+    description = "OV30R2 studyflow_android proper validation seal."
+    workingDir = rootProject.projectDir
+    commandLine("bash", "scripts/validate_ov30r2_studyflow_android_proper_validation_seal.sh")
+}
+
