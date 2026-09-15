@@ -596,6 +596,7 @@ build = [
   "verifyProgrammingCourseModel",
   "verifyCodeBlocksSyntax",
   "verifyOv30StudyflowQualityTargetSeal",
+  "verifyOv30R2StudyflowQualityProperValidationSeal",
 ]
 test = [
   "verifyOv01RepositoryGradleDevtoolTruth",
@@ -652,6 +653,7 @@ preflight = [
   "verifyOv27TermuxExecutionPipelineSandboxCorrectness",
   "verifyOv28LanguageReviewDesktopSpecializedParity",
   "verifyOv30StudyflowQualityTargetSeal",
+  "verifyOv30R2StudyflowQualityProperValidationSeal",
 ]
 dependencies = []
 compile = []

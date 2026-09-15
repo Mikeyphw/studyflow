@@ -1,3 +1,9 @@
+## OV30R2 studyflow_quality proper validation seal
+
+- Added first-class validation task `verifyOv30R2StudyflowQualityProperValidationSeal` for `studyflow_quality`.
+- Wired Devtool target validation so the seal can run during apply without `--no-validate`.
+- Added proper seal evidence documents for the target.
+
 ## OV30R2 studyflow_tv_release proper validation seal
 
 - Added first-class validation task `verifyOv30R2StudyflowTvReleaseProperValidationSeal` for `studyflow_tv_release`.
