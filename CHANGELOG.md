@@ -1,3 +1,9 @@
+## 2026-09-15 — OV30 studyflow_quality target seal
+
+- Added a target-specific Overlay 30 of 30 seal for `studyflow_quality`: Quality target terminal seal.
+- Preserved one-overlay-per-Devtool-target packaging so client, quality, parity, and release lanes can be applied independently in order.
+- Kept release evidence fail-closed; target seals do not synthesize signed artifact/device/operator readiness.
+
 ## 2026-09-15 — OV30 studyflow_tv_release target seal
 
 - Added a target-specific Overlay 30 of 30 seal for `studyflow_tv_release`: Android TV release evidence target seal.
