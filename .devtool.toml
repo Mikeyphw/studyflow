@@ -513,7 +513,7 @@ args = [
 ]
 
 [targets.studyflow_release.tasks]
-build = ["verifyRelFinalDevtoolReleaseRunner", "verifyFinalReleaseAutomatedGate", "verifyOv30StudyflowReleaseTargetSeal"]
+build = ["verifyRelFinalDevtoolReleaseRunner", "verifyFinalReleaseAutomatedGate", "verifyOv30StudyflowReleaseTargetSeal", "verifyOv30R2StudyflowReleaseProperValidationSeal"]
 test = ["verifyRelFinalDevtoolReleaseRunner"]
 lint = [":app:lintRelease"]
 clean = ["clean"]
@@ -523,6 +523,34 @@ required = false
 external_verification = "auto"
 
 # Repository-wide style/source quality is intentionally isolated from routine client validation.
+
+[targets.studyflow_release.validation]
+android_safe = false
+max_workers = 4
+cpu_limit = 4
+parallel = true
+split_gradle = false
+no_daemon = false
+stop_daemon_after_phase = false
+low_priority = false
+gradle_heap_mb = 2048
+gradle_metaspace_mb = 768
+gradle_packaging_heap_mb = 2048
+gradle_packaging_metaspace_mb = 768
+gradle_lint_metaspace_mb = 768
+memory_guard_mb = 0
+affected_module_lint = false
+
+[targets.studyflow_release.validation.phases]
+preflight = ["verifyRelFinalDevtoolReleaseRunner", "verifyFinalReleaseAutomatedGate", "verifyOv30StudyflowReleaseTargetSeal", "verifyOv30R2StudyflowReleaseProperValidationSeal"]
+dependencies = []
+compile = []
+resources = []
+unit-test = ["verifyRelFinalDevtoolReleaseRunner", "verifyOv30R2StudyflowReleaseProperValidationSeal"]
+package = ["verifyFinalReleaseAutomatedGate"]
+instrumentation = []
+lint = [":app:lintRelease"]
+
 [targets.studyflow_quality]
 runner = "gradle"
 platform = "shared"
