@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+python3 scripts/verify_ov30_studyflow_tv_release_target_seal.py
