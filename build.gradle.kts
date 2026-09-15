@@ -2604,3 +2604,11 @@ tasks.register<Exec>("verifyOv30StudyflowAndroidTargetSeal") {
     commandLine("python3", "scripts/verify_ov30_studyflow_android_target_seal.py")
 }
 
+// OV30 — Desktop client terminal target seal.
+tasks.register<Exec>("verifyOv30StudyflowDesktopTargetSeal") {
+    group = "verification"
+    description = "Desktop client terminal target seal."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_ov30_studyflow_desktop_target_seal.py")
+}
+
