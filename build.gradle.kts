@@ -2612,3 +2612,11 @@ tasks.register<Exec>("verifyOv30StudyflowDesktopTargetSeal") {
     commandLine("python3", "scripts/verify_ov30_studyflow_desktop_target_seal.py")
 }
 
+// OV30 — Web/PWA terminal target seal.
+tasks.register<Exec>("verifyOv30StudyflowWebTargetSeal") {
+    group = "verification"
+    description = "Web/PWA terminal target seal."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_ov30_studyflow_web_target_seal.py")
+}
+
