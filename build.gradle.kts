@@ -2724,3 +2724,18 @@ tasks.register<Exec>("verifyOv30R2StudyflowQualityProperValidationSeal") {
     commandLine("bash", "scripts/validate_ov30r2_studyflow_quality_proper_validation_seal.sh")
 }
 
+// OV30R2 — OV30R2 studyflow_parity proper validation seal.
+tasks.register<Exec>("verifyOv30R2StudyflowParityProperValidationSeal") {
+    group = "verification"
+    description = "OV30R2 studyflow_parity proper validation seal."
+    workingDir = rootProject.projectDir
+    commandLine("bash", "scripts/validate_ov30r2_studyflow_parity_proper_validation_seal.sh")
+}
+
+// OV30R2 — all target proper validation seals.
+tasks.register("verifyOv30R2AllTargetProperValidationSeals") {
+    group = "verification"
+    description = "Runs every OV30R2 per-target proper validation seal."
+    dependsOn("verifyOv30R2StudyflowAndroidProperValidationSeal", "verifyOv30R2StudyflowDesktopProperValidationSeal", "verifyOv30R2StudyflowWebProperValidationSeal", "verifyOv30R2StudyflowTvProperValidationSeal", "verifyOv30R2StudyflowReleaseProperValidationSeal", "verifyOv30R2StudyflowTvReleaseProperValidationSeal", "verifyOv30R2StudyflowQualityProperValidationSeal", "verifyOv30R2StudyflowParityProperValidationSeal")
+}
+

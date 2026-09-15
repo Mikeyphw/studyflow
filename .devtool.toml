@@ -712,6 +712,8 @@ build = [
   "verifyWebStaleDistReleaseIntegrity",
   "verifyOv30StudyflowParityTargetSeal",
   "verifyOv30AllTargetOverlaySplit",
+  "verifyOv30R2StudyflowParityProperValidationSeal",
+  "verifyOv30R2AllTargetProperValidationSeals",
 ]
 test = [
   "verifyRelFinalTerminalSeal",
@@ -743,6 +745,8 @@ preflight = [
   "verifyWebStaleDistReleaseIntegrity",
   "verifyOv30StudyflowParityTargetSeal",
   "verifyOv30AllTargetOverlaySplit",
+  "verifyOv30R2StudyflowParityProperValidationSeal",
+  "verifyOv30R2AllTargetProperValidationSeals",
 ]
 dependencies = []
 compile = []
