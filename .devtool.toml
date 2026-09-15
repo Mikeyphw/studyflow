@@ -665,6 +665,8 @@ build = [
   "verifyOv29BehavioralValidationReleaseTruthGates",
   "verifyOv29ExhaustiveVerifierInventory",
   "verifyWebStaleDistReleaseIntegrity",
+  "verifyOv30StudyflowParityTargetSeal",
+  "verifyOv30AllTargetOverlaySplit",
 ]
 test = [
   "verifyRelFinalTerminalSeal",
@@ -694,6 +696,8 @@ preflight = [
   "verifyOv29BehavioralValidationReleaseTruthGates",
   "verifyOv29ExhaustiveVerifierInventory",
   "verifyWebStaleDistReleaseIntegrity",
+  "verifyOv30StudyflowParityTargetSeal",
+  "verifyOv30AllTargetOverlaySplit",
 ]
 dependencies = []
 compile = []

@@ -2652,3 +2652,19 @@ tasks.register<Exec>("verifyOv30StudyflowQualityTargetSeal") {
     commandLine("python3", "scripts/verify_ov30_studyflow_quality_target_seal.py")
 }
 
+// OV30 — Parity aggregate terminal target seal.
+tasks.register<Exec>("verifyOv30StudyflowParityTargetSeal") {
+    group = "verification"
+    description = "Parity aggregate terminal target seal."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_ov30_studyflow_parity_target_seal.py")
+}
+
+// OV30 — OV30 one-overlay-per-target aggregate split seal.
+tasks.register<Exec>("verifyOv30AllTargetOverlaySplit") {
+    group = "verification"
+    description = "OV30 one-overlay-per-target aggregate split seal."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_ov30_all_target_overlay_split.py")
+}
+

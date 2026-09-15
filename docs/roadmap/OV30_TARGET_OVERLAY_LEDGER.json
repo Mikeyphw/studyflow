@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "studyflow.ov30.target_overlay_ledger",
+  "roadmapOverlay": "30 of 30",
+  "splitPolicy": "one_overlay_per_devtool_target",
+  "releaseReadiness": "evidence_pending_fail_closed",
+  "targets": [
+    {
+      "step": "30A",
+      "target": "studyflow_android",
+      "title": "Android client terminal target seal",
+      "gradleTask": "verifyOv30StudyflowAndroidTargetSeal",
+      "validator": "scripts/validate_ov30_studyflow_android_target_seal.sh",
+      "verifier": "scripts/verify_ov30_studyflow_android_target_seal.py"
+    },
+    {
+      "step": "30B",
+      "target": "studyflow_desktop",
+      "title": "Desktop client terminal target seal",
+      "gradleTask": "verifyOv30StudyflowDesktopTargetSeal",
+      "validator": "scripts/validate_ov30_studyflow_desktop_target_seal.sh",
+      "verifier": "scripts/verify_ov30_studyflow_desktop_target_seal.py"
+    },
+    {
+      "step": "30C",
+      "target": "studyflow_web",
+      "title": "Web/PWA terminal target seal",
+      "gradleTask": "verifyOv30StudyflowWebTargetSeal",
+      "validator": "scripts/validate_ov30_studyflow_web_target_seal.sh",
+      "verifier": "scripts/verify_ov30_studyflow_web_target_seal.py"
+    },
+    {
+      "step": "30D",
+      "target": "studyflow_tv",
+      "title": "Android TV debug terminal target seal",
+      "gradleTask": "verifyOv30StudyflowTvTargetSeal",
+      "validator": "scripts/validate_ov30_studyflow_tv_target_seal.sh",
+      "verifier": "scripts/verify_ov30_studyflow_tv_target_seal.py"
+    },
+    {
+      "step": "30E",
+      "target": "studyflow_release",
+      "title": "Android release evidence target seal",
+      "gradleTask": "verifyOv30StudyflowReleaseTargetSeal",
+      "validator": "scripts/validate_ov30_studyflow_release_target_seal.sh",
+      "verifier": "scripts/verify_ov30_studyflow_release_target_seal.py"
+    },
+    {
+      "step": "30F",
+      "target": "studyflow_tv_release",
+      "title": "Android TV release evidence target seal",
+      "gradleTask": "verifyOv30StudyflowTvReleaseTargetSeal",
+      "validator": "scripts/validate_ov30_studyflow_tv_release_target_seal.sh",
+      "verifier": "scripts/verify_ov30_studyflow_tv_release_target_seal.py"
+    },
+    {
+      "step": "30G",
+      "target": "studyflow_quality",
+      "title": "Quality target terminal seal",
+      "gradleTask": "verifyOv30StudyflowQualityTargetSeal",
+      "validator": "scripts/validate_ov30_studyflow_quality_target_seal.sh",
+      "verifier": "scripts/verify_ov30_studyflow_quality_target_seal.py"
+    },
+    {
+      "step": "30H",
+      "target": "studyflow_parity",
+      "title": "Parity aggregate terminal target seal",
+      "gradleTask": "verifyOv30StudyflowParityTargetSeal",
+      "validator": "scripts/validate_ov30_studyflow_parity_target_seal.sh",
+      "verifier": "scripts/verify_ov30_studyflow_parity_target_seal.py"
+    }
+  ],
+  "aggregateValidator": "scripts/verify_ov30_all_target_overlay_split.py"
+}
