@@ -1,67 +1,67 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_ov30r2_30a_studyflow_android_proper_validation_seal_v2",
-  "target": "studyflow_android",
-  "description": "Overlay 30 of 30 R2 30A: proper validation task and target seal for studyflow_android.",
-  "commit_message": "OV30R2 studyflow_android: add proper validation task and seal",
+  "name": "studyflow_ov30r2_30b_studyflow_desktop_proper_validation_seal_v2",
+  "target": "studyflow_desktop",
+  "description": "Overlay 30 of 30 R2 30B: proper validation task and target seal for studyflow_desktop.",
+  "commit_message": "OV30R2 studyflow_desktop: add proper validation task and seal",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV30R2 studyflow_android: add proper validation task and seal"
+    "message": "OV30R2 studyflow_desktop: add proper validation task and seal"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "OV30R2 studyflow_android: add proper validation task and seal"
+      "message": "OV30R2 studyflow_desktop: add proper validation task and seal"
     }
   },
   "baseline": {
     "repo": "studyflow",
-    "target": "studyflow_android",
-    "expected_target_type": "studyflow_android",
+    "target": "studyflow_desktop",
+    "expected_target_type": "studyflow_desktop",
     "previous_overlay": "studyflow_ov30_split_v1_applied",
     "roadmap_overlay": "30 of 30",
-    "sub_overlay": "30A",
+    "sub_overlay": "30B",
     "notes": "Corrective R2 because OV30 v1 was applied with --no-validate; this overlay must be applied with normal validation."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov30r2_30a_studyflow_android_proper_validation_seal_v2",
-    "target": "studyflow_android",
+    "name": "studyflow_ov30r2_30b_studyflow_desktop_proper_validation_seal_v2",
+    "target": "studyflow_desktop",
     "sections": [
       {
         "id": "proper-validation-seal",
-        "purpose": "Android client validated target seal",
+        "purpose": "Desktop client validated target seal",
         "paths": [
           ".devtool-artifact/validation/validate.sh",
           ".devtool.toml",
           "CHANGELOG.md",
-          "REMEDIATION_OV_30R2_STUDYFLOW_ANDROID_PROPER_VALIDATION_SEAL.md",
+          "REMEDIATION_OV_30R2_STUDYFLOW_DESKTOP_PROPER_VALIDATION_SEAL.md",
           "build.gradle.kts",
           "devtool-overlay.json",
-          "docs/remediation/OV30R2_STUDYFLOW_ANDROID_PROPER_VALIDATION_SEAL.md",
-          "scripts/validate_ov30r2_studyflow_android_proper_validation_seal.sh",
-          "scripts/verify_ov30r2_studyflow_android_proper_validation_seal.py"
+          "docs/remediation/OV30R2_STUDYFLOW_DESKTOP_PROPER_VALIDATION_SEAL.md",
+          "scripts/validate_ov30r2_studyflow_desktop_proper_validation_seal.sh",
+          "scripts/verify_ov30r2_studyflow_desktop_proper_validation_seal.py"
         ]
       }
     ]
   },
   "findings": [
     {
-      "id": "OV30R2-30A",
+      "id": "OV30R2-30B",
       "severity": "HIGH",
       "status": "closed",
-      "summary": "studyflow_android has a proper validation task, Devtool validation hook, target graph wiring, and seal evidence."
+      "summary": "studyflow_desktop has a proper validation task, Devtool validation hook, target graph wiring, and seal evidence."
     }
   ],
   "validation": {
-    "entrypoint": "scripts/validate_ov30r2_studyflow_android_proper_validation_seal.sh",
+    "entrypoint": "scripts/validate_ov30r2_studyflow_desktop_proper_validation_seal.sh",
     "devtool_entrypoint": ".devtool-artifact/validation/validate.sh",
-    "gradle_task": "verifyOv30R2StudyflowAndroidProperValidationSeal",
+    "gradle_task": "verifyOv30R2StudyflowDesktopProperValidationSeal",
     "expected": [
-      "OV30R2_STUDYFLOW_ANDROID_PROPER_VALIDATION_SEAL: PASS"
+      "OV30R2_STUDYFLOW_DESKTOP_PROPER_VALIDATION_SEAL: PASS"
     ]
   },
   "inventory": {
@@ -72,68 +72,68 @@
         "action": "modify",
         "path": ".devtool-artifact/validation/validate.sh",
         "mode": "0o755",
-        "sha256": "30260b901c9f5e577504280d95395c5be329c169d1e8220c3711f61563c9008d",
+        "sha256": "418fb64e1c854573aad7b3c7d6dc07f408c64234671bb54179677c2c1a4cb287",
         "size": 175,
         "source_mode": "0o755",
-        "source_sha256": "296400c6bcbe7bdd8cc9f34d1e9b595ddcc4347be0189dcae6ddd07fcca05cb8",
-        "source_size": 124
+        "source_sha256": "30260b901c9f5e577504280d95395c5be329c169d1e8220c3711f61563c9008d",
+        "source_size": 175
       },
       {
         "action": "modify",
         "path": ".devtool.toml",
         "mode": "0o644",
-        "sha256": "9c84efa723fffae5f2b9fcf304c6202822ff1b84ce0eed888b517f6c05356f28",
-        "size": 20487,
+        "sha256": "c3aa5a7daf9e92ecb43bf62bd0ad49c0ef71e7bb8bae41cc899fc6c1a56df958",
+        "size": 20591,
         "source_mode": "0o644",
-        "source_sha256": "9483ecb7db16e3b37e9a50de8e4880ed91c3a6f7b84974519aaa228cfa2fd8e0",
-        "source_size": 20383
+        "source_sha256": "9c84efa723fffae5f2b9fcf304c6202822ff1b84ce0eed888b517f6c05356f28",
+        "source_size": 20487
       },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o644",
-        "sha256": "05f2d425ff720118eba32910733cf15854b3ec82dbfd2bb9e604fb300786a678",
-        "size": 88459,
+        "sha256": "d0ee07ea68ac17c02e37aa3cf338efbda9a4f5d54074db804ae8ccc159467919",
+        "size": 88771,
         "source_mode": "0o644",
-        "source_sha256": "e3fba9c0af26f92de38c8982b2b31a958511eba306a68b31c572f4a92d871fe9",
-        "source_size": 88147
+        "source_sha256": "05f2d425ff720118eba32910733cf15854b3ec82dbfd2bb9e604fb300786a678",
+        "source_size": 88459
       },
       {
         "action": "add",
-        "path": "REMEDIATION_OV_30R2_STUDYFLOW_ANDROID_PROPER_VALIDATION_SEAL.md",
+        "path": "REMEDIATION_OV_30R2_STUDYFLOW_DESKTOP_PROPER_VALIDATION_SEAL.md",
         "mode": "0o644",
-        "sha256": "1bd25dd694d0c2c9e475efb7c86805f76a16159ced1d76e0c4b3a76e22545327",
+        "sha256": "4ede61e665f91da3a03b50e57eb01502b7ce1728ba7fa2c7b276969e0534f190",
         "size": 753
       },
       {
         "action": "modify",
         "path": "build.gradle.kts",
         "mode": "0o644",
-        "sha256": "fcea551c918be3c2fbac20976bb7792d7d862eee54bce6190cd7db953fafb9aa",
-        "size": 107447,
+        "sha256": "308efa36eb244727998cea70fa3f922d2656d7d8d993412c7c92fc3aab95e145",
+        "size": 107819,
         "source_mode": "0o644",
-        "source_sha256": "d2c55a6db9bcbe8f5b27b9094142c772a523f09adbbb6a9cbdfdd73d20439650",
-        "source_size": 107075
+        "source_sha256": "fcea551c918be3c2fbac20976bb7792d7d862eee54bce6190cd7db953fafb9aa",
+        "source_size": 107447
       },
       {
         "action": "add",
-        "path": "docs/remediation/OV30R2_STUDYFLOW_ANDROID_PROPER_VALIDATION_SEAL.md",
+        "path": "docs/remediation/OV30R2_STUDYFLOW_DESKTOP_PROPER_VALIDATION_SEAL.md",
         "mode": "0o644",
-        "sha256": "ecbc666b72b6133091df2949143cd4f10ef244d66285bd74d3b48f07cbc1e285",
+        "sha256": "cdf83b5ba3b296e44c9f88e24c0ca1e2ca95958528ad6107c04903e966544aee",
         "size": 1080
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov30r2_studyflow_android_proper_validation_seal.sh",
+        "path": "scripts/validate_ov30r2_studyflow_desktop_proper_validation_seal.sh",
         "mode": "0o755",
-        "sha256": "df9aac7b10225ea9555b47443601a6c2b7afa7915ca3c070b7478fb73f934434",
+        "sha256": "d0384f80995f5dd0ed8827133a2a1bc2f8f299721d5329e34082f067193a9bc0",
         "size": 136
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov30r2_studyflow_android_proper_validation_seal.py",
+        "path": "scripts/verify_ov30r2_studyflow_desktop_proper_validation_seal.py",
         "mode": "0o755",
-        "sha256": "8b554c103efaf77493255369d77b6dd0b62f938a5ddaf8955c3a10c4f2d5fb83",
+        "sha256": "fbc237c2cfa412671c59ad9b21cd1b8d398eb0385519fa6656a0132487065bbf",
         "size": 2512
       }
     ]

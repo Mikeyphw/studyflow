@@ -2676,3 +2676,11 @@ tasks.register<Exec>("verifyOv30R2StudyflowAndroidProperValidationSeal") {
     commandLine("bash", "scripts/validate_ov30r2_studyflow_android_proper_validation_seal.sh")
 }
 
+// OV30R2 — OV30R2 studyflow_desktop proper validation seal.
+tasks.register<Exec>("verifyOv30R2StudyflowDesktopProperValidationSeal") {
+    group = "verification"
+    description = "OV30R2 studyflow_desktop proper validation seal."
+    workingDir = rootProject.projectDir
+    commandLine("bash", "scripts/validate_ov30r2_studyflow_desktop_proper_validation_seal.sh")
+}
+

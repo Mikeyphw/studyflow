@@ -230,7 +230,7 @@ args = [
 ]
 
 [targets.studyflow_desktop.tasks]
-build = ["verifyCpovAllContracts", "verifyStudyFlowDesktopAllContracts", "verifyDesktopDov23NativeDesktopIntegration", ":desktopApp:compileKotlin", "verifyOv30StudyflowDesktopTargetSeal", "verifyOv28LanguageReviewDesktopSpecializedParity"]
+build = ["verifyCpovAllContracts", "verifyStudyFlowDesktopAllContracts", "verifyDesktopDov23NativeDesktopIntegration", ":desktopApp:compileKotlin", "verifyOv30StudyflowDesktopTargetSeal", "verifyOv28LanguageReviewDesktopSpecializedParity", "verifyOv30R2StudyflowDesktopProperValidationSeal"]
 test = [
   "verifyCpovAllContracts",
   "verifyStudyFlowDesktopAllContracts",
@@ -259,7 +259,7 @@ gradle_metaspace_mb = 768
 memory_guard_mb = 0
 
 [targets.studyflow_desktop.validation.phases]
-preflight = ["verifyCpovAllContracts", "verifyStudyFlowDesktopAllContracts", "verifyDesktopDov23NativeDesktopIntegration", "verifyOv19PromiseAudit", "verifyOv30StudyflowDesktopTargetSeal", "verifyOv28LanguageReviewDesktopSpecializedParity"]
+preflight = ["verifyCpovAllContracts", "verifyStudyFlowDesktopAllContracts", "verifyDesktopDov23NativeDesktopIntegration", "verifyOv19PromiseAudit", "verifyOv30StudyflowDesktopTargetSeal", "verifyOv28LanguageReviewDesktopSpecializedParity", "verifyOv30R2StudyflowDesktopProperValidationSeal"]
 dependencies = []
 compile = []
 resources = []
