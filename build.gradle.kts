@@ -2708,3 +2708,11 @@ tasks.register<Exec>("verifyOv30R2StudyflowReleaseProperValidationSeal") {
     commandLine("bash", "scripts/validate_ov30r2_studyflow_release_proper_validation_seal.sh")
 }
 
+// OV30R2 — OV30R2 studyflow_tv_release proper validation seal.
+tasks.register<Exec>("verifyOv30R2StudyflowTvReleaseProperValidationSeal") {
+    group = "verification"
+    description = "OV30R2 studyflow_tv_release proper validation seal."
+    workingDir = rootProject.projectDir
+    commandLine("bash", "scripts/validate_ov30r2_studyflow_tv_release_proper_validation_seal.sh")
+}
+

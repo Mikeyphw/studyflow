@@ -432,7 +432,7 @@ args = [
 ]
 
 [targets.studyflow_tv_release.tasks]
-build = ["verifyStudyFlowTvAllContracts", "verifyStudyFlowTvFinalReleaseSeal", "verifyOv30StudyflowTvReleaseTargetSeal"]
+build = ["verifyStudyFlowTvAllContracts", "verifyStudyFlowTvFinalReleaseSeal", "verifyOv30StudyflowTvReleaseTargetSeal", "verifyOv30R2StudyflowTvReleaseProperValidationSeal"]
 test = ["verifyStudyFlowTvFinalAcceptanceContracts", ":app-tv:testDebugUnitTest"]
 lint = [":app-tv:lintRelease"]
 clean = ["clean"]
@@ -459,7 +459,7 @@ memory_guard_mb = 0
 affected_module_lint = false
 
 [targets.studyflow_tv_release.validation.phases]
-preflight = ["verifyStudyFlowTvAllContracts", "verifyStudyFlowTvFinalAcceptanceContracts", "verifyOv30StudyflowTvReleaseTargetSeal"]
+preflight = ["verifyStudyFlowTvAllContracts", "verifyStudyFlowTvFinalAcceptanceContracts", "verifyOv30StudyflowTvReleaseTargetSeal", "verifyOv30R2StudyflowTvReleaseProperValidationSeal"]
 dependencies = []
 compile = []
 resources = []
