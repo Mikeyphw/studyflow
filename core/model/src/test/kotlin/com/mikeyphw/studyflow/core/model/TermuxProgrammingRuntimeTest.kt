@@ -21,6 +21,25 @@ class TermuxProgrammingRuntimeTest {
         assertTrue(isAllowedTermuxCommandTemplate("npm test"))
         assertFalse(isAllowedTermuxCommandTemplate("curl https://example.invalid"))
         assertFalse(isAllowedTermuxCommandTemplate("python main.py && rm -rf ~/studyflow"))
+        assertFalse(isAllowedTermuxCommandTemplate("python -c 'print(1)'"))
+        assertFalse(isAllowedTermuxCommandTemplate("node -e \"console.log(1)\""))
+        assertFalse(isAllowedTermuxCommandTemplate("bash -c echo hi"))
+    }
+
+    @Test
+    fun `quoted command templates are tokenized without shell execution`() {
+        assertEquals(listOf("python", "main file.py"), tokenizeTermuxCommandTemplate("python \"main file.py\""))
+        assertTrue(isAllowedTermuxCommandTemplate("python \"main file.py\""))
+        assertFalse(isAllowedTermuxCommandTemplate("python \"main.py && rm -rf home\""))
+    }
+
+    @Test
+    fun `Termux paths are confined to configured StudyFlow roots`() {
+        assertTrue(isSafeTermuxPath("~/studyflow/courses"))
+        assertTrue(isSafeTermuxPath("$" + "HOME/studyflow/courses"))
+        assertFalse(isSafeTermuxPath("/data/data/com.termux/files/home/studyflow"))
+        assertFalse(isSafeTermuxPath("/sdcard/Download"))
+        assertFalse(isSafeTermuxPath("~/studyflow/../escape"))
     }
 
     @Test

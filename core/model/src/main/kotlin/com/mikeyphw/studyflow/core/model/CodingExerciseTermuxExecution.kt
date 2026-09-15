@@ -55,6 +55,9 @@ fun CodingExercise.toTermuxExecutionPlan(
         "Termux request id prefix is not safe."
     }
     require(createdAtEpochMillis >= 0) { "Created timestamp cannot be negative." }
+    require(workspace.courseSlug == sanitizeTermuxWorkspaceSlug(workspace.courseSlug)) {
+        "Termux course workspace is not safe."
+    }
 
     val command = requireNotNull(safeCommandTemplateFor(runMode)) {
         "No safe Termux command is available for ${language.displayName}."
@@ -152,6 +155,10 @@ fun CodingExercise.safeCommandTemplateFor(runMode: TermuxExerciseRunMode): Strin
 
 fun CodingExercise.applyTermuxResult(result: TermuxCommandResult, updatedAtEpochMillis: Long): CodingExercise {
     require(result.requestId.isNotBlank()) { "Termux result must have a request id." }
+    require(result.requestId.endsWith("-run")) { "Only the correlated RUN_COMMAND request can update an exercise." }
+    require(result.requestId.contains(sanitizeTermuxWorkspaceSlug(id.value))) {
+        "Termux result request id does not match this exercise."
+    }
     require(updatedAtEpochMillis >= createdAtEpochMillis) { "Updated timestamp cannot precede created timestamp." }
     val nextStatus = when {
         result.state == TermuxExecutionState.CANCELLED -> CodingExerciseStatus.NEEDS_REVIEW

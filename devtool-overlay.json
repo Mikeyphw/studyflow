@@ -1,375 +1,361 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_ov26_specialized_content_production_data_ui_v1",
+  "name": "studyflow_ov27_termux_execution_pipeline_sandbox_correctness_v1",
   "target": "studyflow_android",
-  "description": "Overlay 26 of 30: close seven S11 specialized content findings with production Room-backed programming and language repositories, real workspace product flows, explicit Termux command templates/defaults, truthful specialized analytics evidence, and mode-gated specialized import apply workflows.",
-  "commit_message": "OV26: add specialized content production data and UI",
+  "description": "Overlay 27 of 30: close eight S11 Termux execution findings by adding a durable Android four-stage Termux pipeline, package visibility, persisted/correlated results, quote-aware command parsing, workspace confinement, and SHA-256-scoped PendingIntents.",
+  "commit_message": "OV27: harden Termux execution pipeline and sandbox correctness",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV26: add specialized content production data and UI"
+    "message": "OV27: harden Termux execution pipeline and sandbox correctness"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "OV26: add specialized content production data and UI"
+      "message": "OV27: harden Termux execution pipeline and sandbox correctness"
     }
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
     "expected_target_type": "android",
-    "previous_overlay": "studyflow_ov25_web_attention_push_tv_timing_route_safety_v2",
-    "previous_commit": "user-applied OV25 cumulative state",
-    "roadmap_overlay": "26 of 30",
-    "notes": "Built cumulatively against the supplied post-OV23 snapshot plus OV24 and OV25 v2. The embedded validator is Gradle-independent for Devtool/Termux and the model syntax portion uses kotlinc when available."
+    "previous_overlay": "studyflow_ov26_specialized_content_production_data_ui_v1",
+    "previous_commit": "661aa951",
+    "roadmap_overlay": "27 of 30",
+    "notes": "Built cumulatively against the supplied post-OV26 StudyFlow state after user-reported Devtool apply commit 661aa951. The embedded validator is Gradle/network-independent by default and uses kotlinc when available."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov26_specialized_content_production_data_ui_v1",
+    "name": "studyflow_ov27_termux_execution_pipeline_sandbox_correctness_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "programming-production-data",
-        "purpose": "Add canonical Room-backed programming repositories, entity mappers, and managers.",
+        "id": "termux-four-stage-pipeline",
+        "purpose": "Persist CREATE_WORKSPACE, WRITE_EXERCISE_FILES, RUN_COMMAND, and READ_RESULT rows before launching Termux.",
         "paths": [
           "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ProgrammingCourseRepository.kt",
           "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomProgrammingCourseRepository.kt",
-          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/ProgrammingCourseEntityMapper.kt"
+          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/ProgrammingCourseDao.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/termux/StudyFlowTermuxExecutionCoordinator.kt"
         ]
       },
       {
-        "id": "language-production-data",
-        "purpose": "Add canonical Room-backed language deck repositories, entity mappers, and managers.",
+        "id": "android-termux-bridge-hardening",
+        "purpose": "Declare Termux package visibility, verify service availability, use configured workdirs, and scope result PendingIntents with SHA-256/data URI.",
         "paths": [
-          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/LanguageLearningRepository.kt",
-          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomLanguageLearningRepository.kt",
-          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/LanguageLearningEntityMapper.kt"
+          "app/src/main/AndroidManifest.xml",
+          "app/src/main/java/com/mikeyphw/studyflow/termux/StudyFlowTermuxRunCommandBridge.kt",
+          "app/src/main/java/com/mikeyphw/studyflow/termux/StudyFlowTermuxResultReceiver.kt"
         ]
       },
       {
-        "id": "specialized-product-ui",
-        "purpose": "Render programming and language dashboards from persisted snapshots instead of synthetic generic metrics.",
-        "paths": [
-          "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/TodayWorkspaceScreen.kt",
-          "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/LanguageDeckWorkspacePanel.kt"
-        ]
-      },
-      {
-        "id": "termux-command-defaults",
-        "purpose": "Make programming command templates explicit and provide safe defaults for all supported language buckets.",
+        "id": "termux-command-sandbox",
+        "purpose": "Replace whitespace command splitting with quote-aware parsing, block inline interpreter code, and confine workspace roots.",
         "paths": [
           "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/ProgrammingCourse.kt",
-          "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/TermuxProgrammingRuntime.kt"
+          "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/TermuxProgrammingRuntime.kt",
+          "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/CodingExerciseTermuxExecution.kt"
         ]
       },
       {
-        "id": "specialized-analytics-import",
-        "purpose": "Derive analytics from specialized evidence and provide mode-gated specialized import application.",
+        "id": "termux-product-action-surface",
+        "purpose": "Wire Today programming surfaces to launch the next runnable Termux exercise through the durable pipeline.",
         "paths": [
-          "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyAnalyticsRepository.kt",
-          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/SpecializedContentImportWorkflow.kt"
+          "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
+          "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/TodayWorkspaceScreen.kt",
+          "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/ProgrammingCourseWorkspacePanel.kt",
+          "feature/workspace/src/main/res/values/strings.xml",
+          "feature/workspace/src/main/res/values-pt-rBR/strings.xml"
+        ]
+      },
+      {
+        "id": "ov27-validation",
+        "purpose": "Add focused OV27 validators and regression tests for command parsing, package visibility, durable result persistence, and PendingIntent scoping.",
+        "paths": [
+          "scripts/validate_ov27_termux_execution_pipeline_sandbox_correctness.sh",
+          "scripts/verify_ov27_termux_execution_pipeline_sandbox_correctness.py",
+          "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/TermuxProgrammingRuntimeTest.kt",
+          "app/src/test/java/com/mikeyphw/studyflow/termux/StudyFlowTermuxBridgeContractTest.kt"
         ]
       }
     ]
   },
   "findings": [
     {
-      "id": "S11-01",
+      "id": "S11-02",
       "severity": "CRITICAL",
       "status": "closed",
-      "summary": "Android specialized Room data now has production programming and language repositories."
+      "summary": "Android Termux four-stage execution pipeline is now durably queued before launch."
     },
     {
-      "id": "S11-05",
+      "id": "S11-03",
       "severity": "HIGH",
       "status": "closed",
-      "summary": "Programming Course UI now reads persisted programming snapshots instead of schedule/generic analytics facades."
+      "summary": "Android manifest declares Termux package/action visibility required for current integration."
     },
     {
-      "id": "S11-06",
+      "id": "S11-04",
       "severity": "HIGH",
       "status": "closed",
-      "summary": "Language Deck plans now have a product workspace panel backed by language snapshot data."
+      "summary": "Termux results are persisted through the repository; volatile latest-result cache was removed."
     },
     {
-      "id": "S11-07",
+      "id": "S11-09",
       "severity": "HIGH",
       "status": "closed",
-      "summary": "Programming run/test templates are explicit mandatory invariants."
+      "summary": "Interpreter inline-code flags such as python -c, node -e, and bash -c are rejected."
     },
     {
-      "id": "S11-08",
-      "severity": "HIGH",
-      "status": "closed",
-      "summary": "Termux defaults now provide safe templates for every supported language bucket."
-    },
-    {
-      "id": "S11-17",
-      "severity": "HIGH",
-      "status": "closed",
-      "summary": "Specialized analytics now derives progress and accuracy from programming/language evidence."
-    },
-    {
-      "id": "S11-18",
+      "id": "S11-10",
       "severity": "MEDIUM-HIGH",
       "status": "closed",
-      "summary": "Specialized template previews now have mode-gated apply workflow boundaries."
+      "summary": "Termux workspaces are confined to configured StudyFlow roots; Android bridge uses that root."
+    },
+    {
+      "id": "S11-11",
+      "severity": "MEDIUM-HIGH",
+      "status": "closed",
+      "summary": "Quoted Termux command templates are parsed correctly without shell tokenization."
+    },
+    {
+      "id": "S11-12",
+      "severity": "HIGH",
+      "status": "closed",
+      "summary": "Termux results mutate exercises only after exact durable request/exercise correlation."
+    },
+    {
+      "id": "S11-13",
+      "severity": "MEDIUM",
+      "status": "closed",
+      "summary": "PendingIntent request codes use SHA-256 prefixes and unique data URIs to reduce collision/collapse risk."
     }
   ],
   "validation": {
     "hook": ".devtool-artifact/validation/validate.sh",
-    "manual": "bash scripts/validate_ov26_specialized_content_data_ui.sh",
+    "manual": "bash scripts/validate_ov27_termux_execution_pipeline_sandbox_correctness.sh",
     "gradle_task": null,
-    "daemon_stop": true,
-    "notes": "Uses source contracts plus model syntax compile; no network or Gradle wrapper download required."
+    "notes": "Default validation uses source contracts plus optional kotlinc model syntax; no network or Gradle wrapper download required. Set STUDYFLOW_OV27_RUN_GRADLE=1 to opt into targeted Gradle Termux tests."
   },
   "inventory": {
     "format": 1,
-    "count": 28,
+    "count": 23,
     "entries": [
       {
         "action": "modify",
         "path": ".devtool-artifact/validation/validate.sh",
         "mode": "0o755",
-        "sha256": "5adfd2ac8fc41b0bb401accd34abeb4ad8350c2d3a5c50cc771348b16b9a95d5",
-        "size": 123,
+        "sha256": "adaae26387091b758db062c1dbb5cbf0490af1e858060cbdc9e793d2fabfb088",
+        "size": 184,
         "source_mode": "0o755",
-        "source_sha256": "479ba557e2a609cccd5a0cfedfc9a967a21b904a4adb5d5028a91afc1f8aa0f8",
-        "source_size": 110
+        "source_sha256": "5adfd2ac8fc41b0bb401accd34abeb4ad8350c2d3a5c50cc771348b16b9a95d5",
+        "source_size": 123
       },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o644",
-        "sha256": "9535e0a8ce096576d34531ac21218374cda040528d8aa8cab4444fcff8416de0",
-        "size": 83293,
+        "sha256": "a208637cb3a78820059601facd55d702027b2aefdffc87e77b23f96145d80603",
+        "size": 83819,
         "source_mode": "0o644",
-        "source_sha256": "142aa8796042e860c5e0a013187db0e1985d7f954a09b0c034142c1068da654f",
-        "source_size": 82580
+        "source_sha256": "9535e0a8ce096576d34531ac21218374cda040528d8aa8cab4444fcff8416de0",
+        "source_size": 83293
       },
       {
         "action": "add",
-        "path": "REMEDIATION_OV_26_IMPLEMENTATION.md",
+        "path": "REMEDIATION_OV_27_IMPLEMENTATION.md",
         "mode": "0o644",
-        "sha256": "f635b15414ba2e6264b09e4d47ffbff34effba181aec0c4d3494ee2ee50c94b9",
-        "size": 1515
+        "sha256": "dc66caed95aa22fc9d67f24a1a019df3080938e5336db3747f2bef4bfb3afc3e",
+        "size": 1793
       },
       {
         "action": "modify",
-        "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt",
+        "path": "app/src/main/AndroidManifest.xml",
         "mode": "0o600",
-        "sha256": "7e2ea7977228aacf703e24920ce184481c953ed381116e20e3c1ea216b5f494f",
-        "size": 27105,
+        "sha256": "3da5a2c070fc1dc482af29826d8d02fcd1deb55f13e6ee81b496cd2f55ca5dc9",
+        "size": 5574,
         "source_mode": "0o600",
-        "source_sha256": "f879b3aefd3498c3b8b0ab2d8b652a62e2b4bbba1e18c0eb0d8d32ce9bf7d428",
-        "source_size": 26176
+        "source_sha256": "b5974a4b1f3d68bb9cc4894c7266f901113bc7d2c80cfc8dabfea4e1c87937a2",
+        "source_size": 5403
       },
       {
         "action": "modify",
         "path": "app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt",
         "mode": "0o600",
-        "sha256": "cbea019ab05c04802463bcd8571f26bc711895584ba0c8f910b5fb1c00d67911",
-        "size": 41694,
+        "sha256": "530e1d2ec73a517caa6691833e13f2837895f2ab6c08b0ec60d8ec1691e1d1d7",
+        "size": 42209,
         "source_mode": "0o600",
-        "source_sha256": "f5cf4b9550010d5e264490e75e1d03aa78885eca0cc9dff3d90b1449fb9e62a7",
-        "source_size": 41384
+        "source_sha256": "cbea019ab05c04802463bcd8571f26bc711895584ba0c8f910b5fb1c00d67911",
+        "source_size": 41694
       },
       {
         "action": "add",
-        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomLanguageLearningRepository.kt",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/termux/StudyFlowTermuxExecutionCoordinator.kt",
         "mode": "0o644",
-        "sha256": "efb216dac8079752e4016150e7d2d7783d3dabfc4e79f3e9b7dff16384c19c71",
-        "size": 7913
+        "sha256": "0c4631aba38c742fac24fe765272cd29e9133f2297431413ba7500537b3240f2",
+        "size": 1993
       },
       {
-        "action": "add",
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/termux/StudyFlowTermuxResultReceiver.kt",
+        "mode": "0o600",
+        "sha256": "4dd64b67bf935add757db9355beb554e2366623c9322cceb5ec07160f01ec23c",
+        "size": 2788,
+        "source_mode": "0o600",
+        "source_sha256": "c181a471e0811910775959c8660d967cc4628cef16a4d1758510964e0f80009c",
+        "source_size": 2554
+      },
+      {
+        "action": "modify",
+        "path": "app/src/main/java/com/mikeyphw/studyflow/termux/StudyFlowTermuxRunCommandBridge.kt",
+        "mode": "0o600",
+        "sha256": "f95bcfab7926ec301821fdca45a68f08c3e0065f8782a7910b368d994ea0e79a",
+        "size": 5295,
+        "source_mode": "0o600",
+        "source_sha256": "a21e96e918dbfdfa94a65946340cbd2267130843e6816b496d9c42233ff31f7c",
+        "source_size": 4697
+      },
+      {
+        "action": "modify",
+        "path": "app/src/test/java/com/mikeyphw/studyflow/termux/StudyFlowTermuxBridgeContractTest.kt",
+        "mode": "0o600",
+        "sha256": "7608f327280d1118d1bae5418452ae795ce40fe8375f6eab5c780c25a0967a9f",
+        "size": 3930,
+        "source_mode": "0o600",
+        "source_sha256": "82fd6daf34f236528a67efc5e09bbd6c342744228165d8ad1502b840f857ad8c",
+        "source_size": 2380
+      },
+      {
+        "action": "modify",
         "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomProgrammingCourseRepository.kt",
         "mode": "0o644",
-        "sha256": "017772815d301be326c8a678c2fda16accf723b2d23e082546aac7134c134059",
-        "size": 13181
-      },
-      {
-        "action": "modify",
-        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyAnalyticsRepository.kt",
-        "mode": "0o600",
-        "sha256": "49f95c7cb6f9f1f89f285387d9737863f67505395800ea9ddb2f3625676f5a8b",
-        "size": 11500,
-        "source_mode": "0o600",
-        "source_sha256": "cdd81361ad97922f198edb0f89f88378839205ea0104267a54fd3e788679a99d",
-        "source_size": 8191
-      },
-      {
-        "action": "modify",
-        "path": "core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/StudyFlowDataLayer.kt",
-        "mode": "0o600",
-        "sha256": "db680a8e1143e48cfbe979f12d3661e7163379abdab95e7b1b1bc6b57c85875b",
-        "size": 6975,
-        "source_mode": "0o600",
-        "source_sha256": "5d9c16c1c9f4c97452aebf2b1f2af6424cbc91e0214fb46e820eff394dcf4756",
-        "source_size": 6402
-      },
-      {
-        "action": "modify",
-        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/LanguageLearningDao.kt",
-        "mode": "0o600",
-        "sha256": "c94afe4358d115bbaa8bb3ea4ad96f06fbd9006f00239e538589801bfbfddc62",
-        "size": 3090,
-        "source_mode": "0o600",
-        "source_sha256": "08b49aaa5181a59fe3e4c77a973bb1de18a29f9901b2c68cd3663a3cdfa036ec",
-        "source_size": 2529
+        "sha256": "774c01daffd4cec9f4d8c90678c49008e979247e360988f6bcddd988bb51128a",
+        "size": 17630,
+        "source_mode": "0o644",
+        "source_sha256": "017772815d301be326c8a678c2fda16accf723b2d23e082546aac7134c134059",
+        "source_size": 13181
       },
       {
         "action": "modify",
         "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/ProgrammingCourseDao.kt",
         "mode": "0o600",
-        "sha256": "55f443fa509e684074bbd53602dbae5e0acf056105aaed4a47ac6c34ad6e3a3a",
-        "size": 4434,
+        "sha256": "8ff46c5d6bcd605c157b953cfec011d214782e10c34103f766c20ec0b9db2e4c",
+        "size": 4977,
         "source_mode": "0o600",
-        "source_sha256": "7542403307e1457dccafb9d106999a9aea824f714dd41be6f045f0990f1fed24",
-        "source_size": 3884
+        "source_sha256": "55f443fa509e684074bbd53602dbae5e0acf056105aaed4a47ac6c34ad6e3a3a",
+        "source_size": 4434
       },
       {
-        "action": "add",
-        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/LanguageLearningEntityMapper.kt",
-        "mode": "0o644",
-        "sha256": "4deb8f14b8f14e45fdb0b89a9be9c068404be887a4caf5276bb4fb68c6226df9",
-        "size": 9509
-      },
-      {
-        "action": "add",
-        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/mapper/ProgrammingCourseEntityMapper.kt",
-        "mode": "0o644",
-        "sha256": "25141a31e74c9732d374b2b821a62a3f564d084c4a3cfb9709405b110135871b",
-        "size": 15365
-      },
-      {
-        "action": "add",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/LanguageLearningRepository.kt",
-        "mode": "0o644",
-        "sha256": "a90307e38e55995ea7922d1d5fcde83ac9ffc0a5c528c9e5306546fd46aa5b17",
-        "size": 3967
-      },
-      {
-        "action": "add",
+        "action": "modify",
         "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ProgrammingCourseRepository.kt",
         "mode": "0o644",
-        "sha256": "039a318a5d174176d070ff2fece4fd276650cc98c64b2e245b3e2a420e8a9299",
-        "size": 4743
+        "sha256": "a0cfae151b38eaecf530465424f0eaca6fbca59954e6fae6c4ab00daa6e9cb95",
+        "size": 5975,
+        "source_mode": "0o644",
+        "source_sha256": "039a318a5d174176d070ff2fece4fd276650cc98c64b2e245b3e2a420e8a9299",
+        "source_size": 4743
       },
       {
-        "action": "add",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/SpecializedContentImportWorkflow.kt",
-        "mode": "0o644",
-        "sha256": "64d4830a4a3975f9324f3dc3a16e0128c92220e274d4f1bfb2b1b921ca6f925a",
-        "size": 1855
-      },
-      {
-        "action": "add",
-        "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/LanguageDeckPresentation.kt",
-        "mode": "0o644",
-        "sha256": "6c8e881d300e6e7d4e9e5f1c9abf4547042db0667bb8f03ec6a6859f8b81c898",
-        "size": 742
+        "action": "modify",
+        "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/CodingExerciseTermuxExecution.kt",
+        "mode": "0o600",
+        "sha256": "00f69d33801fa4922d15d01ea9fb61855744e58be742d2f40f9af60aa5e84f91",
+        "size": 9919,
+        "source_mode": "0o600",
+        "source_sha256": "1bc816bac00d46764308e3d5c5fc8b99a8502db2fc4efa7cc9c7f9eee5f27b72",
+        "source_size": 9509
       },
       {
         "action": "modify",
         "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/ProgrammingCourse.kt",
         "mode": "0o600",
-        "sha256": "b46e86815ce4b8793f015869f2d71625f6a530173da59eb9cda7faa896e043cf",
-        "size": 10246,
+        "sha256": "898d47bf4815ce5810ea33cd6984eedbf0a41ddbcdf97b989ed8a029d8ef0c56",
+        "size": 12335,
         "source_mode": "0o600",
-        "source_sha256": "934077f9c850888b7a0693d73695280e57a4db3d8a2eed3728a7edca2cd42308",
-        "source_size": 9788
+        "source_sha256": "b46e86815ce4b8793f015869f2d71625f6a530173da59eb9cda7faa896e043cf",
+        "source_size": 10246
       },
       {
         "action": "modify",
         "path": "core/model/src/main/kotlin/com/mikeyphw/studyflow/core/model/TermuxProgrammingRuntime.kt",
         "mode": "0o600",
-        "sha256": "d8d4e85fb7912ce422054a59cc447a3d7461cdc1dd25e4a7f4b6b9301d2c7da0",
-        "size": 9655,
+        "sha256": "9671416fd57a9cb1ef1d2098f743d0b6873df3af7e016c8adb6afd9619c80555",
+        "size": 13571,
         "source_mode": "0o600",
-        "source_sha256": "e16b091386446072834fbadb0cede2ab8a67d7c5f61858b81cd9f9b30391b865",
-        "source_size": 8934
-      },
-      {
-        "action": "add",
-        "path": "docs/remediation/OV26_SPECIALIZED_CONTENT_DATA_UI.md",
-        "mode": "0o644",
-        "sha256": "27416457acef0f87ac2048449eb4b5c470999afba87a4834bf1bf4ea03e530a2",
-        "size": 847
+        "source_sha256": "d8d4e85fb7912ce422054a59cc447a3d7461cdc1dd25e4a7f4b6b9301d2c7da0",
+        "source_size": 9655
       },
       {
         "action": "modify",
-        "path": "feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentScreen.kt",
+        "path": "core/model/src/test/kotlin/com/mikeyphw/studyflow/core/model/TermuxProgrammingRuntimeTest.kt",
         "mode": "0o600",
-        "sha256": "e8685f9668346fa1432e5287594f178a21cc78f55db904d89ede6fee484695b3",
-        "size": 42605,
+        "sha256": "c58bc9d22c1d7cd9b1d8b4b4cebe8961bbabc769b42eaae8e863cf556e7a0b6d",
+        "size": 3107,
         "source_mode": "0o600",
-        "source_sha256": "969052df4b563f319fdca562bd496083886f6a210fe32c96843117a7c0c3c94d",
-        "source_size": 42463
+        "source_sha256": "b545ce9d703f58c1a145ec54c7325fead30749858e7e481d933a00db1a3ec478",
+        "source_size": 2083
       },
       {
         "action": "add",
-        "path": "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/LanguageDeckWorkspacePanel.kt",
+        "path": "docs/remediation/OV27_TERMUX_EXECUTION_PIPELINE_SANDBOX_CORRECTNESS.md",
         "mode": "0o644",
-        "sha256": "d2057bf65fb4e46766a14c5508f447c76e96840c2b32485a0f8293d88f0ec5b2",
-        "size": 2290
+        "sha256": "782288c7f61eb0143d22756cd718b00d3034c463bb2cd473c9a3acad45a8f8c8",
+        "size": 949
+      },
+      {
+        "action": "modify",
+        "path": "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/ProgrammingCourseWorkspacePanel.kt",
+        "mode": "0o600",
+        "sha256": "26a1279a0f0d91c504a6d8778e690e6fa50b45c2e5e398619b3e35b8e1a0b1ab",
+        "size": 3783,
+        "source_mode": "0o600",
+        "source_sha256": "875c99686bcc53492c7d1ecc6f968054e6a6a7bc1609f5ef1d6ad8543fd2ec34",
+        "source_size": 3500
       },
       {
         "action": "modify",
         "path": "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/TodayWorkspaceScreen.kt",
         "mode": "0o600",
-        "sha256": "ca3cbc70099938371885968fec11ba7c240513e4dd8be0b830863074f27e67e8",
-        "size": 29898,
+        "sha256": "be1490e10f95e2eb0262746a0644367a313e8e8490a5cf1fdbb5ff8715ffe922",
+        "size": 31459,
         "source_mode": "0o600",
-        "source_sha256": "de304145b26cf802c5d54b42cd03b310f60aaa848bcd0ff0c285d5a210568079",
-        "source_size": 26724
+        "source_sha256": "ca3cbc70099938371885968fec11ba7c240513e4dd8be0b830863074f27e67e8",
+        "source_size": 29898
       },
       {
         "action": "modify",
         "path": "feature/workspace/src/main/res/values-pt-rBR/strings.xml",
         "mode": "0o600",
-        "sha256": "97938e627f5b9c2368b75b3b381d5957cba7a19a5b22bf0307dc571532ead0f2",
-        "size": 64091,
+        "sha256": "7de5a3b7077907c1723afd00681e728c6781d0512850b12619f8f53a506826a0",
+        "size": 64412,
         "source_mode": "0o600",
-        "source_sha256": "1f68394acb4dc781b4f029497a0724024de20494d4d7954118028dc332f45f2f",
-        "source_size": 63338
+        "source_sha256": "97938e627f5b9c2368b75b3b381d5957cba7a19a5b22bf0307dc571532ead0f2",
+        "source_size": 64091
       },
       {
         "action": "modify",
         "path": "feature/workspace/src/main/res/values/strings.xml",
         "mode": "0o600",
-        "sha256": "6d4a01a68b3c09a7d68cb338c8594f7d6497b487dace238b45a800c5c8626bf0",
-        "size": 56948,
+        "sha256": "2c677016098b40629b14601b9c11f4f9790974023efd11a3a89a4ba6873ec1d1",
+        "size": 57235,
         "source_mode": "0o600",
-        "source_sha256": "5bcb23eae3018a9345deaf2011ee40a4f24b0286148b92c928909f9ad3db4898",
-        "source_size": 56239
+        "source_sha256": "6d4a01a68b3c09a7d68cb338c8594f7d6497b487dace238b45a800c5c8626bf0",
+        "source_size": 56948
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov26_specialized_content_data_ui.sh",
+        "path": "scripts/validate_ov27_termux_execution_pipeline_sandbox_correctness.sh",
         "mode": "0o755",
-        "sha256": "6d761ec34cbfd8b7e28248629c04c31d572960c33af36f1c78a89bd0c9346dc8",
-        "size": 121
+        "sha256": "b39c44fe67476b104c252328d7e5fee5d18f5b5f582c1aa1058d59f6a5159d63",
+        "size": 677
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov26_specialized_content_data_ui.py",
+        "path": "scripts/verify_ov27_termux_execution_pipeline_sandbox_correctness.py",
         "mode": "0o755",
-        "sha256": "5e005d6ce192ea407c7037849c6ddc18b85f18b2dab063a4262dc8878dcf5ae0",
-        "size": 8676
-      },
-      {
-        "action": "modify",
-        "path": "scripts/verify_programming_course_ui.py",
-        "mode": "0o600",
-        "sha256": "b7b7ec98e0060950e3cf15f4c005d20f27a5c45b95abf5a2b36d57c5a907c101",
-        "size": 3600,
-        "source_mode": "0o600",
-        "source_sha256": "ebf5c4a7b2ef5cfe36568ceff53802a3581fa88bb24588973dd2a0eae29f2ae2",
-        "source_size": 3227
+        "sha256": "8bbf4c31788fb824623e81191d352f1d7bc1efe8f1ca10e5de97060eade54962",
+        "size": 10150
       }
     ]
   }

@@ -812,4 +812,7 @@
     <string name="language_deck_idiom_count">%1$d idioms</string>
     <string name="language_deck_due">Due cards</string>
     <string name="language_deck_learned_count">%1$d learned · %2$d vocabulary cards</string>
+    <string name="programming_termux_run_next">Run next exercise in Termux</string>
+    <string name="programming_termux_launch_sent">Sent to Termux with durable correlation.</string>
+    <string name="programming_termux_launch_failed">Could not start Termux for this exercise.</string>
 </resources>

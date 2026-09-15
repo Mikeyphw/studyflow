@@ -24,6 +24,14 @@ import com.mikeyphw.studyflow.core.model.ProgrammingLanguage
 import com.mikeyphw.studyflow.core.model.StudyFlowImportRowKind
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.TermuxRuntimePreference
+import com.mikeyphw.studyflow.core.model.toTermuxExecutionPlan
+import com.mikeyphw.studyflow.core.model.TermuxWorkspace
+import com.mikeyphw.studyflow.core.model.TermuxExecutionState
+import com.mikeyphw.studyflow.core.model.TermuxExerciseRunMode
+import com.mikeyphw.studyflow.core.model.TermuxCommandResult
+import com.mikeyphw.studyflow.core.model.TermuxCommandRequest
+import com.mikeyphw.studyflow.core.model.TermuxBridgeAction
+import com.mikeyphw.studyflow.core.model.applyTermuxResult
 import com.mikeyphw.studyflow.core.model.defaultTermuxTemplates
 import com.mikeyphw.studyflow.core.model.sanitizeTermuxWorkspaceSlug
 import java.util.UUID
@@ -88,6 +96,77 @@ internal class RoomProgrammingCourseRepository(
         requirePlan(preference.studyPlanId)
         dao.upsertTermuxRuntimePreference(preference.asEntity())
         preference
+    }
+
+    override suspend fun enqueueTermuxExerciseRun(
+        planId: StudyPlanId,
+        exerciseId: CodingExerciseId,
+        runMode: TermuxExerciseRunMode,
+        requestIdPrefix: String,
+    ): TermuxCommandRequest = database.withTransaction {
+        requirePlan(planId)
+        require(requestIdPrefix == sanitizeTermuxWorkspaceSlug(requestIdPrefix)) {
+            "Termux request id prefix must be a collision-resistant safe slug."
+        }
+        val exercise = requireNotNull(
+            dao.findCodingExercise(planId.value, exerciseId.value)?.asExternalModel(),
+        ) { "Coding exercise ${exerciseId.value} does not belong to plan ${planId.value}." }
+        val preference = requireNotNull(dao.findTermuxRuntimePreference(planId.value)?.asExternalModel()) {
+            "Termux runtime must be enabled and configured before running coding exercises."
+        }
+        require(preference.enabled) { "Termux runtime is disabled for this programming course." }
+        val profile = dao.findProfile(planId.value)?.asExternalModel()
+        val workspace = TermuxWorkspace(
+            root = preference.workspaceRoot,
+            courseSlug = sanitizeTermuxWorkspaceSlug(planId.value),
+            relativePath = profile?.workspaceRelativePath ?: "programming/${sanitizeTermuxWorkspaceSlug(planId.value)}",
+        )
+        val plan = exercise.toTermuxExecutionPlan(
+            workspace = workspace,
+            runMode = runMode,
+            requestIdPrefix = requestIdPrefix,
+            createdAtEpochMillis = clock().coerceAtLeast(0L),
+        )
+        plan.requests.forEach { request -> dao.upsertTermuxCommandRequest(request.asEntity()) }
+        plan.requests.single { request -> request.action == TermuxBridgeAction.RUN_COMMAND }
+    }
+
+    override suspend fun markTermuxRequestWaitingForTermux(requestId: String): TermuxCommandRequest =
+        database.withTransaction {
+            val request = requireNotNull(dao.findTermuxCommandRequest(requestId)?.asExternalModel()) {
+                "Termux request $requestId was not durably queued."
+            }
+            require(request.action == TermuxBridgeAction.RUN_COMMAND) {
+                "Only RUN_COMMAND requests can be sent to Termux."
+            }
+            require(request.state == TermuxExecutionState.QUEUED || request.state == TermuxExecutionState.RUNNING) {
+                "Termux request $requestId is already terminal or in-flight."
+            }
+            dao.updateTermuxCommandRequestState(request.id, TermuxExecutionState.WAITING_FOR_TERMUX.name)
+            request.withState(TermuxExecutionState.WAITING_FOR_TERMUX)
+        }
+
+    override suspend fun recordTermuxCommandResult(result: TermuxCommandResult): CodingExercise = database.withTransaction {
+        val request = requireNotNull(dao.findTermuxCommandRequest(result.requestId)?.asExternalModel()) {
+            "Uncorrelated Termux result ${result.requestId} cannot mutate a coding exercise."
+        }
+        require(request.action == TermuxBridgeAction.RUN_COMMAND) {
+            "Only RUN_COMMAND results can update coding exercises."
+        }
+        val exerciseId = requireNotNull(request.exerciseId) {
+            "Termux RUN_COMMAND result ${request.id} has no exercise correlation."
+        }
+        val exercise = requireNotNull(
+            dao.findCodingExercise(request.studyPlanId.value, exerciseId.value)?.asExternalModel(),
+        ) { "Coding exercise ${exerciseId.value} was removed before Termux returned." }
+        require(result.requestId == request.id) {
+            "Termux result request id must match the durable request row exactly."
+        }
+        dao.upsertTermuxCommandResult(result.asEntity())
+        dao.updateTermuxCommandRequestState(request.id, result.state.name)
+        val updated = exercise.applyTermuxResult(result, clock().coerceAtLeast(result.completedAtEpochMillis))
+        dao.upsertCodingExercise(updated.asEntity())
+        updated
     }
 
     override suspend fun applyImportPreview(

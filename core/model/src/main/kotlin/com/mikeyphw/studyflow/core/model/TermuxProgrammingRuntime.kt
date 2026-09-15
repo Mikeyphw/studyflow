@@ -22,6 +22,9 @@ private val AllowedTermuxExecutables = setOf(
     "sqlite3",
 )
 
+private val InlineInterpreterExecutables = setOf("python", "python3", "node", "bash")
+private val InlineInterpreterFlags = setOf("-c", "--command", "-e", "--eval", "--execute")
+
 enum class TermuxBridgeAction {
     OPEN_TERMUX,
     CREATE_WORKSPACE,
@@ -84,11 +87,14 @@ data class TermuxCommandRequest(
 ) {
     init {
         require(id.isNotBlank()) { "Termux request id cannot be blank." }
+        require(id == sanitizeTermuxWorkspaceSlug(id)) { "Termux request id must be a stable safe slug." }
         require(createdAtEpochMillis >= 0) { "Termux request timestamp cannot be negative." }
         if (action == TermuxBridgeAction.RUN_COMMAND) {
             require(commandTemplate != null) { "RUN_COMMAND requires a command template." }
         }
     }
+
+    fun withState(nextState: TermuxExecutionState): TermuxCommandRequest = copy(state = nextState)
 }
 
 data class TermuxCommandResult(
@@ -103,6 +109,7 @@ data class TermuxCommandResult(
 ) {
     init {
         require(requestId.isNotBlank()) { "Termux result request id cannot be blank." }
+        require(requestId == sanitizeTermuxWorkspaceSlug(requestId)) { "Termux result request id must be a stable safe slug." }
         require(state in terminalTermuxStates) { "Termux result must use a terminal state." }
         require(durationMillis == null || durationMillis >= 0) { "Termux duration cannot be negative." }
         require(completedAtEpochMillis >= 0) { "Termux completion timestamp cannot be negative." }
@@ -173,14 +180,11 @@ fun termuxResultFileName(requestId: String): String {
 fun isAllowedTermuxCommandTemplate(template: String?): Boolean {
     val command = template?.trim().orEmpty()
     if (command.isEmpty()) return false
-    if (!isSafeTermuxCommandTemplate(command)) return false
-
-    val executable = command
-        .split(Regex("\\s+"), limit = 2)
-        .firstOrNull()
-        .orEmpty()
-
-    return executable in AllowedTermuxExecutables
+    val parts = runCatching { tokenizeTermuxCommandTemplate(command) }.getOrElse { return false }
+    val invocation = runCatching {
+        TermuxCommandInvocation(executable = parts.first(), arguments = parts.drop(1))
+    }.getOrElse { return false }
+    return invocation.isAllowedStudyFlowInvocation()
 }
 
 data class TermuxCommandInvocation(
@@ -191,27 +195,89 @@ data class TermuxCommandInvocation(
         require(executable.isNotBlank()) { "Termux executable cannot be blank." }
         require(executable in AllowedTermuxExecutables) { "Termux executable is not allowed." }
         require(arguments.none { it.isBlank() }) { "Termux arguments cannot be blank." }
+        require(arguments.none { argument -> argument.any { it.code == 0 } }) {
+            "Termux arguments cannot contain NUL bytes."
+        }
+        require(executable !in InlineInterpreterExecutables || arguments.none { it in InlineInterpreterFlags }) {
+            "Inline interpreter code is not allowed in StudyFlow Termux templates."
+        }
     }
 }
 
 fun splitTermuxCommandTemplate(commandLine: String): TermuxCommandInvocation {
-    val command = commandLine.trim()
-    require(command.isNotBlank()) { "Termux command template cannot be blank." }
-    require(isSafeTermuxCommandTemplate(command)) { "Termux command template is not safe." }
-    val parts = command.split(Regex("\\s+")).filter { it.isNotBlank() }
-    return TermuxCommandInvocation(
+    val parts = tokenizeTermuxCommandTemplate(commandLine)
+    val invocation = TermuxCommandInvocation(
         executable = parts.first(),
         arguments = parts.drop(1),
     )
+    require(invocation.isAllowedStudyFlowInvocation()) {
+        "Termux command template is outside the allowed StudyFlow execution surface."
+    }
+    return invocation
+}
+
+private fun TermuxCommandInvocation.isAllowedStudyFlowInvocation(): Boolean {
+    if (executable !in AllowedTermuxExecutables) return false
+    if (arguments.any { !isSafeTermuxArgument(it) }) return false
+    return when (executable) {
+        "python", "python3" -> allowsPythonFileOrPytest(arguments)
+        "pytest" -> arguments.all(::isSafeRelativeTermuxPathOrFlag)
+        "node" -> arguments.size == 1 && arguments.single().hasOneOfSuffixes(".js", ".mjs", ".cjs")
+        "npm" -> arguments == listOf("test") || arguments == listOf("run", "test")
+        "npx" -> arguments.size == 2 && arguments.first() == "ts-node" && arguments.last().hasOneOfSuffixes(".ts", ".tsx")
+        "gradle", "./gradlew" -> arguments.isNotEmpty() && arguments.all {
+            it == "test" || it.startsWith(":") && it.endsWith("test", ignoreCase = true)
+        }
+        "kotlinc" -> arguments.isNotEmpty() && arguments.all { it.hasOneOfSuffixes(".kt", ".kts") }
+        "javac" -> arguments.isNotEmpty() && arguments.all { it.hasOneOfSuffixes(".java") }
+        "java" -> arguments.size == 1 && arguments.single().matches(Regex("[A-Za-z_][A-Za-z0-9_.]*"))
+        "gcc", "clang" -> arguments.isNotEmpty() && arguments.all {
+            it.hasOneOfSuffixes(".c", ".cc", ".cpp", ".cxx")
+        }
+        "go" -> arguments == listOf("test")
+        "cargo" -> arguments == listOf("test")
+        "bash" -> arguments.size == 1 && arguments.single().hasOneOfSuffixes(".sh")
+        "sqlite3" -> arguments.size == 1 && arguments.single().hasOneOfSuffixes(".db", ".sqlite", ".sqlite3")
+        else -> false
+    }
+}
+
+private fun allowsPythonFileOrPytest(arguments: List<String>): Boolean = when {
+    arguments == listOf("--version") || arguments == listOf("-V") -> true
+    arguments.size == 1 && arguments.single().hasOneOfSuffixes(".py") -> true
+    arguments.size >= 2 && arguments[0] == "-m" && arguments[1] == "pytest" -> {
+        arguments.drop(2).all(::isSafeRelativeTermuxPathOrFlag)
+    }
+    else -> false
+}
+
+private fun isSafeTermuxArgument(argument: String): Boolean {
+    if (argument.isBlank()) return false
+    if ('\u0000' in argument || '\\' in argument) return false
+    if (argument.startsWith("/")) return false
+    if (argument.startsWith("~")) return false
+    if (".." in argument.split('/')) return false
+    return true
+}
+
+private fun isSafeRelativeTermuxPathOrFlag(argument: String): Boolean =
+    isSafeTermuxArgument(argument) && !argument.startsWith("--root") && !argument.startsWith("--basetemp")
+
+private fun String.hasOneOfSuffixes(vararg suffixes: String): Boolean =
+    suffixes.any { suffix -> endsWith(suffix, ignoreCase = true) }
+
+fun termuxWorkspaceWorkdir(workspace: TermuxWorkspace, workingDirectory: String): String {
+    require(isSafeRelativeTermuxPath(workingDirectory)) { "Termux working directory cannot escape workspace." }
+    val root = workspace.root.trim().removeSuffix("/")
+    val scoped = workspace.courseRelativePath.trim('/').takeIf { it.isNotBlank() }
+    val work = workingDirectory.trim().trim('/').removePrefix("./").takeIf { it.isNotBlank() && it != "." }
+    return listOfNotNull(root, scoped, work).joinToString("/")
 }
 
 fun termuxExecutablePath(executable: String): String {
     require(executable in AllowedTermuxExecutables) { "Termux executable is not allowed." }
     return when {
-        executable.startsWith("/") -> executable
         executable.startsWith("./") -> executable
-        executable.startsWith("~/") -> executable
-        executable.startsWith("$" + "PREFIX/") -> executable
         else -> "$" + "PREFIX/bin/$executable"
     }
 }

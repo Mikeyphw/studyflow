@@ -1,3 +1,13 @@
+# StudyFlow changelog
+
+## OV27 — Termux execution pipeline & sandbox correctness
+
+- Added a durable four-stage Termux execution pipeline for coding exercises.
+- Added Termux package visibility declarations and runtime availability checks.
+- Persisted Termux results through the repository instead of a volatile latest-result cache.
+- Hardened command parsing with quote-aware tokenization and inline interpreter-code rejection.
+- Confined Termux workspace paths to configured StudyFlow roots and exact request correlation.
+
 # OV25 — Web attention, push, Web-TV timing & route safety
 ## Overlay 26 of 30 — Specialized content production data & UI
 

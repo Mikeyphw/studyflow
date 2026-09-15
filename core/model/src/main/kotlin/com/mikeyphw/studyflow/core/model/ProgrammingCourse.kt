@@ -254,20 +254,73 @@ data class TermuxRuntimePreference(
     }
 }
 
-private val DangerousShellFragments = listOf("&&", "||", ";", "`", "$(", ">", "<", "\n", "\r")
+private val DangerousShellFragments = listOf("&&", "||", ";", "`", "$(", ">", "<", "|", "\n", "\r")
+
+/**
+ * Parse the small Termux command-template language used by StudyFlow.
+ *
+ * OV27 intentionally does not pass templates to a shell. Quoted arguments are supported so
+ * filenames/prompts survive correctly, but shell metacharacters, unterminated quotes and blank
+ * tokens fail before an Android PendingIntent can be sent to Termux.
+ */
+fun tokenizeTermuxCommandTemplate(commandLine: String): List<String> {
+    val command = commandLine.trim()
+    require(command.isNotBlank()) { "Termux command template cannot be blank." }
+    require(DangerousShellFragments.none { fragment -> fragment in command }) {
+        "Termux command template contains a shell operator."
+    }
+
+    val tokens = mutableListOf<String>()
+    val current = StringBuilder()
+    var quote: Char? = null
+    var escaped = false
+
+    fun flush() {
+        if (current.isNotEmpty()) {
+            tokens += current.toString()
+            current.clear()
+        }
+    }
+
+    command.forEach { char ->
+        when {
+            escaped -> {
+                current.append(char)
+                escaped = false
+            }
+            char == '\\' -> escaped = true
+            quote != null -> {
+                if (char == quote) quote = null else current.append(char)
+            }
+            char == '\'' || char == '"' -> quote = char
+            char.isWhitespace() -> flush()
+            else -> current.append(char)
+        }
+    }
+    require(!escaped) { "Termux command template ends with a dangling escape." }
+    require(quote == null) { "Termux command template has an unterminated quote." }
+    flush()
+    require(tokens.isNotEmpty()) { "Termux command template cannot be blank." }
+    return tokens
+}
 
 fun isSafeTermuxCommandTemplate(template: String?): Boolean {
     val command = template?.trim().orEmpty()
     if (command.isEmpty()) return true
-    return DangerousShellFragments.none { fragment -> fragment in command }
+    return runCatching { tokenizeTermuxCommandTemplate(command) }.isSuccess
 }
 
-// This predicate rejects shared-storage paths; it does not access them.
-// Android lint otherwise mistakes the literal safety boundary for filesystem usage.
+// Termux execution is intentionally confined to Termux HOME-relative StudyFlow workspaces.
+// Absolute private Android paths such as /data/data/... are rejected because Android cannot
+// safely promise that Termux will execute inside the configured StudyFlow root.
 @Suppress("SdCardPath")
 fun isSafeTermuxPath(path: String): Boolean {
-    val normalized = path.trim()
+    val normalized = path.trim().removeSuffix("/")
     if (normalized.isEmpty()) return false
+    if (normalized.startsWith("/")) return false
     if (normalized.startsWith("/sdcard") || normalized.startsWith("/storage")) return false
-    return ".." !in normalized.split('/')
+    if ('\u0000' in normalized || '\\' in normalized) return false
+    if (".." in normalized.split('/')) return false
+    return normalized == "~" || normalized.startsWith("~/") || normalized == "$" + "HOME" ||
+        normalized.startsWith("$" + "HOME/")
 }

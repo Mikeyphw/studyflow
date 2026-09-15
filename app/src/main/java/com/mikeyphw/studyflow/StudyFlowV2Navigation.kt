@@ -101,6 +101,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import com.mikeyphw.studyflow.termux.StudyFlowTermuxExecutionCoordinator
 
 @Composable
 internal fun StudyFlowV2Navigation(
@@ -272,6 +273,7 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 onSystem = { navController.navigate(SystemHubRoute(route.planId)) },
             )
         } else {
+            val context = LocalContext.current
             TodayWorkspaceScreen(
                 plan = plan,
                 scheduleManager = container.manageStudySchedule,
@@ -327,6 +329,14 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 },
                 onOpenRecommendation = { recommendation ->
                     navController.navigateToWorkspaceRecommendation(recommendation)
+                },
+                onRunTermuxExercise = { exerciseId ->
+                    StudyFlowTermuxExecutionCoordinator.enqueueAndLaunchExercise(
+                        context = context,
+                        programmingCourse = container.manageProgrammingCourse,
+                        planId = plan.id,
+                        exerciseId = exerciseId,
+                    ).sent
                 },
             )
         }

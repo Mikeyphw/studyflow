@@ -20,6 +20,8 @@ internal fun ProgrammingCourseWorkspacePanel(
     summary: ProgrammingCourseDashboardSummary,
     onOpenPractice: () -> Unit,
     onOpenPlan: () -> Unit,
+    nextTermuxExerciseTitle: String?,
+    onRunTermuxExercise: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -61,10 +63,14 @@ internal fun ProgrammingCourseWorkspacePanel(
         )
         StudyFlowFocusActionSurface(
             supportingLabel = stringResource(R.string.programming_termux_execution_title),
-            title = stringResource(R.string.programming_termux_execution_title),
+            title = nextTermuxExerciseTitle ?: stringResource(R.string.programming_termux_execution_title),
             message = stringResource(R.string.programming_termux_execution_message),
-            actionLabel = stringResource(R.string.open_programming_practice),
-            onAction = onOpenPractice,
+            actionLabel = if (onRunTermuxExercise != null) {
+                stringResource(R.string.programming_termux_run_next)
+            } else {
+                stringResource(R.string.open_programming_practice)
+            },
+            onAction = onRunTermuxExercise ?: onOpenPractice,
             secondaryLabel = stringResource(R.string.programming_termux_result_summary),
             onSecondaryAction = onOpenPlan,
         )

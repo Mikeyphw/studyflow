@@ -51,6 +51,9 @@ interface ProgrammingCourseDao {
     @Query("SELECT * FROM coding_exercises WHERE studyPlanId = :planId ORDER BY updatedAtEpochMillis DESC")
     suspend fun findCodingExercises(planId: String): List<CodingExerciseEntity>
 
+    @Query("SELECT * FROM coding_exercises WHERE studyPlanId = :planId AND id = :exerciseId LIMIT 1")
+    suspend fun findCodingExercise(planId: String, exerciseId: String): CodingExerciseEntity?
+
     @Query("SELECT * FROM mini_projects WHERE studyPlanId = :planId ORDER BY updatedAtEpochMillis DESC")
     suspend fun findMiniProjects(planId: String): List<MiniProjectEntity>
 
@@ -69,6 +72,12 @@ interface ProgrammingCourseDao {
 
     @Query("SELECT * FROM termux_command_requests WHERE studyPlanId = :planId ORDER BY createdAtEpochMillis DESC")
     fun observeTermuxCommandRequests(planId: String): Flow<List<TermuxCommandRequestEntity>>
+
+    @Query("SELECT * FROM termux_command_requests WHERE id = :requestId LIMIT 1")
+    suspend fun findTermuxCommandRequest(requestId: String): TermuxCommandRequestEntity?
+
+    @Query("UPDATE termux_command_requests SET state = :state WHERE id = :requestId")
+    suspend fun updateTermuxCommandRequestState(requestId: String, state: String): Int
 
     @Query("SELECT * FROM termux_command_requests WHERE exerciseId = :exerciseId ORDER BY createdAtEpochMillis DESC")
     fun observeTermuxCommandRequestsForExercise(exerciseId: String): Flow<List<TermuxCommandRequestEntity>>

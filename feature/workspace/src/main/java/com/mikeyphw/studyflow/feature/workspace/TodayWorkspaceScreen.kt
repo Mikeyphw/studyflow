@@ -62,6 +62,7 @@ import com.mikeyphw.studyflow.core.domain.StudySessionTimer
 import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.ProgrammingCourseDashboardSummary
+import com.mikeyphw.studyflow.core.model.CodingExerciseId
 import com.mikeyphw.studyflow.core.model.StudyContentMode
 import com.mikeyphw.studyflow.core.model.StudyPlan
 import com.mikeyphw.studyflow.core.model.StudySession
@@ -104,6 +105,7 @@ fun TodayWorkspaceScreen(
     onOpenMockExamStudio: () -> Unit,
     onOpenSchedule: () -> Unit,
     onOpenRecommendation: (StudyRecommendation) -> Unit,
+    onRunTermuxExercise: suspend (CodingExerciseId) -> Boolean,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -148,6 +150,8 @@ fun TodayWorkspaceScreen(
     var cycleAction by remember(plan.id) { mutableStateOf<StudyCycleAction?>(null) }
     var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val operationFailed = stringResource(R.string.operation_failed)
+    val termuxLaunchFailed = stringResource(R.string.programming_termux_launch_failed)
+    val termuxLaunchSent = stringResource(R.string.programming_termux_launch_sent)
     if (
         !workspaceLoadGate(
             states = listOf(scheduleState, sessionsState, reviewState, analyticsState),
@@ -224,6 +228,12 @@ fun TodayWorkspaceScreen(
         .div(60L)
         .toInt()
     val weeklyProgress = weeklyStudiedMinutes.toFloat() / weeklyGoalMinutes.toFloat()
+    val nextRunnableTermuxExercise = remember(programmingSnapshot) {
+        programmingSnapshot?.codingExercises?.firstOrNull { exercise ->
+            exercise.status.name == "NOT_STARTED" || exercise.status.name == "FAILED_TESTS" ||
+                exercise.status.name == "IN_PROGRESS"
+        }
+    }
 
     fun startFocusActivity(activity: PlannedActivity) {
         scope.launch {
@@ -363,6 +373,21 @@ fun TodayWorkspaceScreen(
                             ),
                             onOpenPractice = { onOpenReviews(null, null) },
                             onOpenPlan = onOpenSchedule,
+                            nextTermuxExerciseTitle = nextRunnableTermuxExercise?.title,
+                            onRunTermuxExercise = nextRunnableTermuxExercise?.let { exercise ->
+                                {
+                                    scope.launch {
+                                        try {
+                                            val sent = onRunTermuxExercise(exercise.id)
+                                            snackbar.showSnackbar(if (sent) termuxLaunchSent else termuxLaunchFailed)
+                                        } catch (cancelled: CancellationException) {
+                                            throw cancelled
+                                        } catch (_: Exception) {
+                                            snackbar.showSnackbar(termuxLaunchFailed)
+                                        }
+                                    }
+                                }
+                            },
                         )
                     }
                 }

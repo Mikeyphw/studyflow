@@ -865,4 +865,7 @@
     <string name="language_deck_idiom_count">%1$d expressões idiomáticas</string>
     <string name="language_deck_due">Cards pendentes</string>
     <string name="language_deck_learned_count">%1$d aprendidas · %2$d cards de vocabulário</string>
+    <string name="programming_termux_run_next">Executar próximo exercício no Termux</string>
+    <string name="programming_termux_launch_sent">Enviado ao Termux com correlação persistente.</string>
+    <string name="programming_termux_launch_failed">Não foi possível iniciar o Termux para este exercício.</string>
 </resources>

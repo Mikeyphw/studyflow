@@ -6,12 +6,24 @@ import android.content.Intent
 import android.os.Bundle
 import com.mikeyphw.studyflow.core.model.TermuxCommandResult
 import com.mikeyphw.studyflow.core.model.TermuxExecutionState
+import com.mikeyphw.studyflow.requireStudyFlowAppContainer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /** Receives one-shot RUN_COMMAND result bundles returned by Termux. */
 class StudyFlowTermuxResultReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val result = intent.toStudyFlowTermuxCommandResult(System.currentTimeMillis()) ?: return
-        StudyFlowTermuxResultCache.record(result)
+        val pendingResult = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                context.requireStudyFlowAppContainer().manageProgrammingCourse.recordTermuxCommandResult(result)
+            } finally {
+                pendingResult.finish()
+            }
+        }
     }
 
     companion object {
@@ -23,17 +35,6 @@ class StudyFlowTermuxResultReceiver : BroadcastReceiver() {
         const val EXTRA_ERR = "err"
         const val EXTRA_ERRMSG = "errmsg"
     }
-}
-
-object StudyFlowTermuxResultCache {
-    @Volatile
-    private var latestResult: TermuxCommandResult? = null
-
-    fun record(result: TermuxCommandResult) {
-        latestResult = result
-    }
-
-    fun latest(): TermuxCommandResult? = latestResult
 }
 
 fun Intent.toStudyFlowTermuxCommandResult(completedAtEpochMillis: Long): TermuxCommandResult? {

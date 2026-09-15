@@ -3,18 +3,22 @@ package com.mikeyphw.studyflow.termux
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import com.mikeyphw.studyflow.core.model.TermuxBridgeAction
 import com.mikeyphw.studyflow.core.model.TermuxCommandRequest
 import com.mikeyphw.studyflow.core.model.splitTermuxCommandTemplate
 import com.mikeyphw.studyflow.core.model.termuxExecutablePath
+import com.mikeyphw.studyflow.core.model.termuxWorkspaceWorkdir
+import java.security.MessageDigest
 
 /**
  * Android RUN_COMMAND adapter for StudyFlow programming exercises.
  *
- * The model layer owns the allow-list. This adapter only translates an already validated
- * Termux RUN_COMMAND request into the public Termux intent API and attaches a one-shot
- * PendingIntent so stdout, stderr and exit code can be returned to StudyFlow.
+ * OV27 binds every launch to one durable request row. The generated result PendingIntent uses a
+ * SHA-256 request code plus a unique action/data URI, so Android cannot collapse unrelated exercise
+ * results even if a 32-bit request-code prefix collides.
  */
 object StudyFlowTermuxRunCommandBridge {
     const val TERMUX_PACKAGE = "com.termux"
@@ -30,6 +34,10 @@ object StudyFlowTermuxRunCommandBridge {
     const val EXTRA_PENDING_INTENT = "com.termux.RUN_COMMAND_PENDING_INTENT"
     const val PERMISSION_RUN_COMMAND = "com.termux.permission.RUN_COMMAND"
 
+    fun isTermuxRunCommandAvailable(context: Context): Boolean {
+        val intent = Intent(ACTION_RUN_COMMAND).setClassName(TERMUX_PACKAGE, RUN_COMMAND_SERVICE)
+        return context.packageManager.resolveService(intent, PackageManager.MATCH_DEFAULT_ONLY) != null
+    }
 
     fun buildRunCommandIntent(
         context: Context,
@@ -42,11 +50,13 @@ object StudyFlowTermuxRunCommandBridge {
         val template = requireNotNull(request.commandTemplate) { "Termux RUN_COMMAND requires a command template." }
         val invocation = splitTermuxCommandTemplate(template.commandLine)
         val resultIntent = Intent(context, StudyFlowTermuxResultReceiver::class.java).apply {
+            action = "com.mikeyphw.studyflow.termux.RESULT.${request.id}"
+            data = Uri.parse("studyflow-termux://result/${Uri.encode(request.id)}")
             putExtra(StudyFlowTermuxResultReceiver.EXTRA_REQUEST_ID, request.id)
         }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            request.id.stablePendingIntentRequestCode(),
+            request.id.sha256PendingIntentRequestCode(),
             resultIntent,
             PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT or mutablePendingIntentFlag(),
         )
@@ -55,7 +65,7 @@ object StudyFlowTermuxRunCommandBridge {
             setClassName(TERMUX_PACKAGE, RUN_COMMAND_SERVICE)
             putExtra(EXTRA_COMMAND_PATH, termuxExecutablePath(invocation.executable))
             putExtra(EXTRA_ARGUMENTS, invocation.arguments.toTypedArray())
-            putExtra(EXTRA_WORKDIR, request.toTermuxHomeWorkdir(template.workingDirectory))
+            putExtra(EXTRA_WORKDIR, termuxWorkspaceWorkdir(request.workspace, template.workingDirectory))
             putExtra(EXTRA_BACKGROUND, background)
             putExtra(EXTRA_SESSION_ACTION, "0")
             putExtra(EXTRA_COMMAND_LABEL, template.label)
@@ -71,23 +81,17 @@ object StudyFlowTermuxRunCommandBridge {
     ): StudyFlowTermuxLaunchResult = runCatching {
         val intent = buildRunCommandIntent(context, request, background)
         context.startService(intent)
-        StudyFlowTermuxLaunchResult.SENT
+        StudyFlowTermuxLaunchResult(sent = true, requestId = request.id, message = "Sent to Termux")
     }.getOrElse { error ->
-        StudyFlowTermuxLaunchResult.FAILED.copy(message = error.message.orEmpty())
+        StudyFlowTermuxLaunchResult(sent = false, requestId = request.id, message = error.message.orEmpty())
     }
 
-    private fun TermuxCommandRequest.toTermuxHomeWorkdir(workingDirectory: String): String = buildString {
-        append("~/studyflow/courses/")
-        append(workspace.courseRelativePath)
-        val dir = workingDirectory.trim().removePrefix("./")
-        if (dir.isNotBlank() && dir != ".") {
-            append('/')
-            append(dir)
-        }
-    }
-
-    private fun String.stablePendingIntentRequestCode(): Int = fold(17) { acc, char ->
-        (acc * 31) + char.code
+    private fun String.sha256PendingIntentRequestCode(): Int {
+        val digest = MessageDigest.getInstance("SHA-256").digest(toByteArray(Charsets.UTF_8))
+        return ((digest[0].toInt() and 0xff) shl 24) or
+            ((digest[1].toInt() and 0xff) shl 16) or
+            ((digest[2].toInt() and 0xff) shl 8) or
+            (digest[3].toInt() and 0xff)
     }
 
     private fun mutablePendingIntentFlag(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -99,10 +103,14 @@ object StudyFlowTermuxRunCommandBridge {
 
 data class StudyFlowTermuxLaunchResult(
     val sent: Boolean,
+    val requestId: String,
     val message: String,
 ) {
     companion object {
-        val SENT = StudyFlowTermuxLaunchResult(sent = true, message = "Sent to Termux")
-        val FAILED = StudyFlowTermuxLaunchResult(sent = false, message = "Termux launch failed")
+        val FAILED_UNAVAILABLE = StudyFlowTermuxLaunchResult(
+            sent = false,
+            requestId = "",
+            message = "Termux RUN_COMMAND is unavailable",
+        )
     }
 }

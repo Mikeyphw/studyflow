@@ -11,6 +11,10 @@ import com.mikeyphw.studyflow.core.model.ProgrammingLanguage
 import com.mikeyphw.studyflow.core.model.StudyPlanId
 import com.mikeyphw.studyflow.core.model.TermuxRuntimePolicy
 import com.mikeyphw.studyflow.core.model.TermuxRuntimePreference
+import com.mikeyphw.studyflow.core.model.TermuxExecutionState
+import com.mikeyphw.studyflow.core.model.TermuxExerciseRunMode
+import com.mikeyphw.studyflow.core.model.TermuxCommandResult
+import com.mikeyphw.studyflow.core.model.TermuxCommandRequest
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -28,6 +32,14 @@ interface ProgrammingCourseRepository {
     suspend fun saveCodingExercise(exercise: CodingExercise): CodingExercise
     suspend fun saveMiniProject(project: MiniProject): MiniProject
     suspend fun saveTermuxRuntimePreference(preference: TermuxRuntimePreference): TermuxRuntimePreference
+    suspend fun enqueueTermuxExerciseRun(
+        planId: StudyPlanId,
+        exerciseId: CodingExerciseId,
+        runMode: TermuxExerciseRunMode,
+        requestIdPrefix: String,
+    ): TermuxCommandRequest
+    suspend fun markTermuxRequestWaitingForTermux(requestId: String): TermuxCommandRequest
+    suspend fun recordTermuxCommandResult(result: TermuxCommandResult): CodingExercise
     suspend fun applyImportPreview(planId: StudyPlanId, preview: StudyFlowProgrammingImportPreview): ProgrammingCourseSnapshot
     suspend fun deleteCodeSnippet(planId: StudyPlanId, snippetId: CodeSnippetId)
     suspend fun deleteCodingExercise(planId: StudyPlanId, exerciseId: CodingExerciseId)
@@ -87,6 +99,19 @@ class ManageProgrammingCourse(
 
     suspend fun saveTermuxRuntimePreference(preference: TermuxRuntimePreference): TermuxRuntimePreference =
         repository.saveTermuxRuntimePreference(preference)
+
+    suspend fun enqueueTermuxExerciseRun(
+        planId: StudyPlanId,
+        exerciseId: CodingExerciseId,
+        runMode: TermuxExerciseRunMode,
+        requestIdPrefix: String,
+    ): TermuxCommandRequest = repository.enqueueTermuxExerciseRun(planId, exerciseId, runMode, requestIdPrefix)
+
+    suspend fun markTermuxRequestWaitingForTermux(requestId: String): TermuxCommandRequest =
+        repository.markTermuxRequestWaitingForTermux(requestId)
+
+    suspend fun recordTermuxCommandResult(result: TermuxCommandResult): CodingExercise =
+        repository.recordTermuxCommandResult(result)
 
     suspend fun applyImportPreview(
         planId: StudyPlanId,
