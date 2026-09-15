@@ -2519,8 +2519,22 @@ tasks.register<Exec>("verifyOv23DesktopRuntimeUxSflpCorrectness") {
 }
 
 // OV24 — Web persistence, bootstrap, portable import & secret hygiene.
-tasks.register<Exec>("verifyOv24WebPersistenceBootstrapSecretHygiene") {
+tasks.register<Exec>("verifyOv24WebPersistenceBootstrapPortableSecretHygiene") {
     group = "verification"
-    description = "Validates OV24 Web IndexedDB durability, multi-tab conflict detection, bootstrap degradation, bounded imports, BFCache attention resume, localStorage-denial safety, orphan blob cleanup, async success handling and secret clearing."
-    commandLine("bash", "scripts/validate_ov24_web_persistence_bootstrap_secret_hygiene.sh")
+    description = "Validates OV24 IndexedDB durability/CAS, visible bootstrap failures, BFCache recovery, bounded Web imports, attachment cleanup, async success truth, portable focus sanitization and password hygiene."
+    commandLine("bash", "scripts/validate_ov24_web_persistence_bootstrap_portable_secret_hygiene.sh")
+}
+
+// OV25 — Web attention, push, Web-TV timing & route safety.
+tasks.register<Exec>("verifyOv25WebAttentionPushTvTimingRouteSafety") {
+    group = "verification"
+    description = "Validates OV25 relay-backed Web Push truth, durable Browser-TV mock checkpoints, pairing throttling, acknowledgement-based attention drain, notification admission, terminal action fencing, internal routes and visible foreground fallback."
+    commandLine("bash", "scripts/validate_ov25_web_attention_push_tv_timing_route_safety.sh")
+}
+
+// OV28 — Language review correctness & Desktop specialized parity.
+tasks.register<Exec>("verifyOv28LanguageReviewDesktopSpecializedParity") {
+    group = "verification"
+    description = "Validates OV28 language review correctness, deterministic choice ordering and Desktop specialized graph persistence/execution parity."
+    commandLine("bash", "scripts/validate_ov28_language_review_desktop_specialized_parity.sh")
 }

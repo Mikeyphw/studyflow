@@ -179,24 +179,53 @@ Closed: `S9-01`, `S9-02`, `S9-03`, `S9-04`, `S9-05`, `S9-06`, `S9-07`, `S9-08`, 
 
 Evidence: signed TV-plane envelopes on authenticated wire requests, receiver/session/operation/body-hash fail-closed admission, cast-scope and STOP_CAST binding, domain-action result binding, TV attention plane evidence, browser relay plane validation without bearer/controller tokens, and apply-time `verifyOv21UnifiedTvControlPlane` validation.
 
+## OV25 — Web attention, push, Web-TV timing & route safety
+
+Overlay 25 of 30.
+
+| Finding | Production closure | Behavioral evidence |
+|---|---|---|
+| S10-05 | Browser PushSubscription remains `push-local-only` until same-origin relay registration succeeds; only acknowledged relay subscriptions can advertise `web_push` or designated-notifier ownership. | OV25 source verifier; normal/relay status contract. |
+| S10-06 | Browser-TV timed mocks persist and restore versioned frozen-attempt checkpoints for answers, flags, cursor and timer/pause state; timed start is blocked without proven durable browser storage. | `ov25_attention_tv_safety_runner.mjs`; OV25 source verifier. |
+| S10-07 | LAN `/api/tv/pair` failures are bounded independently by socket source IP and six-digit code, with 429/Retry-After lockout. | IP-sweep and rotated-IP/code behavioral regressions. |
+| S10-08 | Service-worker attention drain is read/post/explicit-ack/per-id-delete instead of getAll/clear. | OV25 source verifier; acknowledgement wiring contract. |
+| DS2-34 | Notification delivery validates sequence, self-target, route target/workspace, required capability, TV policy, source, occurrence target and schedule binding before sequence admission. | wrong-workspace then corrected-same-sequence behavioral regression. |
+| DS2-35 | Web attention action and central transition paths reject terminal occurrence mutation. | terminal snooze/no-resurrection behavioral regression. |
+| DS2-37 | Service-worker push/click navigation normalizes to an internal hash allowlist; malformed/absolute routes fall back to `#today`. | OV25 source verifier. |
+| DS2-47 | Normal Web keeps an occurrence pending after an unavailable/failed system notification and records delivery only after the foreground React surface renders; push is recorded only after `showNotification()` succeeds. | invisible→foreground→ack behavioral regression; OV25 source verifier. |
+
 ## OV24 — Web persistence, bootstrap, portable import & secret hygiene
 
 Overlay 24 of 30.
 
 | Finding | Production closure | Behavioral evidence |
 |---|---|---|
-| S10-01 | IndexedDB save/clear operations now return pending until the write transaction settles; `flush()` is the durable acknowledgement boundary. | `test_indexeddb_save_is_pending_until_flush_and_stale_tab_is_rejected`; `verifyOv24WebPersistenceBootstrapSecretHygiene`. |
-| S10-02 | IndexedDB writes compare the loaded durable revision inside the write transaction and abort stale tab commits. | `durableWriteConflict`; stale tab rejection test. |
-| S10-03 | IndexedDB open/init failure returns explicit unavailable persistence instead of silently writing canonical state to localStorage. | `test_indexeddb_initialization_failure_is_visible_without_localstorage_downgrade`. |
-| S10-04 | Service-worker registration clears the memoized promise on failure so later registration attempts can retry. | OV24 verifier `OV24-sw-retry`. |
-| S10-09 | Portable, encrypted portable, and plan-content imports check `file.size` before reading text/bytes. | OV24 verifier `OV24-size-bound-imports` and UI bounded-reader checks. |
-| S10-10 | Portable export/import sanitizes focus to a new idle focus state with no live timer identity or timestamps. | `test_portable_runtime_focus_is_sanitized_and_size_is_checked_before_materialization`. |
-| S10-11 | Web attention and SFLP bootstrap safely probe localStorage and tolerate browser denial without crashing. | `test_denied_localstorage_does_not_crash_bootstrap_link_install`. |
-| S10-12 | BFCache `pageshow` resumes attention runtime while terminal `pagehide` still disposes bridge state. | OV24 verifier `OV24-bfcache-resume`. |
-| S10-13 | Material deletion now deletes the linked local attachment blob when attachment storage is available. | OV24 verifier `OV24-attachment-honesty`. |
-| S10-14 | React async action wrapper delays success copy until promise fulfillment and reports async failures. | OV24 verifier `OV24-async-success-copy`. |
-| DS2-04 | Encrypted portable export clears export password and confirmation in `finally` on success and failure. | OV24 verifier `OV24-secret-clearing`. |
-| DS2-36 | Sessions without IndexedDB attachment storage hide file-upload actions and show unavailable attachment copy. | OV24 verifier `OV24-attachment-honesty`. |
-| DS2-46 | Encrypted import and preview clear import password state in `finally`/failure paths. | OV24 verifier `OV24-secret-clearing`. |
-| DS2-48 | Browser persistence reports explicit compatibility/unavailable states so users can distinguish localStorage compatibility from disabled durability. | `test_indexeddb_initialization_failure_is_visible_without_localstorage_downgrade`; OV24 docs. |
+| S10-01 | IndexedDB save/clear returns a pending commit handle and StudyStore remains non-durable until transaction completion. | `ov24_persistence_runner.mjs`; OV24 verifier. |
+| S10-02 | Full-state IndexedDB replacement uses same-transaction revision CAS and rejects stale tabs. | stale-tab CAS regression in `ov24_persistence_runner.mjs`. |
+| S10-03 | IndexedDB open/recovery failures raise a visible startup error instead of silently substituting localStorage/sample state. | bootstrap-failure regression + source verifier. |
+| S10-04 | BFCache page restoration restarts the Web attention runtime/bridges while preserved pages keep persistence open. | OV24 source verifier. |
+| S10-09 | Plan/portable/encrypted file size gates run before full `text()`/`arrayBuffer()` materialization. | OV24 source verifier. |
+| S10-10 | One-second focus ticking is scoped to live focus child surfaces instead of the root React App. | OV24 source verifier. |
+| S10-11 | Material deletion pairs metadata mutation with local blob deletion and restores bytes after failed durable commit. | OV24 source verifier. |
+| S10-12 | Common Web action runner is Promise-aware and waits for StudyStore durability before success copy. | OV24 source verifier. |
+| S10-13 | Failed service-worker registration clears its memoized promise and is retryable. | service-worker retry regression. |
+| S10-14 | localStorage compatibility mode advertises no attachment repository and hides local file upload. | OV24 source verifier. |
+| DS2-04 | Portable export/replace always normalizes live focus state to idle and replace refuses to overwrite an active local focus session. | portable-focus regression. |
+| DS2-36 | StudyStore `awaitPersistence()` observes the IndexedDB commit promise; save/clear success is never reported at enqueue time. | durability regression. |
+| DS2-46 | SFLP localStorage access is capability-safe inside caught boot and denied localStorage returns null instead of pre-boot crashing. | denied-localStorage regression. |
+| DS2-48 | Backup passwords use uncontrolled ephemeral refs and are cleared in `finally` after success/failure. | OV24 source verifier. |
+
+## OV28 — Language review correctness & Desktop specialized parity
+
+Status: closed by `studyflow_ov28_language_review_desktop_specialized_parity_v1`.
+
+Findings closed:
+
+- S11-14 — Free-form language review scoring rejects gibberish and ranks valid target usage higher.
+- S11-15 — Spot-the-mistake rejects repeated mistakes and literal-only answers.
+- S11-16 — Natural-usage multiple choice no longer fixes the correct answer in the first position.
+- S11-19 — Desktop persists the full specialized graph, including snippets, mini-projects, runtime preferences, idiom cards, and vocabulary cards.
+- S11-20 — Desktop programming execution honors exercise command templates and expected output.
+
+Validation entrypoint: `scripts/validate_ov28_language_review_desktop_specialized_parity.sh`.
 

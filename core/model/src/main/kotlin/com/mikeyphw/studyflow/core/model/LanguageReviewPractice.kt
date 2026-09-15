@@ -142,8 +142,12 @@ fun buildLanguageReviewPrompt(
             direction = direction,
             kind = LanguageReviewAnswerKind.TEXT,
             promptText = expression.commonMistake ?: expression.literalTranslation ?: expression.expression,
-            instruction = "Explain what is unnatural or wrong.",
-            acceptedAnswers = listOfNotNull(expression.commonMistake, "literal", expression.meaning),
+            instruction = "Explain what is unnatural or wrong; do not repeat the mistake.",
+            acceptedAnswers = listOfNotNull(
+                "The literal wording is unnatural; use ${expression.expression} to mean ${expression.meaning}.",
+                expression.meaning,
+                idiomCard.naturalExample,
+            ),
             choices = emptyList(),
             exampleSentence = idiomCard.naturalExample,
             requiresManualReview = false,
@@ -173,7 +177,12 @@ fun evaluateLanguageReviewAnswer(
     val normalizedAnswer = normalizeLanguageAnswer(answerText)
     val outcome = when {
         normalizedAnswer.isBlank() -> LanguageReviewOutcome.INCORRECT
+        prompt.direction == LanguageReviewDirection.SPOT_THE_MISTAKE -> spotTheMistakeReviewOutcome(
+            prompt,
+            normalizedAnswer,
+        )
         prompt.requiresManualReview -> sentenceReviewOutcome(prompt, normalizedAnswer)
+        prompt.kind == LanguageReviewAnswerKind.MULTIPLE_CHOICE -> multipleChoiceReviewOutcome(prompt, normalizedAnswer)
         prompt.acceptedAnswers.any { accepted -> normalizeLanguageAnswer(accepted) == normalizedAnswer } -> {
             LanguageReviewOutcome.CORRECT
         }
@@ -286,26 +295,115 @@ private fun naturalUsageChoices(
         expression.literalTranslation?.let { "Literal translation: $it" },
         idiomCard.clozePrompt,
     ).filter { it.isNotBlank() && normalizeLanguageAnswer(it) != normalizeLanguageAnswer(idiomCard.naturalExample) }
-
-    return (listOf(LanguageReviewChoice(idiomCard.naturalExample, expected = true)) +
-        distractors.take(3).map { LanguageReviewChoice(it, expected = false) })
-        .ifEmpty { listOf(LanguageReviewChoice(idiomCard.naturalExample, expected = true)) }
-        .let { choices ->
-            if (choices.size >= 2) choices else choices + LanguageReviewChoice(
-                label = "Use it as a word-for-word translation.",
-                expected = false,
+        .distinctBy(::normalizeLanguageAnswer)
+        .take(3)
+        .map { LanguageReviewChoice(it, expected = false) }
+        .ifEmpty {
+            listOf(
+                LanguageReviewChoice("Use it as a word-for-word translation.", expected = false),
             )
         }
+
+    return deterministicLanguageReviewChoiceOrder(
+        correct = LanguageReviewChoice(idiomCard.naturalExample, expected = true),
+        distractors = distractors,
+        seed = "${expression.studyPlanId.value}:${expression.id.value}:${idiomCard.id.value}",
+    )
+}
+
+internal fun deterministicLanguageReviewChoiceOrder(
+    correct: LanguageReviewChoice,
+    distractors: List<LanguageReviewChoice>,
+    seed: String,
+): List<LanguageReviewChoice> {
+    require(correct.expected) { "Correct language choice must be marked expected." }
+    require(distractors.all { !it.expected }) { "Distractors cannot be expected choices." }
+    val orderedDistractors = distractors
+        .distinctBy { normalizeLanguageAnswer(it.label) }
+        .sortedBy { stableLanguageChoiceHash("$seed:${it.label}") }
+    val size = orderedDistractors.size + 1
+    val correctIndex = stableLanguageChoiceHash("$seed:correct:${correct.label}") % size
+    return buildList(size) {
+        orderedDistractors.forEachIndexed { index, choice ->
+            if (index == correctIndex) add(correct)
+            add(choice)
+        }
+        if (size - 1 == correctIndex) add(correct)
+    }
+}
+
+private fun multipleChoiceReviewOutcome(
+    prompt: LanguageReviewPrompt,
+    normalizedAnswer: String,
+): LanguageReviewOutcome {
+    val expected = prompt.choices.singleOrNull { it.expected } ?: return LanguageReviewOutcome.INCORRECT
+    return if (normalizeLanguageAnswer(expected.label) == normalizedAnswer) {
+        LanguageReviewOutcome.CORRECT
+    } else {
+        LanguageReviewOutcome.INCORRECT
+    }
+}
+
+private fun spotTheMistakeReviewOutcome(
+    prompt: LanguageReviewPrompt,
+    normalizedAnswer: String,
+): LanguageReviewOutcome {
+    val promptText = normalizeLanguageAnswer(prompt.promptText)
+    if (normalizedAnswer == promptText || promptText in normalizedAnswer || normalizedAnswer in promptText) {
+        return LanguageReviewOutcome.INCORRECT
+    }
+    if (normalizedAnswer in setOf("literal", "literal translation", "word for word", "literalmente")) {
+        return LanguageReviewOutcome.INCORRECT
+    }
+    val hasMistakeReason = listOf(
+        "wrong", "mistake", "unnatural", "natural", "literal", "translation", "idiom",
+        "meaning", "instead", "correct", "errado", "erro", "natural", "literalmente", "tradução",
+    ).any { marker -> marker in normalizedAnswer }
+    val referencesAcceptedMeaning = prompt.acceptedAnswers.any { accepted ->
+        val normalizedAccepted = normalizeLanguageAnswer(accepted)
+        normalizedAccepted.split(' ').size >= 2 && normalizedAccepted in normalizedAnswer
+    }
+    return when {
+        !hasMistakeReason -> LanguageReviewOutcome.INCORRECT
+        referencesAcceptedMeaning || normalizedAnswer.split(' ').size >= 5 -> LanguageReviewOutcome.CORRECT
+        else -> LanguageReviewOutcome.PARTIAL
+    }
 }
 
 private fun sentenceReviewOutcome(
     prompt: LanguageReviewPrompt,
     normalizedAnswer: String,
-): LanguageReviewOutcome = when {
-    prompt.acceptedAnswers.any { normalizeLanguageAnswer(it) in normalizedAnswer } -> {
-        LanguageReviewOutcome.NEEDS_MANUAL_REVIEW
+): LanguageReviewOutcome {
+    if (looksLikeLanguageGibberish(normalizedAnswer)) return LanguageReviewOutcome.INCORRECT
+    val promptText = normalizeLanguageAnswer(prompt.promptText)
+    if (normalizedAnswer == promptText || normalizedAnswer in prompt.acceptedAnswers.map(::normalizeLanguageAnswer)) {
+        return LanguageReviewOutcome.PARTIAL
     }
-    else -> LanguageReviewOutcome.PARTIAL
+    val targetUsage = prompt.acceptedAnswers.any { accepted ->
+        val normalizedAccepted = normalizeLanguageAnswer(accepted)
+        normalizedAccepted.isNotBlank() && normalizedAccepted in normalizedAnswer
+    }
+    val wordCount = normalizedAnswer.split(' ').filter(String::isNotBlank).size
+    return when {
+        targetUsage && wordCount >= 4 -> LanguageReviewOutcome.NEEDS_MANUAL_REVIEW
+        targetUsage -> LanguageReviewOutcome.PARTIAL
+        else -> LanguageReviewOutcome.INCORRECT
+    }
+}
+
+private fun looksLikeLanguageGibberish(normalizedAnswer: String): Boolean {
+    val tokens = normalizedAnswer.split(' ').filter(String::isNotBlank)
+    if (tokens.isEmpty()) return true
+    if (tokens.distinct().size == 1 && tokens.size > 1) return true
+    if (tokens.any { token -> token in setOf("asdf", "qwer", "zxcv", "lorem", "ipsum", "blah") }) return true
+    val letters = tokens.joinToString("").filter(Char::isLetter)
+    if (letters.length < 3) return true
+    val vowelCount = letters.count { it.lowercaseChar() in "aeiouáéíóúâêôãõàü" }
+    return letters.length >= 8 && vowelCount == 0
+}
+
+private fun stableLanguageChoiceHash(value: String): Int = value.fold(0x45d9f3b) { acc, char ->
+    ((acc * 31) xor char.code).and(0x7fffffff)
 }
 
 private fun scorePercentFor(outcome: LanguageReviewOutcome): Int = when (outcome) {

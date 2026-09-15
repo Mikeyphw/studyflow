@@ -6,6 +6,7 @@ import com.mikeyphw.studyflow.core.model.CodingExerciseFileRole
 import com.mikeyphw.studyflow.core.model.CodingExerciseId
 import com.mikeyphw.studyflow.core.model.CodingExerciseStatus
 import com.mikeyphw.studyflow.core.model.CodingExerciseType
+import com.mikeyphw.studyflow.core.model.CodeSnippet
 import com.mikeyphw.studyflow.core.model.CodeSnippetId
 import com.mikeyphw.studyflow.core.model.IdiomCard
 import com.mikeyphw.studyflow.core.model.IdiomCardId
@@ -19,15 +20,22 @@ import com.mikeyphw.studyflow.core.model.LanguageReviewAttempt
 import com.mikeyphw.studyflow.core.model.LanguageReviewAttemptId
 import com.mikeyphw.studyflow.core.model.LanguageReviewDirection
 import com.mikeyphw.studyflow.core.model.LanguageReviewOutcome
+import com.mikeyphw.studyflow.core.model.MiniProject
+import com.mikeyphw.studyflow.core.model.MiniProjectCheckpoint
+import com.mikeyphw.studyflow.core.model.MiniProjectId
+import com.mikeyphw.studyflow.core.model.MiniProjectStatus
 import com.mikeyphw.studyflow.core.model.ProgrammingCourseLevel
 import com.mikeyphw.studyflow.core.model.ProgrammingCourseProfile
 import com.mikeyphw.studyflow.core.model.ProgrammingCourseProfileId
 import com.mikeyphw.studyflow.core.model.ProgrammingLanguage
 import com.mikeyphw.studyflow.core.model.ReviewItemId
 import com.mikeyphw.studyflow.core.model.StudyPlanId
+import com.mikeyphw.studyflow.core.model.TermuxRuntimePreference
 import com.mikeyphw.studyflow.core.model.SubjectId
 import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.UsageExample
+import com.mikeyphw.studyflow.core.model.VocabularyCard
+import com.mikeyphw.studyflow.core.model.VocabularyCardId
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
@@ -37,7 +45,7 @@ import java.nio.file.StandardCopyOption
 import java.util.Base64
 import java.util.Properties
 
-private const val ContentModeSchemaVersion = 1
+private const val ContentModeSchemaVersion = 2
 private const val ContentModeFileName = "content-modes-v1.properties"
 private const val ContentModeNull = "~"
 private const val ListSeparator = '\u001f'
@@ -45,10 +53,14 @@ private const val RecordSeparator = '\u001e'
 
 data class DesktopContentModeSnapshot(
     val programmingProfiles: List<ProgrammingCourseProfile> = emptyList(),
+    val codeSnippets: List<CodeSnippet> = emptyList(),
     val codingExercises: List<CodingExercise> = emptyList(),
+    val miniProjects: List<MiniProject> = emptyList(),
+    val termuxRuntimePreferences: List<TermuxRuntimePreference> = emptyList(),
     val languageDecks: List<LanguageDeckProfile> = emptyList(),
     val languageExpressions: List<LanguageExpression> = emptyList(),
     val idiomCards: List<IdiomCard> = emptyList(),
+    val vocabularyCards: List<VocabularyCard> = emptyList(),
     val languageAttempts: List<LanguageReviewAttempt> = emptyList(),
 )
 
@@ -113,24 +125,47 @@ class DesktopContentModeRepository(
         snapshot = next
     }
     fun programmingProfile(planId: StudyPlanId) = snapshot.programmingProfiles.firstOrNull { it.studyPlanId == planId }
+    fun codeSnippets(planId: StudyPlanId) = snapshot.codeSnippets.filter { it.studyPlanId == planId }
     fun codingExercises(planId: StudyPlanId) = snapshot.codingExercises.filter { it.studyPlanId == planId }
+    fun miniProjects(planId: StudyPlanId) = snapshot.miniProjects.filter { it.studyPlanId == planId }
+    fun termuxRuntimePreference(planId: StudyPlanId) =
+        snapshot.termuxRuntimePreferences.firstOrNull { it.studyPlanId == planId }
     fun languageDeck(planId: StudyPlanId) = snapshot.languageDecks.firstOrNull { it.studyPlanId == planId }
     fun languageExpressions(planId: StudyPlanId) = snapshot.languageExpressions.filter { it.studyPlanId == planId }
     fun idiomCards(planId: StudyPlanId): List<IdiomCard> {
         val ids = languageExpressions(planId).map { it.id }.toSet()
         return snapshot.idiomCards.filter { it.expressionId in ids }
     }
+    fun vocabularyCards(planId: StudyPlanId): List<VocabularyCard> {
+        val ids = languageExpressions(planId).map { it.id }.toSet()
+        return snapshot.vocabularyCards.filter { it.expressionId in ids }
+    }
     fun languageAttempts(planId: StudyPlanId): List<LanguageReviewAttempt> {
         val ids = languageExpressions(planId).map { it.id }.toSet()
         return snapshot.languageAttempts.filter { it.expressionId in ids }
     }
 
-    fun upsertProgramming(profile: ProgrammingCourseProfile, exercise: CodingExercise? = null) {
+    fun upsertProgramming(
+        profile: ProgrammingCourseProfile,
+        exercise: CodingExercise? = null,
+        codeSnippet: CodeSnippet? = null,
+        miniProject: MiniProject? = null,
+        termuxRuntimePreference: TermuxRuntimePreference? = null,
+    ) {
         snapshot = snapshot.copy(
             programmingProfiles = snapshot.programmingProfiles.upsert(profile) { it.id == profile.id },
+            codeSnippets = codeSnippet?.let { value ->
+                snapshot.codeSnippets.upsert(value) { it.id == value.id }
+            } ?: snapshot.codeSnippets,
             codingExercises = exercise?.let { value ->
                 snapshot.codingExercises.upsert(value) { it.id == value.id }
             } ?: snapshot.codingExercises,
+            miniProjects = miniProject?.let { value ->
+                snapshot.miniProjects.upsert(value) { it.id == value.id }
+            } ?: snapshot.miniProjects,
+            termuxRuntimePreferences = termuxRuntimePreference?.let { value ->
+                snapshot.termuxRuntimePreferences.upsert(value) { it.studyPlanId == value.studyPlanId }
+            } ?: snapshot.termuxRuntimePreferences,
         )
         persist()
     }
@@ -145,6 +180,7 @@ class DesktopContentModeRepository(
         deck: LanguageDeckProfile,
         expression: LanguageExpression? = null,
         idiomCard: IdiomCard? = null,
+        vocabularyCard: VocabularyCard? = null,
     ) {
         snapshot = snapshot.copy(
             languageDecks = snapshot.languageDecks.upsert(deck) { it.id == deck.id },
@@ -154,6 +190,9 @@ class DesktopContentModeRepository(
             idiomCards = idiomCard?.let { value ->
                 snapshot.idiomCards.upsert(value) { it.id == value.id }
             } ?: snapshot.idiomCards,
+            vocabularyCards = vocabularyCard?.let { value ->
+                snapshot.vocabularyCards.upsert(value) { it.id == value.id }
+            } ?: snapshot.vocabularyCards,
         )
         persist()
     }
@@ -170,10 +209,14 @@ class DesktopContentModeRepository(
         val expressionIds = languageExpressions(planId).map { it.id }.toSet()
         snapshot = snapshot.copy(
             programmingProfiles = snapshot.programmingProfiles.filterNot { it.studyPlanId == planId },
+            codeSnippets = snapshot.codeSnippets.filterNot { it.studyPlanId == planId },
             codingExercises = snapshot.codingExercises.filterNot { it.studyPlanId == planId },
+            miniProjects = snapshot.miniProjects.filterNot { it.studyPlanId == planId },
+            termuxRuntimePreferences = snapshot.termuxRuntimePreferences.filterNot { it.studyPlanId == planId },
             languageDecks = snapshot.languageDecks.filterNot { it.studyPlanId == planId },
             languageExpressions = snapshot.languageExpressions.filterNot { it.studyPlanId == planId },
             idiomCards = snapshot.idiomCards.filterNot { it.expressionId in expressionIds },
+            vocabularyCards = snapshot.vocabularyCards.filterNot { it.expressionId in expressionIds },
             languageAttempts = snapshot.languageAttempts.filterNot { it.expressionId in expressionIds },
         )
         persist()
@@ -189,25 +232,34 @@ private object DesktopContentModePropertiesCodec {
         val props = Properties()
         props["schema.version"] = ContentModeSchemaVersion.toString()
         writeList(props, "programming", snapshot.programmingProfiles, ::encodeProgrammingProfile)
+        writeList(props, "snippet", snapshot.codeSnippets, ::encodeCodeSnippet)
         writeList(props, "exercise", snapshot.codingExercises, ::encodeExercise)
+        writeList(props, "project", snapshot.miniProjects, ::encodeMiniProject)
+        writeList(props, "runtime", snapshot.termuxRuntimePreferences, ::encodeRuntimePreference)
         writeList(props, "deck", snapshot.languageDecks, ::encodeDeck)
         writeList(props, "expression", snapshot.languageExpressions, ::encodeExpression)
         writeList(props, "idiom", snapshot.idiomCards, ::encodeIdiom)
+        writeList(props, "vocab", snapshot.vocabularyCards, ::encodeVocabulary)
         writeList(props, "attempt", snapshot.languageAttempts, ::encodeAttempt)
         props.store(output, "StudyFlow Desktop content modes schema v$ContentModeSchemaVersion")
     }
 
     fun read(input: InputStream): DesktopContentModeSnapshot {
         val props = Properties().apply { load(input) }
-        require(props.required("schema.version").toInt() == ContentModeSchemaVersion) {
+        val schema = props.required("schema.version").toInt()
+        require(schema in 1..ContentModeSchemaVersion) {
             "Unsupported Desktop content-mode schema."
         }
         return DesktopContentModeSnapshot(
             programmingProfiles = readList(props, "programming", ::decodeProgrammingProfile),
+            codeSnippets = readList(props, "snippet", ::decodeCodeSnippet),
             codingExercises = readList(props, "exercise", ::decodeExercise),
+            miniProjects = readList(props, "project", ::decodeMiniProject),
+            termuxRuntimePreferences = readList(props, "runtime", ::decodeRuntimePreference),
             languageDecks = readList(props, "deck", ::decodeDeck),
             languageExpressions = readList(props, "expression", ::decodeExpression),
             idiomCards = readList(props, "idiom", ::decodeIdiom),
+            vocabularyCards = readList(props, "vocab", ::decodeVocabulary),
             languageAttempts = readList(props, "attempt", ::decodeAttempt),
         )
     }
@@ -224,6 +276,21 @@ private object DesktopContentModePropertiesCodec {
             ProgrammingCourseProfileId(f[0]!!), StudyPlanId(f[1]!!), ProgrammingLanguage.valueOf(f[2]!!),
             ProgrammingCourseLevel.valueOf(f[3]!!), f[4], f[5]!!, f[6], f[7], splitList(f[8]),
             f[9]!!.toLong(), f[10]!!.toLong(),
+        )
+    }
+
+    private fun encodeCodeSnippet(v: CodeSnippet) = fields(
+        v.id.value, v.studyPlanId.value, v.subjectId?.value, v.topicId?.value, v.title, v.language.name,
+        v.code, v.description, v.sourceUri, v.tags.joinToString(ListSeparator.toString()),
+        v.createdAtEpochMillis.toString(), v.updatedAtEpochMillis.toString(),
+    )
+
+    private fun decodeCodeSnippet(value: String): CodeSnippet {
+        val f = split(value, 12)
+        return CodeSnippet(
+            CodeSnippetId(f[0]!!), StudyPlanId(f[1]!!), f[2]?.let(::SubjectId), f[3]?.let(::TopicId),
+            f[4]!!, ProgrammingLanguage.valueOf(f[5]!!), f[6]!!, f[7]!!, f[8], splitList(f[9]),
+            f[10]!!.toLong(), f[11]!!.toLong(),
         )
     }
 
@@ -248,6 +315,37 @@ private object DesktopContentModePropertiesCodec {
             files = decodeExerciseFiles(f[17]), tags = splitList(f[18]), lastResultJson = f[19],
             retryAtEpochMillis = f[20]?.toLong(), createdAtEpochMillis = f[21]!!.toLong(),
             updatedAtEpochMillis = f[22]!!.toLong(),
+        )
+    }
+
+    private fun encodeMiniProject(v: MiniProject) = fields(
+        v.id.value, v.studyPlanId.value, v.subjectId?.value, v.topicId?.value, v.title, v.description,
+        v.status.name, v.language.name, v.repositoryUri, v.workspaceRelativePath, encodeCheckpoints(v.checkpoints),
+        v.deliverables.joinToString(ListSeparator.toString()), v.runCommandTemplate, v.testCommandTemplate,
+        v.createdAtEpochMillis.toString(), v.updatedAtEpochMillis.toString(),
+    )
+
+    private fun decodeMiniProject(value: String): MiniProject {
+        val f = split(value, 16)
+        return MiniProject(
+            MiniProjectId(f[0]!!), StudyPlanId(f[1]!!), f[2]?.let(::SubjectId), f[3]?.let(::TopicId),
+            f[4]!!, f[5]!!, MiniProjectStatus.valueOf(f[6]!!), ProgrammingLanguage.valueOf(f[7]!!),
+            f[8], f[9]!!, decodeCheckpoints(f[10]), splitList(f[11]), f[12], f[13],
+            f[14]!!.toLong(), f[15]!!.toLong(),
+        )
+    }
+
+    private fun encodeRuntimePreference(v: TermuxRuntimePreference) = fields(
+        v.studyPlanId.value, v.enabled.toString(), v.workspaceRoot, v.preferredLanguage?.name,
+        v.defaultRunCommand, v.defaultTestCommand, v.allowedCommandTemplates.joinToString(ListSeparator.toString()),
+        v.captureStdout.toString(), v.captureStderr.toString(), v.updatedAtEpochMillis.toString(),
+    )
+
+    private fun decodeRuntimePreference(value: String): TermuxRuntimePreference {
+        val f = split(value, 10)
+        return TermuxRuntimePreference(
+            StudyPlanId(f[0]!!), f[1]!!.toBoolean(), f[2]!!, f[3]?.let(ProgrammingLanguage::valueOf),
+            f[4], f[5], splitList(f[6]), f[7]!!.toBoolean(), f[8]!!.toBoolean(), f[9]!!.toLong(),
         )
     }
 
@@ -298,6 +396,22 @@ private object DesktopContentModePropertiesCodec {
         )
     }
 
+    private fun encodeVocabulary(v: VocabularyCard) = fields(
+        v.id.value, v.expressionId.value, v.partOfSpeech,
+        v.synonyms.joinToString(ListSeparator.toString()),
+        v.antonyms.joinToString(ListSeparator.toString()),
+        v.reviewDirections.joinToString(ListSeparator.toString()) { it.name },
+        v.difficulty.toString(),
+    )
+
+    private fun decodeVocabulary(value: String): VocabularyCard {
+        val f = split(value, 7)
+        return VocabularyCard(
+            VocabularyCardId(f[0]!!), LanguageExpressionId(f[1]!!), f[2], splitList(f[3]), splitList(f[4]),
+            splitList(f[5]).map(LanguageReviewDirection::valueOf).toSet(), f[6]!!.toInt(),
+        )
+    }
+
     private fun encodeAttempt(v: LanguageReviewAttempt) = fields(
         v.id.value, v.expressionId.value, v.idiomCardId?.value, v.direction.name, v.promptText, v.answerText,
         v.outcome.name, v.scorePercent.toString(), v.reviewItemId?.value, v.createdAtEpochMillis.toString(),
@@ -329,6 +443,19 @@ private object DesktopContentModePropertiesCodec {
             )
         }
 
+    private fun encodeCheckpoints(checkpoints: List<MiniProjectCheckpoint>): String =
+        checkpoints.joinToString(RecordSeparator.toString()) {
+            listOf(it.title, it.description, it.completed.toString())
+                .joinToString(ListSeparator.toString()) { value -> encode(value) }
+        }
+
+    private fun decodeCheckpoints(value: String?): List<MiniProjectCheckpoint> = value.orEmpty()
+        .split(RecordSeparator).filter(String::isNotEmpty).map { record ->
+            val pieces = record.split(ListSeparator).map(::decode)
+            require(pieces.size == 3) { "Corrupt Desktop mini-project checkpoint." }
+            MiniProjectCheckpoint(pieces[0], pieces[1], pieces[2].toBoolean())
+        }
+
     private fun encodeExamples(examples: List<UsageExample>): String =
         examples.joinToString(RecordSeparator.toString()) {
         listOf(it.sentence, it.translation ?: ContentModeNull, it.note ?: ContentModeNull)
@@ -352,7 +479,7 @@ private object DesktopContentModePropertiesCodec {
     }
 
     private fun <T> readList(props: Properties, prefix: String, decodeValue: (String) -> T): List<T> =
-        List(props.required("$prefix.count").toInt()) { index -> decodeValue(props.required("$prefix.$index")) }
+        List(props.getProperty("$prefix.count")?.toInt() ?: 0) { index -> decodeValue(props.required("$prefix.$index")) }
 
     private fun fields(vararg values: String?): String =
         values.joinToString(".") { it?.let(::encode) ?: ContentModeNull }

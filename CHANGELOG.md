@@ -1,3 +1,12 @@
+# StudyFlow Changelog
+
+## OV28 — Language review correctness & Desktop specialized parity
+
+- Hardened shared language review scoring so gibberish, repeated prompt text, and literal-only mistake answers cannot pass.
+- Added deterministic non-fixed natural-usage multiple-choice ordering and exact expected-choice grading.
+- Expanded Desktop content-mode persistence to schema v2 with full specialized graph round-tripping.
+- Updated Desktop programming execution to honor exercise command templates, file bundles, and expected-output matching.
+
 # StudyFlow changelog
 
 ## OV27 — Termux execution pipeline & sandbox correctness
