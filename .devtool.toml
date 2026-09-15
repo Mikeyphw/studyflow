@@ -65,7 +65,7 @@ args = [
 ]
 
 [targets.studyflow_android.tasks]
-build = ["verifyStudyFlowAndroidPreflightContracts", "prepareDevtoolValidationArtifacts", ":app:assembleDebug"]
+build = ["verifyStudyFlowAndroidPreflightContracts", "prepareDevtoolValidationArtifacts", ":app:assembleDebug", "verifyOv30StudyflowAndroidTargetSeal"]
 test = [
   "verifyStudyFlowAndroidPreflightContracts",
   "verifyOv09SflpNativeWebInterop",
@@ -150,7 +150,7 @@ memory_guard_mb = 0
 affected_module_lint = false
 
 [targets.studyflow_android.validation.phases]
-preflight = ["verifyStudyFlowAndroidPreflightContracts"]
+preflight = ["verifyStudyFlowAndroidPreflightContracts", "verifyOv30StudyflowAndroidTargetSeal"]
 dependencies = []
 compile = []
 resources = []

@@ -1,3 +1,9 @@
+## 2026-09-15 — OV30 studyflow_android target seal
+
+- Added a target-specific Overlay 30 of 30 seal for `studyflow_android`: Android client terminal target seal.
+- Preserved one-overlay-per-Devtool-target packaging so client, quality, parity, and release lanes can be applied independently in order.
+- Kept release evidence fail-closed; target seals do not synthesize signed artifact/device/operator readiness.
+
 ## 2026-09-15 — OV29 behavioral validation, debug labs & release-truth gates
 
 - Wired the missing CMOV validators into quality, Android, parity, and release-truth gates.

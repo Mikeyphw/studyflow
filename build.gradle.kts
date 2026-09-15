@@ -2595,3 +2595,12 @@ tasks.register<Exec>("verifyOv29BehavioralValidationReleaseTruthGates") {
     dependsOn("verifyOv29ExhaustiveVerifierInventory", "verifyWebStaleDistReleaseIntegrity")
     commandLine("bash", "scripts/validate_ov29_behavioral_validation_release_truth_gates.sh")
 }
+
+// OV30 — Android client terminal target seal.
+tasks.register<Exec>("verifyOv30StudyflowAndroidTargetSeal") {
+    group = "verification"
+    description = "Android client terminal target seal."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_ov30_studyflow_android_target_seal.py")
+}
+
