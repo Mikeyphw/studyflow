@@ -347,7 +347,7 @@ args = [
 ]
 
 [targets.studyflow_tv.tasks]
-build = ["verifyStudyFlowTvAllContracts", ":app-tv:assembleDebug", "verifyOv30StudyflowTvTargetSeal"]
+build = ["verifyStudyFlowTvAllContracts", ":app-tv:assembleDebug", "verifyOv30StudyflowTvTargetSeal", "verifyOv30R2StudyflowTvProperValidationSeal"]
 test = [
   "verifyStudyFlowTvAllContracts",
   ":core:tvcontrol:test",
@@ -379,7 +379,7 @@ memory_guard_mb = 0
 affected_module_lint = false
 
 [targets.studyflow_tv.validation.phases]
-preflight = ["verifyStudyFlowTvAllContracts", "verifyOv30StudyflowTvTargetSeal"]
+preflight = ["verifyStudyFlowTvAllContracts", "verifyOv30StudyflowTvTargetSeal", "verifyOv30R2StudyflowTvProperValidationSeal"]
 dependencies = []
 compile = []
 resources = []
