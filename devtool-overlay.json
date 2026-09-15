@@ -1,66 +1,66 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_ov30_30d_studyflow_tv_target_seal_v1",
-  "target": "studyflow_tv",
-  "description": "Overlay 30 of 30 30D: Android TV debug terminal target seal. Target-specific artifact per user preference.",
-  "commit_message": "OV30 studyflow_tv: add terminal target seal",
+  "name": "studyflow_ov30_30e_studyflow_release_target_seal_v1",
+  "target": "studyflow_release",
+  "description": "Overlay 30 of 30 30E: Android release evidence target seal. Target-specific artifact per user preference.",
+  "commit_message": "OV30 studyflow_release: add terminal target seal",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV30 studyflow_tv: add terminal target seal"
+    "message": "OV30 studyflow_release: add terminal target seal"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "OV30 studyflow_tv: add terminal target seal"
+      "message": "OV30 studyflow_release: add terminal target seal"
     }
   },
   "baseline": {
     "repo": "studyflow",
-    "target": "studyflow_tv",
+    "target": "studyflow_release",
     "expected_target_type": "android",
-    "previous_overlay": "studyflow_ov30_30c_studyflow_web_target_seal_v1.tar",
+    "previous_overlay": "studyflow_ov30_30d_studyflow_tv_target_seal_v1.tar",
     "roadmap_overlay": "30 of 30",
-    "sub_overlay": "30D",
+    "sub_overlay": "30E",
     "notes": "Built cumulatively from user-applied OV29. Overlay 30 is split so each Devtool target has its own overlay artifact."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov30_30d_studyflow_tv_target_seal_v1",
-    "target": "studyflow_tv",
+    "name": "studyflow_ov30_30e_studyflow_release_target_seal_v1",
+    "target": "studyflow_release",
     "sections": [
       {
         "id": "target-terminal-seal",
-        "purpose": "Android TV debug terminal target seal",
+        "purpose": "Android release evidence target seal",
         "paths": [
           ".devtool-artifact/validation/validate.sh",
           ".devtool.toml",
           "CHANGELOG.md",
-          "REMEDIATION_OV_30_STUDYFLOW_TV_TARGET_SEAL.md",
+          "REMEDIATION_OV_30_STUDYFLOW_RELEASE_TARGET_SEAL.md",
           "build.gradle.kts",
           "devtool-overlay.json",
-          "docs/remediation/OV30_STUDYFLOW_TV_TARGET_SEAL.md",
-          "scripts/validate_ov30_studyflow_tv_target_seal.sh",
-          "scripts/verify_ov30_studyflow_tv_target_seal.py"
+          "docs/remediation/OV30_STUDYFLOW_RELEASE_TARGET_SEAL.md",
+          "scripts/validate_ov30_studyflow_release_target_seal.sh",
+          "scripts/verify_ov30_studyflow_release_target_seal.py"
         ]
       }
     ]
   },
   "findings": [
     {
-      "id": "OV30-30D",
+      "id": "OV30-30E",
       "severity": "HIGH",
       "status": "closed",
-      "summary": "studyflow_tv has an independent terminal target seal overlay."
+      "summary": "studyflow_release has an independent terminal target seal overlay."
     }
   ],
   "validation": {
-    "entrypoint": "scripts/validate_ov30_studyflow_tv_target_seal.sh",
+    "entrypoint": "scripts/validate_ov30_studyflow_release_target_seal.sh",
     "devtool_entrypoint": ".devtool-artifact/validation/validate.sh",
     "expected": [
-      "OV30_STUDYFLOW_TV_TARGET_SEAL: PASS"
+      "OV30_STUDYFLOW_RELEASE_TARGET_SEAL: PASS"
     ]
   },
   "inventory": {
@@ -71,79 +71,79 @@
         "action": "modify",
         "path": ".devtool-artifact/validation/validate.sh",
         "mode": "0o755",
-        "sha256": "3dcc007ef6ba2c9cab8914b4ae0e6f1078a913fb06edf48440694969479c25e4",
-        "size": 120,
+        "sha256": "ebec800d05052caaf47326c84377dc96bfcd2114ae52dd5bfefe28e433512f37",
+        "size": 125,
         "source_mode": "0o755",
-        "source_sha256": "32f0e0ce06580f4df9df1ed8e3755b14df1ed78b33e35a8b07147b470efae621",
-        "source_size": 121
+        "source_sha256": "3dcc007ef6ba2c9cab8914b4ae0e6f1078a913fb06edf48440694969479c25e4",
+        "source_size": 120
       },
       {
         "action": "modify",
         "path": ".devtool.toml",
         "mode": "0o644",
-        "sha256": "c581ca00ab04d739be62afcce47effa1c2f685fe21fed5491fd702fa92f5c88f",
-        "size": 20019,
+        "sha256": "6ccacaffd14f2885e92187f1c3bb7b38050deda8b7e9a73a850d3405a37609b2",
+        "size": 20059,
         "source_mode": "0o644",
-        "source_sha256": "cde01e42c060d56867a80bf30ebac1ae99e0d619c34e44a08a5eda84993e1823",
-        "source_size": 19949
+        "source_sha256": "c581ca00ab04d739be62afcce47effa1c2f685fe21fed5491fd702fa92f5c88f",
+        "source_size": 20019
       },
       {
         "action": "modify",
         "path": "CHANGELOG.md",
         "mode": "0o644",
-        "sha256": "bf593450c702006f2654b960793e1b324919daed72586e446d4dc2771002e607",
-        "size": 86487,
+        "sha256": "55ba80690058564971484ab264df038400995c8b4e2bb4df0b69ed8773525d64",
+        "size": 86902,
         "source_mode": "0o644",
-        "source_sha256": "472e0ad8447754816287aa48cb100fafa8d6c426e089473ba0b6a98968f7d48f",
-        "source_size": 86081
+        "source_sha256": "bf593450c702006f2654b960793e1b324919daed72586e446d4dc2771002e607",
+        "source_size": 86487
       },
       {
         "action": "add",
-        "path": "REMEDIATION_OV_30_STUDYFLOW_TV_TARGET_SEAL.md",
+        "path": "REMEDIATION_OV_30_STUDYFLOW_RELEASE_TARGET_SEAL.md",
         "mode": "0o644",
-        "sha256": "7a80fbd120ac2c4a8b3baaea0b9b40d2f1ed8775b1abe065186e138991c197df",
-        "size": 527
+        "sha256": "149ea4c50a340a497ddfb021528be565ba2be76c5edb21e7eb576be493d35a4b",
+        "size": 551
       },
       {
         "action": "modify",
         "path": "build.gradle.kts",
         "mode": "0o644",
-        "sha256": "f6e51e42a564f084b15fb45d755a340b08912b4b01fb7f6b00bfe014d093c4b8",
-        "size": 105446,
+        "sha256": "0678c65d68ff75779c5d9905a5d94182286047b7a741497b972dcf0861ac698d",
+        "size": 105770,
         "source_mode": "0o644",
-        "source_sha256": "31fdb107d133c916d0684c4a6e62a2f9b461af67a7d6d84ff202604ff9290f1c",
-        "source_size": 105130
+        "source_sha256": "f6e51e42a564f084b15fb45d755a340b08912b4b01fb7f6b00bfe014d093c4b8",
+        "source_size": 105446
       },
       {
         "action": "modify",
         "path": "devtool-overlay.json",
         "mode": "0o644",
-        "sha256": "d34f6b2db05634ddc5741234f82a920df1b74d1b1109f4b281a8a6e6340a61e5",
-        "size": 4629,
+        "sha256": "a9934f858c07916b002b9f291b2f00a58b727eae753a02558b5c860c7acfde4f",
+        "size": 4721,
         "source_mode": "0o644",
-        "source_sha256": "dc12885dc8369433ac7066890655804103ede67047e40f4f3a55f7de23d565f8",
-        "source_size": 5040
+        "source_sha256": "d5221d76a8a32a6fb0f8e7d42e501101f147e0187ef4a9b5c9a217d9512d94de",
+        "source_size": 5034
       },
       {
         "action": "add",
-        "path": "docs/remediation/OV30_STUDYFLOW_TV_TARGET_SEAL.md",
+        "path": "docs/remediation/OV30_STUDYFLOW_RELEASE_TARGET_SEAL.md",
         "mode": "0o644",
-        "sha256": "08589dfd8f2d60d1852b6b1f302ffe7cac2e045d7eaf4a3ed5248efea8121b46",
-        "size": 824
+        "sha256": "4c5c9451da1b4f6b85ab975e51ebb7cd596271039749fbc0ceed9f2435de0d86",
+        "size": 858
       },
       {
         "action": "add",
-        "path": "scripts/validate_ov30_studyflow_tv_target_seal.sh",
+        "path": "scripts/validate_ov30_studyflow_release_target_seal.sh",
         "mode": "0o755",
-        "sha256": "40961d68d44e1e49a14bd1e0fbe9ac346682e06f909822817c7a9b1a6820eb10",
-        "size": 118
+        "sha256": "1c47827f5c015c9f5bfe387089c15264f610110f8f799355f7e632eaa126fc23",
+        "size": 123
       },
       {
         "action": "add",
-        "path": "scripts/verify_ov30_studyflow_tv_target_seal.py",
+        "path": "scripts/verify_ov30_studyflow_release_target_seal.py",
         "mode": "0o755",
-        "sha256": "8f1dd39436c305508e71a7e450e777dd2f30d6f82824425fc21a580821657590",
-        "size": 2773
+        "sha256": "bde81088947252f052a8ade2dffb3b39c7702d868cc791d7eb8743a8e53f453a",
+        "size": 2802
       }
     ]
   }

@@ -498,7 +498,7 @@ args = [
 ]
 
 [targets.studyflow_release.tasks]
-build = ["verifyRelFinalDevtoolReleaseRunner", "verifyFinalReleaseAutomatedGate"]
+build = ["verifyRelFinalDevtoolReleaseRunner", "verifyFinalReleaseAutomatedGate", "verifyOv30StudyflowReleaseTargetSeal"]
 test = ["verifyRelFinalDevtoolReleaseRunner"]
 lint = [":app:lintRelease"]
 clean = ["clean"]

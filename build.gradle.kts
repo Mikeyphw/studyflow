@@ -2628,3 +2628,11 @@ tasks.register<Exec>("verifyOv30StudyflowTvTargetSeal") {
     commandLine("python3", "scripts/verify_ov30_studyflow_tv_target_seal.py")
 }
 
+// OV30 — Android release evidence target seal.
+tasks.register<Exec>("verifyOv30StudyflowReleaseTargetSeal") {
+    group = "verification"
+    description = "Android release evidence target seal."
+    workingDir = rootProject.projectDir
+    commandLine("python3", "scripts/verify_ov30_studyflow_release_target_seal.py")
+}
+
