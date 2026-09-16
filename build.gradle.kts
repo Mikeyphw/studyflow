@@ -314,6 +314,9 @@ val studyFlowReleaseSigningVariables = listOf(
 )
 
 tasks.register<Delete>("prepareDevtoolValidationArtifacts") {
+    // Gradle 9 cannot serialize the environment-backed onlyIf closure in the
+    // configuration cache; this cleanup task is intentionally uncached.
+    notCompatibleWithConfigurationCache("Signing-environment cleanup is evaluated at execution time")
     group = "verification"
     description =
         "Removes stale unsigned Release outputs before ordinary Devtool validation when signing is unavailable."
