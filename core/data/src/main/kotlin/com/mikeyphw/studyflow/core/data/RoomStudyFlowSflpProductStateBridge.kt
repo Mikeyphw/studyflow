@@ -64,7 +64,7 @@ internal class RoomStudyFlowSflpProductStateBridge(
         }
         projectedOperationIds += pending.map { it.operationId.value }
         if (projectedOperationIds.size > 8_192) {
-            val keep = projectedOperationIds.takeLast(4_096).toSet()
+            val keep = projectedOperationIds.toList().takeLast(4_096).toSet()
             projectedOperationIds.retainAll(keep)
         }
         baseline = captureRows(database.openHelper.readableDatabase)

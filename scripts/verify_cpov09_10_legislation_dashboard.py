@@ -58,7 +58,7 @@ require(
 )
 require(
     "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt",
-    "SCHEMA_VERSION = 13",
+    "SCHEMA_VERSION = 15",
     "LegislationDocumentEntity::class",
 )
 require(

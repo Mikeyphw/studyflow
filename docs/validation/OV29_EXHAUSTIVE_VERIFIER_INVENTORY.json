@@ -253,6 +253,7 @@
     "runRelFinalExhaustiveRoadmapAudit",
     "runRelFinalReleaseCampaign",
     "verifyAndroidFocusShellFinalSeal",
+    "verifyArchivedRepositoryContracts",
     "verifyAtt01AttentionContracts",
     "verifyAtt01UnifiedAttentionFoundation",
     "verifyAtt01WebAttentionRuntime",

@@ -24,7 +24,11 @@ const host={
   capabilities:["workspace.read","workspace.write","workspace.sync","device.control","device.presentation_source"],
 };
 const pairing={
-  version:1,
+  version:2,
+  createdAtEpochMillis:1,
+  expiresAtEpochMillis:9999999999999,
+  host,
+  hostKeyAgreementPublicKeyHex:"a".repeat(160),
   pairingId:"pair-ov09-native",
   sessionNonce:"a".repeat(48),
   pairingCode:"123456",

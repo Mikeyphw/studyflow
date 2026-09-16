@@ -81,7 +81,7 @@ require(
 require(
     "app/src/main/java/com/mikeyphw/studyflow/reminders/StudyFlowWidgetUpdateCoordinator.kt",
     "AppWidgetManager.getInstance",
-    "TodayWidgetSummary",
+    "TodayWidgetRenderState",
     "StudyFlowTodayWidgetProvider.updateWidget",
     "resolveCanonicalWidgetPlan",
     "StudyPlanStatus.ARCHIVED",
@@ -89,8 +89,8 @@ require(
 )
 require(
     "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowTodayWidgetProvider.kt",
-    "TodayWidgetSummary?",
-    "widget_due_reviews_format",
+    "TodayWidgetRenderState",
+    "widget_due_reviews",
     "android.R.id.background",
 )
 require("app/src/main/res/layout/widget_today.xml", "@android:id/background", "@drawable/widget_background")

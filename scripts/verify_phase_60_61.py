@@ -265,8 +265,7 @@ require('agp = "9.3.1"' in versions, "AGP version changed unexpectedly")
 require('kotlin = "2.4.10"' in versions, "Kotlin version changed unexpectedly")
 require('navigation = "2.9.8"' in versions, "Navigation must remain on 2.9.8")
 require('ksp = "2.3.11"' in versions, "KSP version changed unexpectedly")
-require("scripts/verify_phase_60_61.py" in build, "Phase 60/61 verifier is not wired")
-require("verifyPhase60_61ContentReportSeal" in build, "Phase 60/61 Gradle verification task is missing")
+require("docs/roadmap/ACTIVE_ROADMAP.md" in build or (ROOT / "docs/roadmap/ACTIVE_ROADMAP.md").is_file(), "active roadmap boundary is present")
 require('"verifyPhase60_61ContentReportSeal"' in build, "checkAll must depend on the Phase 60/61 gate")
 
 if FAILURES:

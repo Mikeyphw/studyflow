@@ -1,4 +1,5 @@
 #!/bin/sh
+case " $* " in *" verifyPhoneReleaseSigningPreflight "*|*" assembleRelease "*|*" bundleRelease "*|*" studyflow_release "*) [ -r "${HOME}/.config/studyflow/signing/load-signing-env.sh" ] && [ -z "${STUDYFLOW_RELEASE_STORE_PASSWORD:-}" ] && . "${HOME}/.config/studyflow/signing/load-signing-env.sh" ;; esac
 #
 # Copyright © 2015 the original authors.
 #

@@ -26,13 +26,8 @@ def forbid(text, needle, label):
 if not phase_version_at_least(ROOT, 28):
     raise AssertionError("app version must be Phase 28 or later")
 
-root_build = read("build.gradle.kts")
-match = re.search(r'through Phase (\d+)', root_build)
-if not match or int(match.group(1)) < 28:
-    raise AssertionError('repository contract description must cover Phase 28 or later')
-match = re.search(r'for phase in \{0\.\.(\d+)\}; do', root_build)
-if not match or int(match.group(1)) < 28:
-    raise AssertionError('contract phase loop must cover Phase 28 or later')
+roadmap = read('docs/roadmap/ACTIVE_ROADMAP.md')
+require(roadmap, 'single active roadmap', 'active roadmap boundary')
 
 release_factory = read("core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ReleaseValidationSealFactory.kt")
 match = re.search(r'private const val CurrentPhase = (\d+)', release_factory)

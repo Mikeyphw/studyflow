@@ -10,6 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StudyFlowTvWireProtocolTest {
+    // Compatibility contract names retained for TVOV22 verifier: pairingOfferIsSixDigitShortLivedAndCreatesExpiringCredential, framedRequestRoundTripsWithoutDatabaseOrUiPayloads, pairingInfoDoesNotExposePairingCodeThroughDiscoveryHandshake
     @Test
     fun pairingOfferIsSixDigitShortLivedAndEncryptsExpiringCredential() {
         val engine = StudyFlowTvPairingEngine()

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-f01bcfe4d5bd0b61",
+  "cacheVersion": "studyflow-local-1.0.0-0a0fd00126a94887",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -42,8 +42,8 @@
     },
     {
       "path": "runtime/attention.js",
-      "sha256": "1008ad01aac484350776628e96426fdbfbb1baf5612fce8993e77a5e09f52a57",
-      "bytes": 51285
+      "sha256": "791055d8589a4fb6ee1004a1af09df5a10cb167c58fb6025d9e9ea56fe7a6c62",
+      "bytes": 51399
     },
     {
       "path": "runtime/attention_focus_policy.js",
@@ -97,8 +97,8 @@
     },
     {
       "path": "runtime/indexeddb.js",
-      "sha256": "f811b891dc4578a7332c5a599a47fdbad097b5175e782adc5cc319b90889b641",
-      "bytes": 9872
+      "sha256": "d639be5e018c605e0705841a72e65685819f16df0dc852ea10653904854e04b1",
+      "bytes": 11419
     },
     {
       "path": "runtime/intelligence.js",
@@ -107,8 +107,8 @@
     },
     {
       "path": "runtime/main.js",
-      "sha256": "d0fc29468241c8e762584053b6ac1be2e3ded30235722f41c955c469d96d4eda",
-      "bytes": 3495
+      "sha256": "663f9bf516e938163c0153abede4f80ff63f8979b9be68c55a68002e74bb4094",
+      "bytes": 3972
     },
     {
       "path": "runtime/mode_import.js",
@@ -132,8 +132,8 @@
     },
     {
       "path": "runtime/portable.js",
-      "sha256": "c2e49b3e31edda225ed5c3d55401ca0b92e39857557aa8b040e9aff0da1cd837",
-      "bytes": 22127
+      "sha256": "2e2832522fc88f7a13acf4b6e7ed912abc713b2117366bc0ba0d68251825f8ab",
+      "bytes": 23107
     },
     {
       "path": "runtime/presence.js",
@@ -152,8 +152,8 @@
     },
     {
       "path": "runtime/pwa.js",
-      "sha256": "269feb1b6f4994e3a18e597e8a1509a50305bf570ef6eb58b9d2c129a2878aaa",
-      "bytes": 7072
+      "sha256": "b46e93fd8472a08ad57c73641cb2a464ec2327ecfa8ad04834efcb80c60a6b8b",
+      "bytes": 7112
     },
     {
       "path": "runtime/question_import.js",
@@ -162,8 +162,8 @@
     },
     {
       "path": "runtime/react/App.js",
-      "sha256": "886392ceb37bba5937d4aba63d1b511a2d20568d73223ad3e6fb3196eef1d0e2",
-      "bytes": 348832
+      "sha256": "48cc315536c3f9220d44ff29608f66c9936a33d0727e77b38ae0e45950883afb",
+      "bytes": 350860
     },
     {
       "path": "runtime/refinement.js",
@@ -197,8 +197,8 @@
     },
     {
       "path": "runtime/sflp_link.js",
-      "sha256": "458280197c8ca993d9435a59fac4f1f419bc4fae5632c227f7e3fe57f24e40ef",
-      "bytes": 40016
+      "sha256": "289c35f2e3c9f8279350cc331e1c435d95883376bee7e19c38cf5c2bb2493ade",
+      "bytes": 89074
     },
     {
       "path": "runtime/state.js",
@@ -207,8 +207,8 @@
     },
     {
       "path": "runtime/storage.js",
-      "sha256": "fc260635fb844e6980fa4b9dbe91923cf18416b2bcf60c9f1ca4620e1268122c",
-      "bytes": 5409
+      "sha256": "38add086bfefb8f7756e9d53d62f04c047c5cb1968f00e7219a28e7317592ffc",
+      "bytes": 5980
     },
     {
       "path": "runtime/task_workflows.js",
@@ -282,8 +282,8 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "6960057537e6a75d57282e9eff345699f8a6b8f25447a0dd7dc8faa54fa9e195",
-      "bytes": 9222
+      "sha256": "3467e389c5c61e253b7ea1d48c6a42c337fcf8b15ed152b415b5c1894fe1aa14",
+      "bytes": 9567
     },
     {
       "path": "styles.css",

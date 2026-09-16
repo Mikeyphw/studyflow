@@ -19,6 +19,7 @@ import com.mikeyphw.studyflow.core.model.StudyPlanStatus
 import com.mikeyphw.studyflow.core.model.StudySession
 import com.mikeyphw.studyflow.core.model.StudyTarget
 import com.mikeyphw.studyflow.core.model.StudyTargetId
+import kotlinx.coroutines.flow.first
 import com.mikeyphw.studyflow.core.model.StudyType
 import java.util.UUID
 

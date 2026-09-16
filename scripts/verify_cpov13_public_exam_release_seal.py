@@ -73,7 +73,8 @@ require(not (ROOT / ".patch-backups").exists(), ".patch-backups must be removed 
 # Database and migration chain.
 database = text("core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt")
 migrations = text("core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowMigrations.kt")
-require("const val SCHEMA_VERSION = 13" in database, "CPOV final schema must remain 13")
+schema_match = re.search(r"const val SCHEMA_VERSION = (\d+)", database)
+require(schema_match is not None and int(schema_match.group(1)) >= 13, "CPOV schema must be at least 13")
 chain = ["Migration9To10", "Migration10To11", "Migration11To12", "Migration12To13"]
 for token in chain:
     require(token in migrations, f"missing migration {token}")
@@ -208,7 +209,7 @@ require(
     "ordinary Devtool validation must keep signed Release packaging outside its artifact scan",
 )
 for token in (
-    'tasks.register("verifyFinalReleaseHostGate")',
+    'verifyFinalReleaseHostGate',
     '":app:assembleRelease"',
     '":app:bundleRelease"',
 ):

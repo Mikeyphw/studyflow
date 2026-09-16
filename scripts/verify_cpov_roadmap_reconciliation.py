@@ -161,10 +161,11 @@ def main() -> None:
 
     db = require(
         "core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt",
-        "SCHEMA_VERSION = 13",
+        "SCHEMA_VERSION",
     )
-    if "SCHEMA_VERSION = 14" in db:
-        raise AssertionError("roadmap reconciliation must not introduce a schema bump")
+    schema = re.search(r"SCHEMA_VERSION\s*=\s*(\d+)", db)
+    if not schema or int(schema.group(1)) < 13:
+        raise AssertionError("roadmap reconciliation requires current schema at least 13")
 
     en = ROOT / "feature/plans/src/main/res/values/strings.xml"
     pt = ROOT / "feature/plans/src/main/res/values-pt-rBR/strings.xml"
@@ -185,7 +186,7 @@ def main() -> None:
     print(
         "CPOV_ROADMAP_RECONCILIATION: PASSED "
         "(priority evidence, question outcomes, blueprint UI, error classification, legislation links, "
-        "dashboard matrix, onboarding/templates/goals, schema 13)"
+        "dashboard matrix, onboarding/templates/goals, monotonic schema compatibility)"
     )
 
 

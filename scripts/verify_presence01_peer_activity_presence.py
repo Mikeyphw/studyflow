@@ -81,7 +81,7 @@ if start >= 0 and end > start:
 
 # Durable reconcile must happen before optional/non-fatal presence exchange.
 rpc = text("core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerRpc.kt")
-reconcile = rpc.find("workspace(workspaceId).reconnect.reconcile")
+reconcile = rpc.find("workspaceRuntime.reconnect.reconcile")
 presence = rpc.find("runCatching { exchangePresenceWith", reconcile)
 need(reconcile >= 0 and presence > reconcile, "presence exchange must run after durable reconciliation")
 

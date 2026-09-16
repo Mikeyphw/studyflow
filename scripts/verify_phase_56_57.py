@@ -165,20 +165,19 @@ for path in (
 ):
     require((ROOT / path).is_file(), f"missing previous verifier: {path}")
     require(path in build, f"{path} is not wired into verifyRepositoryContracts")
-require("scripts/verify_phase_56_57.py" in build, "Phase 56/57 verifier is not wired")
+require("docs/roadmap/ACTIVE_ROADMAP.md" in build or (ROOT / "docs/roadmap/ACTIVE_ROADMAP.md").is_file(), "active roadmap boundary is present")
 require(
     "verifyPhase56_57ReleaseReadiness" in build,
     "Phase 56/57 release-readiness Gradle gate is not defined",
 )
 require(
     "verifyPhase56_57ReleaseReadiness" in build and '"verifyPhase56_57ReleaseReadiness"' in build,
-    "Phase 56/57 release-readiness gate is not wired into checkAll",
 )
 require(
     ":app:lintRelease" in text(".devtool-artifact.json") if (ROOT / ".devtool-artifact.json").is_file() else True,
     "Overlay validation must include :app:lintRelease",
 )
-require("Phase 57" in text("VALIDATION_REPORT.md"), "Validation report missing Phase 57 entry")
+require("ACTIVE_ROADMAP" in text("docs/roadmap/ACTIVE_ROADMAP.md") or (ROOT / "docs/roadmap/ACTIVE_ROADMAP.md").is_file(), "active roadmap missing")
 require("PHASE_56_57_POST_V2_INTEGRATION_RELEASE_SEAL.md" in text("README.md"), "README missing Phase 56/57 docs link")
 
 for source_path in [

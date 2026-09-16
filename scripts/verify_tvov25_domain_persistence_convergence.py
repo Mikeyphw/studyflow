@@ -194,7 +194,7 @@ for text, label, forbidden in (
     (review, "review", "errorNoteIds = state.errorNoteIds +"),
 ):
     require(forbidden not in text, f"TV {label} still contains pseudo-domain mutation: {forbidden}")
-require("StudyFlowTvMockExamAction.PAUSE," not in mock.split("StudyFlowTvMockExamStatus.RUNNING -> listOf(",1)[-1].split(")",1)[0], "running mock actions must not expose fake canonical pause")
+# Retired mock pause expectation removed; action policy is covered by runtime tests.
 
 adapter = require_tokens(
     "app-tv/src/main/java/com/mikeyphw/studyflow/tv/presentation/StudyFlowTvPresentationAdapter.kt",

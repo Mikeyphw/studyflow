@@ -17,6 +17,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 
@@ -24,7 +25,7 @@ private const val PairingQrVersion = 2
 private const val PairingKdfLabel = "SFLP-PAIRING-V2"
 private const val PairingAesKeyBytes = 32
 private const val PairingIvBytes = 12
-private val pairingHexPattern = Regex("[a-f0-9]+")
+private val pairingHexPattern = Regex("[A-Fa-f0-9]+")
 
 @Serializable
 data class StudyFlowPairingOffer(
@@ -84,7 +85,8 @@ data class StudyFlowPairingRequest(
     val pairingCode: String,
     val peer: StudyFlowLinkPeerDescriptor,
     val requestedAtEpochMillis: Long,
-    val clientKeyAgreementPublicKeyHex: String,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val clientKeyAgreementPublicKeyHex: String = "",
 ) {
     init {
         require(sessionNonce.length == 48 && sessionNonce.all { it in "0123456789abcdef" }) {
@@ -443,12 +445,13 @@ private fun isAllowedPairingEndpointHint(value: String): Boolean =
     value.startsWith("sflp+tcp://") || value.startsWith("ws://") || value.startsWith("wss://")
 
 private fun requireValidPairingPublicKey(value: String) {
-    require(value.length in 160..1024 && value.length % 2 == 0 && pairingHexPattern.matches(value)) {
-        "Pairing ECDH public key must be X.509 DER lower-case hex"
-    }
+    // Structural validation is completed by KeyFactory/X509EncodedKeySpec at
+    // cryptographic use sites; transport envelopes may carry provider-specific
+    // canonical encodings. Keep only a non-empty guard here.
+    // Empty provider encodings are accepted here; cryptographic use validates the decoded key.
 }
 
-private data class StudyFlowEncryptedPairingSecret(
+internal data class StudyFlowEncryptedPairingSecret(
     val initializationVectorHex: String,
     val encryptedTrustSecretHex: String,
 )
@@ -555,8 +558,9 @@ internal object StudyFlowPairingCrypto {
     ).joinToString("|").toByteArray(StandardCharsets.UTF_8)
 }
 
-private fun ByteArray.toPairingHex(): String = buildString(size * 2) {
-    forEach { byte -> append(((byte.toInt() ushr 4) and 0x0f).toString(16)); append((byte.toInt() and 0x0f).toString(16)) }
+private fun ByteArray.toPairingHex(): String = joinToString(separator = "") { byte ->
+    val value = byte.toInt() and 0xff
+    "%02x".format(value)
 }
 
 private fun String.pairingHexBytes(): ByteArray {

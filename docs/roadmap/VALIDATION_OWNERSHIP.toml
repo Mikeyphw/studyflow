@@ -1,0 +1,31 @@
+# Validator ownership and retirement boundary.
+
+[[validator]]
+name = "current-android"
+status = "active"
+owner = "android"
+replaces = ["verifyHistorical*", "verify_phase_*", "legacy CPOV phase gates"]
+
+[[validator]]
+name = "current-tv"
+status = "active"
+owner = "tv"
+replaces = ["TV historical phase validators"]
+
+[[validator]]
+name = "current-desktop"
+status = "active"
+owner = "desktop"
+replaces = ["desktop historical phase validators"]
+
+[[validator]]
+name = "current-web"
+status = "active"
+owner = "web"
+replaces = ["obsolete web phase validators"]
+
+[[validator]]
+name = "current-release"
+status = "active"
+owner = "release"
+replaces = ["duplicate historical release gates"]

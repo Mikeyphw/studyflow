@@ -40,6 +40,16 @@ ndk_version = "29.0.14206865"
 provider = "auto"
 device_policy = "first-physical"
 
+[targets.studyflow_android.android.signing.release]
+mode = "devtool"
+policy = "release-required"
+keystore = "~/.config/studyflow/signing/studyflow-release.p12"
+alias = "studyflow-release"
+store_file_env = "STUDYFLOW_RELEASE_STORE_FILE"
+key_alias_env = "STUDYFLOW_RELEASE_KEY_ALIAS"
+store_password_env = "STUDYFLOW_RELEASE_STORE_PASSWORD"
+key_password_env = "STUDYFLOW_RELEASE_KEY_PASSWORD"
+
 [targets.studyflow_android.android.instrumentation]
 policy = "when-device-present"
 keep_installed = false
@@ -289,12 +299,6 @@ cpu_limit = 2
 parallel = true
 low_priority = false
 memory_guard_mb = 0
-
-[targets.studyflow_web.tasks]
-build = ["npm run ov30r2:proper-validation-seal", "npm run build"]
-test = ["npm run ov30r2:proper-validation-seal", "npm test"]
-lint = ["npm run ov30r2:proper-validation-seal", "npm run lint"]
-clean = []
 
 [targets.studyflow_web.validation.phases]
 preflight = ["npm run ov30r2:proper-validation-seal"]

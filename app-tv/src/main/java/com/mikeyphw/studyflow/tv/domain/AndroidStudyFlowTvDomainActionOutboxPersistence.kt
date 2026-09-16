@@ -28,7 +28,7 @@ class AndroidStudyFlowTvDomainActionOutboxPersistence(context: Context) : StudyF
             preferences.edit()
                 .putString("$KEY_CORRUPT_PREFIX${System.currentTimeMillis()}", encoded)
                 .remove(KEY_SNAPSHOT)
-                .commit()
+                .apply()
             null
         }
     }

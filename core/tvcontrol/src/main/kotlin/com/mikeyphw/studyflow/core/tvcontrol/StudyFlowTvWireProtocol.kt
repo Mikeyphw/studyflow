@@ -47,6 +47,7 @@ object StudyFlowTvWireProtocol {
     const val localPairingDiscoveryAndTransportImplemented = true
     const val rawDatabaseRowsForbidden = true
     const val arbitraryUiTreesForbidden = true
+    fun constantTimeEquals(left: ByteArray, right: ByteArray): Boolean = MessageDigest.isEqual(left, right)
 }
 
 @Serializable
@@ -261,6 +262,7 @@ data class StudyFlowTvPairingAcceptance(
     val encryptedCredential: StudyFlowTvEncryptedSessionCredential,
 )
 
+@ConsistentCopyVisibility
 data class StudyFlowTvPairingClientKeyMaterial internal constructor(
     internal val privateKeyPkcs8Hex: String,
     val publicKeyX509Hex: String,

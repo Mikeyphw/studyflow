@@ -16,7 +16,7 @@ async function boot(): Promise<void> {
   const node = document.getElementById("root");
   if (!node) throw new Error("StudyFlow React root is missing");
   const persistence = await createBrowserPersistence() as BrowserPersistence;
-  const store = (createStudyStore as unknown as (options: { repository: BrowserPersistence["repository"] }) => StudyStore)({ repository: persistence.repository });
+  const store= (createStudyStore as unknown as (options: { repository: BrowserPersistence["repository"] }) => StudyStore)({ repository: persistence.repository });
   const attentionRuntime = sflpPeer ? new StudyFlowWebAttentionRuntime(store, sflpPeer, { autoStart: true }) : null;
   const attentionBridge = attentionRuntime ? installStudyFlowWebAttentionBridge(attentionRuntime) : null;
   const tvAttentionRuntime = tvAdapter.resolution.enabled && attentionRuntime ? new StudyFlowWebTvAttentionRuntime(attentionRuntime) : null;

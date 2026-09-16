@@ -115,7 +115,8 @@ class ManageStudySchedule(
     ): RebalanceResult {
         val schedule = repository.observeSchedule(planId).first()
         require(schedule.studyPlanId == planId) { "Schedule snapshot belongs to another Study Plan." }
-        require(schedule.strategy == null || schedule.strategy.studyPlanId == planId) {
+        val strategy = schedule.strategy
+        require(strategy == null || strategy.studyPlanId == planId) {
             "Schedule strategy belongs to another Study Plan."
         }
         require(schedule.scheduleRules.all { it.studyPlanId == planId }) {

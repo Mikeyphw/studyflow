@@ -219,11 +219,11 @@ class StudyFlowShareImportReducer(
         if (delivery.offer.targetDeviceId != null && delivery.offer.targetDeviceId != delivery.targetDeviceId) {
             return delivery.ack(StudyFlowShareImportStatus.REJECTED, "inner_target_mismatch")
         }
-        if (!delivery.offer.accepts(localDevice, clock.nowEpochMillis())) {
-            return delivery.ack(StudyFlowShareImportStatus.REJECTED, "missing_capability")
-        }
         StudyFlowShareImportPayloadPolicy.validateCompleteContent(delivery.offer)?.let { reason ->
             return delivery.ack(StudyFlowShareImportStatus.REJECTED, reason)
+        }
+        if (!delivery.offer.accepts(localDevice, clock.nowEpochMillis())) {
+            return delivery.ack(StudyFlowShareImportStatus.REJECTED, "missing_capability")
         }
         if (delivery.offer.importId in acceptedImports) {
             return delivery.ack(StudyFlowShareImportStatus.DUPLICATE, "duplicate")

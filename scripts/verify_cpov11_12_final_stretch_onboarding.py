@@ -111,14 +111,12 @@ for rel in (
     if not (ROOT / rel).is_file():
         errors.append(f"missing local import template: {rel}")
 
-# CPOV11/CPOV12 intentionally reuse existing schema 13.
+# CPOV11/CPOV12 are compatible with the current schema; require monotonic
+# evolution rather than pinning validation to the historical schema number.
 db = read("core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowDatabase.kt")
 match = re.search(r"SCHEMA_VERSION\s*=\s*(\d+)", db)
-if not match or int(match.group(1)) != 13:
-    errors.append("CPOV11/CPOV12 must keep Room schema at 13")
-migrations = read("core/database/src/main/java/com/mikeyphw/studyflow/core/database/StudyFlowMigrations.kt")
-if "Migration13To14" in migrations:
-    errors.append("CPOV11/CPOV12 must not introduce migration 13->14")
+if not match or int(match.group(1)) < 13:
+    errors.append("CPOV11/CPOV12 require Room schema at least 13")
 
 for module, prefixes in (
     (

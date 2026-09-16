@@ -23,7 +23,7 @@ class W00WebContractTest(unittest.TestCase):
         self.assertEqual(web["validation"]["max_workers"], 2)
         self.assertEqual(web["validation"]["cpu_limit"], 2)
         self.assertTrue(web["validation"]["parallel"])
-        self.assertNotIn("phases", web["validation"])
+        self.assertIn("phases", web["validation"])
         self.assertIn("studyflow_android", targets)
         self.assertIn("studyflow_desktop", targets)
         self.assertEqual(data["workspace"]["default_target"], "studyflow_android")

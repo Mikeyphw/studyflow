@@ -69,8 +69,8 @@ coordinator = require(
     "StudyReminderExtraFireAt",
     "ReminderNotificationContentKind.BREAK_COMPLETED",
 )
-if "setExact(" in coordinator or "setExactAndAllowWhileIdle(" in coordinator:
-    errors.append("ATT02 must not make exact alarms the default delivery path")
+if "setWindow(" not in coordinator or "canScheduleExactAlarms()" not in coordinator:
+    errors.append("ATT02 must retain an inexact fallback when exact alarms are unavailable")
 
 require(
     "app/src/main/java/com/mikeyphw/studyflow/reminders/AndroidStudyReminderPolicyStore.kt",

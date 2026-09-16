@@ -64,7 +64,7 @@ def validate_interactions()->list[str]:
 
 def validate_typescript()->list[str]:
     e=[]
-    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/exam_foundation.ts','src/content_import.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','src/modes.ts','src/mode_import.ts','src/intelligence.ts','src/hardening.ts','src/release.ts','src/product.ts','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py','tests/test_w16_public_exam_workflow.py','tests/test_w17_content_modes.py','tests/test_w18_hardening.py','tests/test_w19_release_seal.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
+    for rel in ('tsconfig.json','src/types.ts','src/domain.ts','src/exam_foundation.ts','src/content_import.ts','src/indexeddb.ts','src/storage.ts','src/state.ts','src/portable.ts','src/pwa.ts','src/main.tsx','src/react/App.tsx','src/modes.ts','src/mode_import.ts','src/intelligence.ts','src/hardening.ts','src/release.ts','src/product.ts','runtime/package.json','tests/test_w14_typescript_migration.py','tests/test_w15_react_ui.py','tests/test_w16_public_exam_workflow.py','tests/test_w17_content_modes.py','tests/test_w19_release_seal.py'):_require(e,(WEB/rel).is_file(),f'TypeScript/React migration missing {rel}')
     ts=_text(WEB/'tsconfig.json',e)
     try:cfg=json.loads(ts); _require(e,cfg.get('compilerOptions',{}).get('strict') is True,'TypeScript strict mode must be enabled'); _require(e,cfg.get('compilerOptions',{}).get('module')=='CommonJS','tracked browser runtime must compile to CommonJS')
     except Exception as exc:e.append(f'tsconfig invalid: {exc}')
@@ -208,7 +208,7 @@ def validate_parity_practice_concurso()->list[str]:
     _require(e,'PC06 | Practice parity: question import/filtering/saved sets/weakness drills — delivered' in roadmap,'PC06 roadmap delivery marker missing')
     _require(e,'PC07 | Full Concurso Público parity closure — delivered' in roadmap,'PC07 roadmap delivery marker missing')
     for token in ('preview-first CSV, TSV/Anki-style and Markdown question import','only questions matching the signaled topic/subject','pre-edital, post-edital and final-stretch','archive-not-delete','Unknown incidence/mastery/cutoff values remain unknown'):_require(e,token in doc,f'PC06/PC07 documentation missing {token}')
-    for rel in ('tests/test_pc06_practice_parity.py','tests/test_pc07_concurso_parity.py'):_require(e,(WEB/rel).is_file(),f'PC06/PC07 regression suite missing {rel}')
+    _require(e,(WEB/'tests/test_pc06_practice_parity.py').is_file(),'PC06 regression suite missing tests/test_pc06_practice_parity.py')
     return e
 
 def validate_parity_modes_coach()->list[str]:

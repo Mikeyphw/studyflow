@@ -24,8 +24,8 @@ if not phase_version_at_least(ROOT, 27):
     raise AssertionError("app version must be Phase 27 or later")
 
 root_build = read("build.gradle.kts")
-require(root_build, 'through Phase', 'repository contract description')
-require(root_build, 'verify_phase_${', 'contract phase loop')
+roadmap = read('docs/roadmap/ACTIVE_ROADMAP.md')
+require(roadmap, 'single active roadmap', 'active roadmap boundary')
 
 routes = read("core/navigation/src/main/kotlin/com/mikeyphw/studyflow/core/navigation/StudyFlowRoutes.kt")
 require(routes, 'data object RuntimeSmokeRoute', 'runtime smoke route')

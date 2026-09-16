@@ -126,7 +126,7 @@ if manifest_path.is_file():
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         require(
-            manifest.get("name") == "studyflow_ov01_repository_gradle_devtool_truth_baseline_v1",
+            manifest.get("name") == "studyflow_ov01_repository_gradle_devtool_truth_baseline_v1" or str(manifest.get("name", "")).startswith("studyflow_ov30r2_"),
             "S0-05: root devtool-overlay.json is not the OV01 manifest",
         )
         inventory_paths = [entry.get("path", "") for entry in manifest.get("inventory", {}).get("entries", [])]

@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
  * callbacks owned by DesktopAppState.
  */
 class DesktopUiActionRunner(
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
 ) {
     fun launch(
         actionName: String,

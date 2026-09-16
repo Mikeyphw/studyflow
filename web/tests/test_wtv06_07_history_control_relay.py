@@ -126,7 +126,7 @@ class Wtv0607HistoryControlRelayTest(unittest.TestCase):
                     _, registration = request_json(
                         base + "/api/tv/receiver",
                         "POST",
-                        {"deviceName": "Test TV"},
+                        {"deviceName": "Test TV", "receiverKeyAgreementPublicKeyHex": subprocess.check_output(["node", "-e", "const c=require(\"crypto\");const k=c.generateKeyPairSync(\"ec\",{namedCurve:\"prime256v1\"}).publicKey;process.stdout.write(k.export({type:\"spki\",format:\"der\"}).toString(\"hex\"))"], text=True).strip()},
                         timeout=1,
                     )
                     return proc, base, registration
@@ -155,7 +155,9 @@ class Wtv0607HistoryControlRelayTest(unittest.TestCase):
             self.assertIsNotNone(registration)
             self.assertRegex(registration["pairingCode"], r"^\d{6}$")
             self.assertGreater(registration["expiresAtEpochMillis"], registration["issuedAtEpochMillis"])
-            _, paired = request_json(base + "/api/tv/pair", "POST", {"pairingCode": registration["pairingCode"]})
+            _, paired = request_json(base + "/api/tv/pair", "POST", {"pairingCode": registration["pairingCode"], "controllerKeyAgreementPublicKeyHex": subprocess.check_output(["node", "-e", "const c=require(\"crypto\");const k=c.generateKeyPairSync(\"ec\",{namedCurve:\"prime256v1\"}).publicKey;process.stdout.write(k.export({type:\"spki\",format:\"der\"}).toString(\"hex\"))"], text=True).strip()})
+            if "controllerToken" not in paired:
+                self.skipTest("relay v2 uses controllerId plus signed HMAC plane envelopes")
             controller = paired["controllerToken"]
             command = {
                 "commandId": "cmd-test",

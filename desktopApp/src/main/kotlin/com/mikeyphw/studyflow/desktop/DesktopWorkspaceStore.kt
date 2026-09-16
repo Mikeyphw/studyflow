@@ -229,8 +229,16 @@ class DesktopWorkspacePersistence private constructor(
                 StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE,
             )
-            val exclusiveLock = channel.tryLock()
-                ?: error("StudyFlow Desktop workspace is already open in another process: $normalized")
+            var inProcessOverlap = false
+            val exclusiveLock = try {
+                channel.tryLock()
+            } catch (_: java.nio.channels.OverlappingFileLockException) {
+                inProcessOverlap = true
+                null
+            }
+            if (exclusiveLock == null && !inProcessOverlap) {
+                error("StudyFlow Desktop workspace is already open in another process: $normalized")
+            }
             return runCatching {
                 val file = normalized.resolve(WORKSPACE_FILE)
                 val initial = if (Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
@@ -244,7 +252,7 @@ class DesktopWorkspacePersistence private constructor(
                     if (!Files.exists(file, LinkOption.NOFOLLOW_LINKS)) persistence.persistLocked()
                 }
             }.getOrElse { error ->
-                runCatching { exclusiveLock.release() }
+                runCatching { exclusiveLock?.release() }
                 runCatching { channel.close() }
                 throw error
             }

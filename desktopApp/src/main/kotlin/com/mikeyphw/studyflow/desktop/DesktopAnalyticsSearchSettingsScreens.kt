@@ -682,7 +682,11 @@ fun DesktopSettingsScreen(
                                 if (peer.trusted) "trusted" else "revoked",
                             fontWeight = FontWeight.Bold,
                         )
-                        Text("${peer.endpointCount} remembered endpoint(s) • ${if (peer.reachable) "reachable" else "not currently reachable"} • ${peer.deviceId}")
+                        Text(
+                            "${peer.endpointCount} remembered endpoint(s) • " +
+                                "${if (peer.reachable) "reachable" else "not currently reachable"} • " +
+                                peer.deviceId,
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Button(onClick = { onRevokePeer(peer.deviceId) }, enabled = peer.trusted) {
                                 Text(desktopText("Revoke"))

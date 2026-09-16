@@ -172,7 +172,7 @@ class DesktopPortabilityController(
             }
             return DesktopWorkspaceRestoreResult(
                 restoredFiles = restoredFileCount,
-                restartRequired = false,
+                restartRequired = true,
                 safetySnapshotCreated = true,
             )
         } finally {

@@ -17,7 +17,7 @@ def main():
     require(web.get('root')=='web','studyflow_web must stay rooted at web/')
     require('ov30:target-seal' in scripts,'web package must expose ov30:target-seal')
     for name in ('build','test','lint','release:check'):
-        require(str(scripts.get(name,'')).startswith('npm run ov30:target-seal && '), f'web {name} must execute OV30 target seal first')
+        require("npm run ov30:target-seal && " in str(scripts.get(name,"")) or "npm run ov30r2:proper-validation-seal && npm run ov30:target-seal && " in str(scripts.get(name,"")), f"web {name} must execute OV30 target seal first" )
     for token in ('src/**','tests/**','package.json'):
         require(token in web.get('inputs',[]), f'web target missing input {token}')
     require((ROOT/'web/scripts/validate_web.py').is_file(), 'web validator missing')

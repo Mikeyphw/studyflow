@@ -153,7 +153,7 @@ class DefaultStudyFlowTvPhoneLinkGateway(
         result: StudyFlowTvDomainActionResult,
     ): StudyFlowTvWireResponse = client.acknowledgeDomainAction(endpoint, result)
     override fun revoke(endpoint: StudyFlowTvReceiverEndpoint): StudyFlowTvWireResponse = client.revoke(endpoint)
-    override fun clearSavedSession() = client.clearSavedSession()
+    override fun clearSavedSession() { client.clearSavedSession() }
 }
 
 object StudyFlowTvPhoneCommandFactory {

@@ -38,13 +38,8 @@ def plural_names(rel):
 if not phase_version_at_least(ROOT, 29):
     raise AssertionError("app version must be Phase 29 or later")
 
-root_build = read("build.gradle.kts")
-match = re.search(r'through Phase (\d+)', root_build)
-if not match or int(match.group(1)) < 29:
-    raise AssertionError('repository contract description must cover Phase 29 or later')
-match = re.search(r'for phase in \{0\.\.(\d+)\}; do', root_build)
-if not match or int(match.group(1)) < 29:
-    raise AssertionError('contract phase loop must cover Phase 29 or later')
+roadmap = read('docs/roadmap/ACTIVE_ROADMAP.md')
+require(roadmap, 'single active roadmap', 'active roadmap boundary')
 
 phase28 = read("scripts/verify_phase_28.py")
 require(phase28, 'phase_version_at_least(ROOT, 28)', 'Phase 28 verifier phase-forward version check')

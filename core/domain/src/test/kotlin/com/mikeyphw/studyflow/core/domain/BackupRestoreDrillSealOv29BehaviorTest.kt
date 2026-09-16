@@ -25,7 +25,7 @@ class BackupRestoreDrillSealOv29BehaviorTest {
         assertTrue(BackupRestoreDrillSeal.modernDataCoverageVerified(modern))
     }
 
-    private fun manifest(rows: Map<String, Long>): StudyPlanPackageManifest = StudyPlanPackageManifest(
+    private fun manifest(rows: Map<String, Int>): StudyPlanPackageManifest = StudyPlanPackageManifest(
         applicationVersion = "test",
         exportedAtEpochMillis = 1L,
         sourceStudyPlanId = "plan",

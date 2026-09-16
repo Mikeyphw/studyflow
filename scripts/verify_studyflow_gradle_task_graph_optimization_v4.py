@@ -111,9 +111,9 @@ for name, t in (("android", android), ("tv", tv), ("tv_release", tv_release)):
     require(validation.get("gradle_heap_mb") == 2048, f"{name} validation heap must be 2048 MiB")
     require(validation.get("gradle_metaspace_mb") == 768, f"{name} validation metaspace must be 768 MiB")
 
-require(phase_list(android, "preflight") == ["verifyStudyFlowAndroidPreflightContracts"], "Android preflight must be one aggregate gate")
-require(phase_list(tv, "preflight") == ["verifyStudyFlowTvAllContracts"], "TV preflight must be one aggregate gate")
-require(phase_list(parity, "unit-test") == ["verifyRelFinalTerminalSeal"], "parity unit-test lane must use only the terminal seal")
+require(phase_list(android, "preflight") == ["verifyStudyFlowAndroidPreflightContracts", "verifyOv30StudyflowAndroidTargetSeal", "verifyOv30R2StudyflowAndroidProperValidationSeal"], "Android preflight must be one aggregate gate")
+require(phase_list(tv, "preflight") == ["verifyStudyFlowTvAllContracts", "verifyOv30StudyflowTvTargetSeal", "verifyOv30R2StudyflowTvProperValidationSeal"], "TV preflight must be one aggregate gate")
+require(phase_list(parity, "unit-test") == ["verifyRelFinalTerminalSeal", "verifyOv29BehavioralValidationReleaseTruthGates", "verifyOv29ExhaustiveVerifierInventory", "verifyWebStaleDistReleaseIntegrity"], "parity unit-test lane must use the terminal seal and release-truth checks")
 require(phase_list(desktop, "package") == [], "Desktop must not launch a redundant package/compile phase")
 require("verifyOv20FinalIntegration" not in phase_list(desktop, "preflight"), "Desktop routine preflight must not rerun the overlapping OV20 meta-seal")
 
@@ -155,9 +155,9 @@ require(android.get("validation", {}).get("affected_module_lint") is False, "And
 require(tv.get("validation", {}).get("affected_module_lint") is False, "TV affected_module_lint must be disabled for the two-variant app-level lint lane")
 
 build = text("build.gradle.kts")
-require(task_list(tv, "build") == ["verifyStudyFlowTvAllContracts", ":app-tv:assembleDebug"], "routine TV build must stay debug-only and aggregate contracts")
+require(task_list(tv, "build") == ["verifyStudyFlowTvAllContracts", ":app-tv:assembleDebug", "verifyOv30StudyflowTvTargetSeal", "verifyOv30R2StudyflowTvProperValidationSeal"], "routine TV build must stay debug-only and aggregate contracts")
 require("verifyStudyFlowTvOptimizedReleaseArtifact" not in task_list(tv, "build"), "routine TV target must not run release-artifact gates")
-require(task_list(tv_release, "build") == ["verifyStudyFlowTvAllContracts", "verifyStudyFlowTvFinalReleaseSeal"], "TV release build must use aggregate contracts plus the final release seal")
+require(task_list(tv_release, "build") == ["verifyStudyFlowTvAllContracts", "verifyStudyFlowTvFinalReleaseSeal", "verifyOv30StudyflowTvReleaseTargetSeal", "verifyOv30R2StudyflowTvReleaseProperValidationSeal"], "TV release build must use aggregate contracts plus the final release seal")
 require("verifyStudyFlowTvFinalReleaseSeal" in task_list(tv_release, "build"), "TV release target must own the final release seal")
 release_seal = build.split('tasks.register<Exec>("verifyStudyFlowTvFinalReleaseSeal")', 1)[1]
 release_seal = release_seal.split('tasks.register<Exec>("verifySflp01ProtocolBaseline")', 1)[0]

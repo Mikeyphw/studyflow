@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "packageSha256": "c259e3ac17028f2ac4b2c3fc9a40780e8ce54454a584302fd2f05078821e72fb",
   "runtime": {
     "attention.js": "791055d8589a4fb6ee1004a1af09df5a10cb167c58fb6025d9e9ea56fe7a6c62",
@@ -99,5 +100,6 @@
     "tv_session.ts": "3f20730ffd0fcb4f18f521267ab70173a21b7756c0be55eb595e3ae6c52380b2",
     "types.ts": "86f78c83fedce3972a7f4893067a9dcdb86a9a02a843ea49670dbcfbc9bf38d7"
   },
-  "tsconfigSha256": "1ab749fac0623b001bf849b988ec94a679a36427b3c454e3b8928b7a0fbe7b05"
+  "tsconfigSha256": "1ab749fac0623b001bf849b988ec94a679a36427b3c454e3b8928b7a0fbe7b05",
+  "typescriptVersion": "5.8.3"
 }

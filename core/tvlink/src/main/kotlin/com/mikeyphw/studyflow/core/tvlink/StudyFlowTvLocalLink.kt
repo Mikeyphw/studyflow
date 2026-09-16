@@ -28,6 +28,7 @@ import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireOperation
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireProtocol
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireRequest
 import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvWireResponse
+import com.mikeyphw.studyflow.core.tvcontrol.StudyFlowTvUnifiedControlPlane
 import java.io.Closeable
 import java.net.InetSocketAddress
 import java.net.ServerSocket
@@ -419,7 +420,7 @@ class StudyFlowTvLocalTransportClient(context: Context) {
                 requestId = requestId(),
                 operation = StudyFlowTvWireOperation.PAIR,
                 pairingCode = pairingCode,
-                sessionNonce = pairingInfo.sessionNonce,
+                sessionNonce = requireNotNull(pairingInfo.sessionNonce),
                 phoneDeviceName = phoneDeviceName,
                 clientKeyAgreementPublicKeyHex = keyMaterial.publicKeyX509Hex,
                 issuedAtEpochMillis = nowEpochMillis,
@@ -434,7 +435,7 @@ class StudyFlowTvLocalTransportClient(context: Context) {
             val decrypted = runCatching {
                 StudyFlowTvPairingCrypto.decryptCredential(
                     grant = grant,
-                    sessionNonce = pairingInfo.sessionNonce,
+                    sessionNonce = requireNotNull(pairingInfo.sessionNonce),
                     keyMaterial = keyMaterial,
                 )
             }.getOrElse {

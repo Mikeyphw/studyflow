@@ -580,7 +580,6 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 scheduleManager = container.manageStudySchedule,
                 contentManager = container.manageStudyContent,
                 publicExamManager = container.managePublicExam,
-                specializedImportWorkflow = container.applySpecializedContentImport,
                 onBack = navController::popBackStack,
             )
         }
@@ -597,7 +596,6 @@ internal fun NavGraphBuilder.studyFlowV2Destinations(
                 plan = plan,
                 content = container.manageStudyContent,
                 publicExamManager = container.managePublicExam,
-                specializedImportWorkflow = container.applySpecializedContentImport,
                 onBack = navController::popBackStack,
             )
         }

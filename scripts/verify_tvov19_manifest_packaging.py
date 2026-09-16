@@ -62,7 +62,7 @@ def check_target_isolation() -> None:
     for task in task_strings:
         if task.startswith(":") or task.startswith("verify"):
             allowed = (
-                task.startswith("verifyStudyFlowTv")
+                task.startswith("verifyStudyFlowTv") or task.startswith("verifyOv30StudyflowTv") or task.startswith("verifyOv30R2StudyflowTv")
                 or task.startswith(":app-tv:")
                 or task.startswith(":core:tvcontrol:")
                 or task.startswith(":core:tvlink:")

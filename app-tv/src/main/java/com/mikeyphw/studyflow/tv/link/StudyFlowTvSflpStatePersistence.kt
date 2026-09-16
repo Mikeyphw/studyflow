@@ -278,7 +278,7 @@ class StudyFlowTvSflpStatePersistence(context: Context) {
             .putString(quarantineKey, encoded)
             .putString(CorruptionKey, StudyFlowPeerPersistenceCodec.encodeCorruptionRecords(records))
             .remove(storageKey)
-            .commit()
+            .apply()
         fallback()
     }
 

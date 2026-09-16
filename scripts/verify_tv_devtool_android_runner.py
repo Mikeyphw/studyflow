@@ -22,5 +22,5 @@ assert ':app-tv:assembleDebug' in build, 'studyflow_tv build must assemble the T
 assert ':app:assembleDebug' not in build, 'studyflow_tv build must not assemble the mobile app'
 assert 'verifyStudyFlowTvAllContracts' in build, 'TV build must use the aggregate source-contract gate'
 phases = target.get('validation', {}).get('phases', {})
-assert phases.get('preflight') == ['verifyStudyFlowTvAllContracts'], 'TV validation preflight must use the aggregate source-contract gate once'
+assert phases.get('preflight') == ['verifyStudyFlowTvAllContracts', 'verifyOv30StudyflowTvTargetSeal', 'verifyOv30R2StudyflowTvProperValidationSeal'], 'TV validation preflight must use the aggregate source-contract gate once'
 print('STUDYFLOW_TV_DEVTOOL_ANDROID_RUNNER: PASS')

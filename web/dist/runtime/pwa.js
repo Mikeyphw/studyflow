@@ -43,7 +43,7 @@ function registerStudyFlowServiceWorker(navigatorObject) {
         return Promise.resolve(null);
     if (!registrationPromise) {
         registrationPromise = navigatorObject.serviceWorker.register("./service-worker.js", { scope: "./" })
-            .catch(() => null);
+            .catch(() => { registrationPromise = null; return null; });
     }
     return registrationPromise;
 }

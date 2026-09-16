@@ -4,6 +4,7 @@ import android.app.Activity
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.annotation.SuppressLint
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
@@ -345,6 +346,7 @@ class StudyFlowTvActivity : Activity() {
         renderSearchOverlay()
     }
 
+    @SuppressLint("GestureBackNavigation")
     private fun handleSearchKey(keyCode: Int): Boolean = when (keyCode) {
         KeyEvent.KEYCODE_DPAD_UP -> {
             searchState = StudyFlowTvSearch.move(searchState, -1)

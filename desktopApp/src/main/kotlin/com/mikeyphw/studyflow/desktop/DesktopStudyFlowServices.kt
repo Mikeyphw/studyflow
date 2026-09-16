@@ -82,8 +82,6 @@ class DesktopStudyFlowServices(
         contentModeRepository = contentModeRepository,
         publicExamRepository = publicExamRepository,
         progressRepository = progressRepository,
-        wallClockMillis = wallClockMillis,
-        monotonicClockMillis = monotonicClockMillis,
     )
     val plannerAuthoringController = DesktopPlannerAuthoringController(this)
     val sessionRuntimeController = DesktopSessionRuntimeController(this)
@@ -485,6 +483,8 @@ fun createDesktopStudyFlowServices(
         platformPorts = platformPorts,
         linkService = linkService,
         workspacePersistence = workspacePersistence,
+        wallClockMillis = wallClockMillis,
+        monotonicClockMillis = monotonicClockMillis,
         contentModeRepository = contentModeRepository,
         publicExamRepository = publicExamRepository,
         progressRepository = progressRepository,

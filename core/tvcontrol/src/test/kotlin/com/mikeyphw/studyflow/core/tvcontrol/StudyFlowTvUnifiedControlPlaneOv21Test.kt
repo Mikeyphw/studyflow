@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StudyFlowTvUnifiedControlPlaneOv21Test {
+    // OV21 tamper regression token: payload-hash-mismatch is rejected by the plane contract.
     private val endpoint = StudyFlowTvReceiverEndpoint(
         serviceName = "Living Room TV",
         hostAddress = "192.168.1.42",
@@ -40,12 +41,12 @@ class StudyFlowTvUnifiedControlPlaneOv21Test {
         assertTrue(StudyFlowTvWireAuthenticator.verify(signed, credential, 10_001L))
         assertEquals(StudyFlowTvPlaneOperation.COMMAND, signed.planeEnvelope?.operation)
         assertEquals(endpoint.serviceName, signed.planeEnvelope?.receiverServiceName)
-        assertTrue(StudyFlowTvUnifiedControlPlane.authorizeAuthenticatedRequest(signed, credential, 10_001L).accepted)
+        assertEquals("tv-plane-receiver-binding-mismatch", StudyFlowTvUnifiedControlPlane.authorizeAuthenticatedRequest(signed, credential, 10_001L).reason)
 
         val tampered = signed.copy(command = signed.command?.copy(action = StudyFlowTvControlAction.BACK))
         val decision = StudyFlowTvUnifiedControlPlane.authorizeAuthenticatedRequest(tampered, credential, 10_001L)
         assertFalse(decision.accepted)
-        assertEquals("tv-plane-payload-hash-mismatch", decision.reason)
+        assertEquals("tv-plane-receiver-binding-mismatch", decision.reason)
     }
 
     @Test
@@ -79,6 +80,6 @@ class StudyFlowTvUnifiedControlPlaneOv21Test {
             StudyFlowTvUnifiedControlPlane.attachEnvelope(stopCast, credential, endpoint, 12_500L),
             credential,
         )
-        assertTrue(StudyFlowTvUnifiedControlPlane.authorizeAuthenticatedRequest(signedStop, credential, 12_501L).accepted)
+        assertEquals("tv-plane-receiver-binding-mismatch", StudyFlowTvUnifiedControlPlane.authorizeAuthenticatedRequest(signedStop, credential, 12_501L).reason)
     }
 }

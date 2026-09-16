@@ -3,6 +3,8 @@ package com.mikeyphw.studyflow.core.model
 private const val DefaultTermuxWorkspaceRoot = "~/studyflow/courses"
 
 private val AllowedTermuxExecutables = setOf(
+    "sh",
+    "bash",
     "python",
     "python3",
     "node",
@@ -22,7 +24,9 @@ private val AllowedTermuxExecutables = setOf(
     "sqlite3",
 )
 
-private val InlineInterpreterExecutables = setOf("python", "python3", "node", "bash")
+private val InlineInterpreterExecutables = setOf("sh",
+    "bash",
+    "python", "python3", "node", "bash")
 private val InlineInterpreterFlags = setOf("-c", "--command", "-e", "--eval", "--execute")
 
 enum class TermuxBridgeAction {
@@ -235,7 +239,9 @@ private fun TermuxCommandInvocation.isAllowedStudyFlowInvocation(): Boolean {
     if (executable !in AllowedTermuxExecutables) return false
     if (arguments.any { !isSafeTermuxArgument(it) }) return false
     return when (executable) {
-        "python", "python3" -> allowsPythonFileOrPytest(arguments)
+        "sh",
+    "bash",
+    "python", "python3" -> allowsPythonFileOrPytest(arguments)
         "pytest" -> arguments.all(::isSafeRelativeTermuxPathOrFlag)
         "node" -> arguments.size == 1 && arguments.single().hasOneOfSuffixes(".js", ".mjs", ".cjs")
         "npm" -> arguments == listOf("test") || arguments == listOf("run", "test")
@@ -267,6 +273,7 @@ private fun allowsPythonFileOrPytest(arguments: List<String>): Boolean = when {
 }
 
 private fun isSafeTermuxArgument(argument: String): Boolean {
+    if (argument == "{mainFile}" || argument == "{exerciseFile}" || argument == "{expectedOutput}") return true
     if (argument.isBlank()) return false
     if ('\u0000' in argument || '\\' in argument) return false
     if (argument.startsWith("/")) return false

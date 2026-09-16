@@ -76,6 +76,7 @@ dependencies {
     implementation(project(":core:tvcontrol"))
     implementation(project(":core:tvlink"))
     implementation(project(":core:link"))
+    implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit4)
     testImplementation(kotlin("test-junit"))
 }
