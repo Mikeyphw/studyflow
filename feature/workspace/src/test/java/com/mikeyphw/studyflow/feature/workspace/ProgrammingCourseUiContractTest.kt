@@ -44,7 +44,8 @@ class ProgrammingCourseUiContractTest {
 
         assertTrue("StudyContentMode.PROGRAMMING_COURSE" in today)
         assertTrue("ProgrammingCourseWorkspacePanel" in today)
-        assertTrue("termuxRuntimeReady = plan.contentMode.capabilities.supportsTermuxRuntime" in today)
+        assertTrue("termuxRuntimeReady = snapshot.termuxRuntimeReady" in today)
+        assertFalse("termuxRuntimeReady = plan.contentMode.capabilities.supportsTermuxRuntime" in today)
         assertTrue("planPrimaryDateLabel(plan)" in plan)
         assertTrue("programming_modules" in plan)
         assertTrue("programming_resources" in plan)

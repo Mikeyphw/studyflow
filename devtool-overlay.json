@@ -1,54 +1,52 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_failure_audit_ov01_active_time_backup_v1",
+  "name": "studyflow_failure_audit_ov02_sflp_programming_contracts_v1",
   "target": "studyflow_android",
-  "description": "Failure-audit remediation overlay 1 of 3: restore canonical persisted active-study-time semantics across domain, Room analytics, workspace recommendations and Web golden semantics; repair strict backup/restore drill fixtures without weakening codec validation.",
-  "commit_message": "fix(studyflow): restore active-time and backup drill invariants",
+  "description": "Failure-audit remediation overlay 2 of 3: converge programming-course UI contract tests on persisted Termux runtime readiness; modernize OV09/OV12 Web interoperability validation around encrypted P-256 ECDH pairing grants, opaque trust-key persistence, and authenticated reconnect proofs; restore the missing OV09 Python regression module.",
+  "commit_message": "fix(studyflow): converge SFLP and programming UI contracts",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "fix(studyflow): restore active-time and backup drill invariants"
+    "message": "fix(studyflow): converge SFLP and programming UI contracts"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "fix(studyflow): restore active-time and backup drill invariants"
+      "message": "fix(studyflow): converge SFLP and programming UI contracts"
     }
   },
   "baseline": {
     "repo": "studyflow",
     "target": "studyflow_android",
-    "roadmap_overlay": "1 of 3",
+    "roadmap_overlay": "2 of 3",
     "source_snapshot": "studyflow-20260918-114523-074751.tar.gz",
     "audit_log": "20260918-113944-422073.log",
-    "notes": "Built directly against the uploaded 2026-09-18 repository snapshot. Generated web/dist output is intentionally excluded."
+    "requires_overlay": "studyflow_failure_audit_ov01_active_time_backup_v1",
+    "requires_overlay_sha256": "2b94b6893fbd95d4325d4c7716967794b42437e580f625abc33c29f74a851a6a",
+    "observed_applied_commit": "a05d9e2e",
+    "notes": "Built on the uploaded snapshot with Overlay 1 changes reconstructed. This overlay intentionally contains no production pairing implementation changes: production already implements encrypted pairing correctly; the failing interop fixtures and stale UI test are brought back into contract."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_failure_audit_ov01_active_time_backup_v1",
+    "name": "studyflow_failure_audit_ov02_sflp_programming_contracts_v1",
     "target": "studyflow_android",
     "sections": [
       {
-        "id": "active-time-semantics",
-        "purpose": "Restore canonical persisted active study duration; pause telemetry is never subtracted twice.",
+        "id": "programming-ui-contract-convergence",
+        "purpose": "Make the JUnit UI contract assert persisted ProgrammingCourseSnapshot Termux readiness, matching production and the canonical Python verifier.",
         "paths": [
-          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/GoalProgressCalculator.kt",
-          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyAnalyticsDao.kt",
-          "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/PlanWorkspaceScreen.kt",
-          "protocol/semantic/v1/golden-vectors.json",
-          "web/src/semantic_golden.ts",
-          "web/runtime/semantic_golden.js",
-          "web/runtime-parity-manifest.json"
+          "feature/workspace/src/test/java/com/mikeyphw/studyflow/feature/workspace/ProgrammingCourseUiContractTest.kt"
         ]
       },
       {
-        "id": "backup-drill-fixtures",
-        "purpose": "Make backup drill fixtures structurally truthful while preserving strict manifest validation.",
+        "id": "sflp-encrypted-interop-fixture",
+        "purpose": "Exercise the current encrypted SFLP pairing protocol end to end: P-256 ECDH, derived AES-GCM grant, opaque trust-key ID persistence, and HMAC reconnect proof.",
         "paths": [
-          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSeal.kt",
-          "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSealTest.kt"
+          "web/tests/ov09_interop_runner.mjs",
+          "scripts/verify_ov09_sflp_native_web_interop.py",
+          "web/tests/test_ov09_native_web_interop.py"
         ]
       },
       {
@@ -62,126 +60,79 @@
   },
   "findings": [
     {
-      "id": "AUDIT-OV01-ACTIVE-TIME",
+      "id": "AUDIT-OV02-PROGRAMMING-UI-STALE-CONTRACT",
       "severity": "HIGH",
       "status": "closed",
-      "summary": "Completed-session grossDurationSeconds is canonical persisted active time; downstream consumers no longer subtract pauseDurationSeconds again."
+      "summary": "ProgrammingCourseUiContractTest no longer requires the removed content-mode capability shortcut and now requires snapshot.termuxRuntimeReady, matching production and verify_programming_course_ui.py."
     },
     {
-      "id": "AUDIT-OV01-BACKUP-DRILL",
+      "id": "AUDIT-OV02-SFLP-PLAINTEXT-FIXTURE",
       "severity": "HIGH",
       "status": "closed",
-      "summary": "Backup/restore drill fixtures now materialize every manifest-declared table and retain annex metadata counts when only annex payload bytes are removed."
+      "summary": "OV09 Web/native interop now constructs a valid encrypted pairing grant and verifies opaque trust-key persistence plus the reconnect HMAC proof instead of modeling a plaintext trustSecret grant."
+    },
+    {
+      "id": "AUDIT-OV02-SFLP-MISSING-REGRESSION-MODULE",
+      "severity": "MEDIUM",
+      "status": "closed",
+      "summary": "Restores web/tests/test_ov09_native_web_interop.py, which the canonical OV09 validator invokes after the Node runner and which was absent from the snapshot."
     }
   ],
   "validation": {
     "source_checks": [
-      "python3 scripts/verify_ov02_session_practice_invariants.py",
-      "python3 scripts/verify_web20_shared_semantic_golden_vectors.py",
-      "node web/scripts/compile_runtime.mjs"
+      "python3 scripts/verify_programming_course_ui.py",
+      "python3 scripts/verify_ov09_sflp_native_web_interop.py",
+      "bash scripts/validate_ov09_sflp_native_web_interop.sh",
+      "bash scripts/validate_ov12_sflp_advanced_rpc_semantics.sh"
     ],
     "gradle_tasks": [
-      ":core:domain:test",
-      ":core:database:testDebugUnitTest",
       ":feature:workspace:testDebugUnitTest",
-      ":desktopApp:test",
-      "verifyWeb20SharedSemanticGoldenVectors"
+      "verifyProgrammingCourseUi",
+      "verifyOv09SflpNativeWebInterop",
+      "verifyOv12SflpAdvancedRpcSemantics"
     ],
-    "local_result": "Source checks and WEB20/runtime parity passed while building the overlay; Gradle/JUnit execution was not available in the artifact container because the Gradle distribution was not cached and network access is disabled."
+    "local_result": "Programming UI source contract, OV09 full Web validator, and OV12 full Web validator all passed. The OV09 validator includes TypeScript runtime parity, encrypted interop, parity04, and the restored Python regression module. Full Android Gradle execution is deferred to the final overlay per campaign validation policy."
   },
   "inventory": {
     "format": 1,
-    "count": 9,
+    "count": 4,
     "entries": [
       {
         "action": "modify",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/GoalProgressCalculator.kt",
+        "path": "feature/workspace/src/test/java/com/mikeyphw/studyflow/feature/workspace/ProgrammingCourseUiContractTest.kt",
         "mode": "0o600",
-        "sha256": "b131b6c184f2280b902424c77f2f3486f26b7be8ea3bb96019c84e1a3f4686c1",
-        "size": 5763,
+        "sha256": "48829a637516b5e36e07ffc311b19d2bf426af6e8ae404b7323432fcd864d722",
+        "size": 2142,
         "source_mode": "0o600",
-        "source_sha256": "3ec2eaedb2dc20299d8053cd895188d5b6d2458028238af82520aa5dccd29529",
-        "source_size": 5794
+        "source_sha256": "78f51f9ca94781530452054f418c16caec5671ec688eb385491b059f76e85966",
+        "source_size": 2061
       },
       {
         "action": "modify",
-        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyAnalyticsDao.kt",
-        "mode": "0o600",
-        "sha256": "db3ef05a6c176bce8a7acda11f0076de77c24d584dcfc39da7896af8ed4d3b3b",
-        "size": 4166,
-        "source_mode": "0o600",
-        "source_sha256": "5fa518c4448c1407a4310113c53f52d23672d4d662fa4811e597b361a22b865a",
-        "source_size": 4191
+        "path": "scripts/verify_ov09_sflp_native_web_interop.py",
+        "mode": "0o755",
+        "sha256": "6ee98726ccdab40db6b9a09c118dee2de635d46006174eaa0c3c90469f6da82c",
+        "size": 3858,
+        "source_mode": "0o755",
+        "source_sha256": "2dfaf8594cd9db19cf911a3344e9f6f64b5cb12c59e94e284ffdc35336a18d41",
+        "source_size": 3126
       },
       {
         "action": "modify",
-        "path": "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/PlanWorkspaceScreen.kt",
-        "mode": "0o600",
-        "sha256": "c060391d1a11d2610e4b86162ac941af120668d6f11b0d61a0ebac54ced52970",
-        "size": 57592,
-        "source_mode": "0o600",
-        "source_sha256": "8ed66b5ca32c86295545316e07ba0a6acd3f67ff19a51a3197c9fb15467a3c84",
-        "source_size": 57562
+        "path": "web/tests/ov09_interop_runner.mjs",
+        "mode": "0o644",
+        "sha256": "0a7ff87812d48d447d34fdb6ec7228a072079f3db56fe895073fd3964367b0ec",
+        "size": 9444,
+        "source_mode": "0o644",
+        "source_sha256": "3fcb4a5874ceb4b0e39beee59a44da5555e9e0187bb04d04fd6ff76bb45d8099",
+        "source_size": 4923
       },
       {
-        "action": "modify",
-        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSeal.kt",
-        "mode": "0o600",
-        "sha256": "074dff9d440bb7edfa9029550da00da629a3e32b3dc18d3268c00bfd04987d7e",
-        "size": 18186,
-        "source_mode": "0o600",
-        "source_sha256": "ba4995e46e6f7e5aa9380de7135ecf2dad6c9242f0ae39a596385a128873f4dc",
-        "source_size": 17848
-      },
-      {
-        "action": "modify",
-        "path": "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSealTest.kt",
-        "mode": "0o600",
-        "sha256": "dfff7f02ce237c2fc865851ae6b92c31359d9df53ce20dd0a02d4838b012fca7",
-        "size": 8009,
-        "source_mode": "0o600",
-        "source_sha256": "2bcc9cdb12b19430216c29047ec437bcc3201758f140306a3d04bf08b48d51dc",
-        "source_size": 8100
-      },
-      {
-        "action": "modify",
-        "path": "protocol/semantic/v1/golden-vectors.json",
-        "mode": "0o600",
-        "sha256": "bd85212daf696e6c18ffafb98b79f658f73dab5d41d4070cd8abd59168081f96",
-        "size": 12459,
-        "source_mode": "0o600",
-        "source_sha256": "c4d1fbe6d238e3c99f979bd63056d83bc2717d565f00ef802fd77428cdaa2535",
-        "source_size": 12444
-      },
-      {
-        "action": "modify",
-        "path": "web/src/semantic_golden.ts",
-        "mode": "0o600",
-        "sha256": "33830995cd4cae2b97fcac4c3f7248a6b4bc07b7fb068da88f6891ac61129f38",
-        "size": 4373,
-        "source_mode": "0o600",
-        "source_sha256": "f76c7e4961e7921e65154ed97b079a58f2c6dcf4ed5555004a4eeea77b68c338",
-        "source_size": 4400
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime/semantic_golden.js",
-        "mode": "0o600",
-        "sha256": "949d7c73eaa71d4bb908e213b9f16b01276242b1a58e6b99c1a42252b7c2fdbc",
-        "size": 4707,
-        "source_mode": "0o600",
-        "source_sha256": "a35ede736798dfaa48c4a73c3b81c3023a08ecc58dec7aa374c274a6889312b0",
-        "source_size": 4736
-      },
-      {
-        "action": "modify",
-        "path": "web/runtime-parity-manifest.json",
-        "mode": "0o600",
-        "sha256": "e3fd83dee44d6dbfc828ba01156fc5d93d008fa8b1c0c3074dc140bc0e2db234",
-        "size": 8871,
-        "source_mode": "0o600",
-        "source_sha256": "d2e48ba387085083d80f43ec91edfc792faac7ae7d0830813bc756761bc08fdc",
-        "source_size": 8871
+        "action": "add",
+        "path": "web/tests/test_ov09_native_web_interop.py",
+        "mode": "0o644",
+        "sha256": "00d7d8a9602b73f2845b4947254212b97340ebed2e7b24ef55137682c326bba0",
+        "size": 1685
       }
     ]
   }

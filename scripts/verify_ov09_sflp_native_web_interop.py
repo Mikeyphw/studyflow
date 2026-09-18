@@ -35,11 +35,29 @@ need("web/src/sflp_link.ts",
      'studyflow://pair?data=', 'studyflow.sflp.web.peer.v1', 'studyflow.sflp.web_tv.peer.v1',
      'link.pair', 'link.reconnect_challenge', 'link.reconnect_proof', 'sync.frontier', 'sync.apply',
      'logicalTimestamp', 'occurredAtEpochMillis', 'sendRoutedRpc', 'studyflow.sflp.v1')
-need("web/tests/ov09_interop_runner.mjs", "OV09_WEB_NATIVE_INTEROP: PASS", '"b".repeat(64)')
+need(
+    "web/tests/ov09_interop_runner.mjs",
+    "OV09_WEB_NATIVE_INTEROP: PASS",
+    "hostKeyAgreementPublicKeyHex",
+    "clientKeyAgreementPublicKeyHex",
+    "encryptedTrustSecretHex",
+    "initializationVectorHex",
+    "trustKeyId",
+    "localStorage must not persist the raw host trust secret",
+)
+interop_runner = text("web/tests/ov09_interop_runner.mjs")
+if 'trustSecret:' in interop_runner or 'record.trustSecret' in interop_runner:
+    raise SystemExit("OV09 verification failed: Web interop runner still models plaintext trust-secret grants/persistence")
 need("core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowOv09NativeWebInteropTest.kt",
      "websocketBridgeUsesCanonicalPairingSyncAndRoutedRpc", "routedRegistryCoversEveryPromisedSflp14Through23Family")
 need("core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowWebSocketBrowserInteropTest.kt",
      "browserHandshakeAndFragmentedMaskedMessageAreAccepted", "browserFramesMustBeMasked", "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=")
+need(
+    "web/tests/test_ov09_native_web_interop.py",
+    "test_encrypted_pairing_and_authenticated_rpc_runner",
+    "test_web_pairing_contract_uses_encrypted_grants_and_opaque_key_ids",
+    "test_interop_fixture_never_models_plaintext_secret_persistence",
+)
 validator = text("scripts/validate_ov09_sflp_native_web_interop.sh")
 if "gradle --stop" in validator or "./gradlew" in validator or " gradle " in validator:
     raise SystemExit("OV09 verification failed: source validator must not manage/invoke Gradle")
