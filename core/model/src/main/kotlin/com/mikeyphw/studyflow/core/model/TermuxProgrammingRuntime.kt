@@ -265,7 +265,7 @@ private fun TermuxCommandInvocation.isAllowedStudyFlowInvocation(): Boolean {
 
 private fun allowsPythonFileOrPytest(arguments: List<String>): Boolean = when {
     arguments == listOf("--version") || arguments == listOf("-V") -> true
-    arguments.size == 1 && arguments.single().hasOneOfSuffixes(".py") -> true
+    arguments.size == 1 && (arguments.single().hasOneOfSuffixes(".py") || arguments.single() == "{mainFile}" || arguments.single() == "{exerciseFile}") -> true
     arguments.size >= 2 && arguments[0] == "-m" && arguments[1] == "pytest" -> {
         arguments.drop(2).all(::isSafeRelativeTermuxPathOrFlag)
     }

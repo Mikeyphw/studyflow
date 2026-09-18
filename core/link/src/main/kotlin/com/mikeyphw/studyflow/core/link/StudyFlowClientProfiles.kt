@@ -84,6 +84,7 @@ object StudyFlowClientProfiles {
         StudyFlowLinkCapabilities.BackupImport,
         StudyFlowLinkCapabilities.DeviceControl,
         StudyFlowLinkCapabilities.DevicePresentationSource,
+        StudyFlowLinkCapabilities.DevicePresentationSink,
         StudyFlowLinkCapabilities.TextInputProvide,
         StudyFlowLinkCapabilities.KeyboardInput,
         StudyFlowLinkCapabilities.TouchInput,

@@ -111,6 +111,7 @@ class DesktopWorkspacePersistence private constructor(
         } catch (error: Throwable) {
             snapshot = before
             persistLocked()
+            if (error is IllegalArgumentException) throw error
             throw IllegalStateException("Desktop composite persistence transaction failed during $reason; workspace rolled back.", error)
         }
     }

@@ -110,17 +110,22 @@ data class StudyFlowPairingGrant(
     val pairingId: StudyFlowPairingId,
     val host: StudyFlowLinkPeerDescriptor,
     val peerDeviceId: StudyFlowDeviceId,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val trustSecret: String = "",
     val pairedAtEpochMillis: Long,
-    val hostKeyAgreementPublicKeyHex: String,
-    val initializationVectorHex: String,
-    val encryptedTrustSecretHex: String,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val hostKeyAgreementPublicKeyHex: String = "",
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val initializationVectorHex: String = "",
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val encryptedTrustSecretHex: String = "",
 ) {
     init {
         requireValidPairingPublicKey(hostKeyAgreementPublicKeyHex)
-        require(initializationVectorHex.length == PairingIvBytes * 2 && pairingHexPattern.matches(initializationVectorHex)) {
+        if (initializationVectorHex.isNotEmpty()) require(initializationVectorHex.length == PairingIvBytes * 2 && pairingHexPattern.matches(initializationVectorHex)) {
             "Pairing grant IV must be a 12-byte lower-case hex value"
         }
-        require(encryptedTrustSecretHex.length >= (32 + 16) * 2 && pairingHexPattern.matches(encryptedTrustSecretHex)) {
+        if (encryptedTrustSecretHex.isNotEmpty()) require(encryptedTrustSecretHex.length >= (32 + 16) * 2 && pairingHexPattern.matches(encryptedTrustSecretHex)) {
             "Pairing grant ciphertext is invalid"
         }
     }

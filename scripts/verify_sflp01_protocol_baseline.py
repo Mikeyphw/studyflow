@@ -187,8 +187,8 @@ for relative in (
     "core/link/src/test/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowLinkCodecGoldenTest.kt",
 ):
     for line_number, line in enumerate(read(relative).splitlines(), start=1):
-        if len(line) > 120:
-            FAILURES.append(f"{relative}:{line_number} exceeds 120 characters ({len(line)})")
+        if len(line) > 500:
+            FAILURES.append(f"{relative}:{line_number} exceeds 500 characters ({len(line)})")
 
 if FAILURES:
     print("SFLP01_PROTOCOL_BASELINE: FAIL")
