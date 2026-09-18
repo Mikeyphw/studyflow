@@ -1,140 +1,187 @@
 {
   "schema_version": 1,
   "type": "overlay",
-  "name": "studyflow_ov30r2_30h_studyflow_parity_proper_validation_seal_v2",
-  "target": "studyflow_parity",
-  "description": "Overlay 30 of 30 R2 30H: proper validation task and target seal for studyflow_parity.",
-  "commit_message": "OV30R2 studyflow_parity: add proper validation task and seal",
+  "name": "studyflow_failure_audit_ov01_active_time_backup_v1",
+  "target": "studyflow_android",
+  "description": "Failure-audit remediation overlay 1 of 3: restore canonical persisted active-study-time semantics across domain, Room analytics, workspace recommendations and Web golden semantics; repair strict backup/restore drill fixtures without weakening codec validation.",
+  "commit_message": "fix(studyflow): restore active-time and backup drill invariants",
   "commit": {
     "enabled": true,
     "strategy": "single",
-    "message": "OV30R2 studyflow_parity: add proper validation task and seal"
+    "message": "fix(studyflow): restore active-time and backup drill invariants"
   },
   "apply": {
     "commit": {
       "enabled": true,
       "strategy": "single",
-      "message": "OV30R2 studyflow_parity: add proper validation task and seal"
+      "message": "fix(studyflow): restore active-time and backup drill invariants"
     }
   },
   "baseline": {
     "repo": "studyflow",
-    "target": "studyflow_parity",
-    "expected_target_type": "studyflow_parity",
-    "previous_overlay": "studyflow_ov30_split_v1_applied",
-    "roadmap_overlay": "30 of 30",
-    "sub_overlay": "30H",
-    "notes": "Corrective R2 because OV30 v1 was applied with --no-validate; this overlay must be applied with normal validation."
+    "target": "studyflow_android",
+    "roadmap_overlay": "1 of 3",
+    "source_snapshot": "studyflow-20260918-114523-074751.tar.gz",
+    "audit_log": "20260918-113944-422073.log",
+    "notes": "Built directly against the uploaded 2026-09-18 repository snapshot. Generated web/dist output is intentionally excluded."
   },
   "structure": {
     "format": 1,
-    "name": "studyflow_ov30r2_30h_studyflow_parity_proper_validation_seal_v2",
-    "target": "studyflow_parity",
+    "name": "studyflow_failure_audit_ov01_active_time_backup_v1",
+    "target": "studyflow_android",
     "sections": [
       {
-        "id": "proper-validation-seal",
-        "purpose": "Parity aggregate validated target seal",
+        "id": "active-time-semantics",
+        "purpose": "Restore canonical persisted active study duration; pause telemetry is never subtracted twice.",
         "paths": [
-          ".devtool-artifact/validation/validate.sh",
-          ".devtool.toml",
-          "CHANGELOG.md",
-          "REMEDIATION_OV_30R2_STUDYFLOW_PARITY_PROPER_VALIDATION_SEAL.md",
-          "build.gradle.kts",
-          "devtool-overlay.json",
-          "docs/remediation/OV30R2_STUDYFLOW_PARITY_PROPER_VALIDATION_SEAL.md",
-          "scripts/validate_ov30r2_studyflow_parity_proper_validation_seal.sh",
-          "scripts/verify_ov30r2_studyflow_parity_proper_validation_seal.py"
+          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/GoalProgressCalculator.kt",
+          "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyAnalyticsDao.kt",
+          "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/PlanWorkspaceScreen.kt",
+          "protocol/semantic/v1/golden-vectors.json",
+          "web/src/semantic_golden.ts",
+          "web/runtime/semantic_golden.js",
+          "web/runtime-parity-manifest.json"
+        ]
+      },
+      {
+        "id": "backup-drill-fixtures",
+        "purpose": "Make backup drill fixtures structurally truthful while preserving strict manifest validation.",
+        "paths": [
+          "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSeal.kt",
+          "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSealTest.kt"
+        ]
+      },
+      {
+        "id": "overlay-metadata",
+        "purpose": "Devtool overlay metadata and immutable inventory.",
+        "paths": [
+          "devtool-overlay.json"
         ]
       }
     ]
   },
   "findings": [
     {
-      "id": "OV30R2-30H",
+      "id": "AUDIT-OV01-ACTIVE-TIME",
       "severity": "HIGH",
       "status": "closed",
-      "summary": "studyflow_parity has a proper validation task, Devtool validation hook, target graph wiring, and seal evidence."
+      "summary": "Completed-session grossDurationSeconds is canonical persisted active time; downstream consumers no longer subtract pauseDurationSeconds again."
+    },
+    {
+      "id": "AUDIT-OV01-BACKUP-DRILL",
+      "severity": "HIGH",
+      "status": "closed",
+      "summary": "Backup/restore drill fixtures now materialize every manifest-declared table and retain annex metadata counts when only annex payload bytes are removed."
     }
   ],
   "validation": {
-    "entrypoint": "scripts/validate_ov30r2_studyflow_parity_proper_validation_seal.sh",
-    "devtool_entrypoint": ".devtool-artifact/validation/validate.sh",
-    "gradle_task": "verifyOv30R2StudyflowParityProperValidationSeal",
-    "expected": [
-      "OV30R2_STUDYFLOW_PARITY_PROPER_VALIDATION_SEAL: PASS"
-    ]
+    "source_checks": [
+      "python3 scripts/verify_ov02_session_practice_invariants.py",
+      "python3 scripts/verify_web20_shared_semantic_golden_vectors.py",
+      "node web/scripts/compile_runtime.mjs"
+    ],
+    "gradle_tasks": [
+      ":core:domain:test",
+      ":core:database:testDebugUnitTest",
+      ":feature:workspace:testDebugUnitTest",
+      ":desktopApp:test",
+      "verifyWeb20SharedSemanticGoldenVectors"
+    ],
+    "local_result": "Source checks and WEB20/runtime parity passed while building the overlay; Gradle/JUnit execution was not available in the artifact container because the Gradle distribution was not cached and network access is disabled."
   },
   "inventory": {
     "format": 1,
-    "count": 8,
+    "count": 9,
     "entries": [
       {
         "action": "modify",
-        "path": ".devtool-artifact/validation/validate.sh",
-        "mode": "0o755",
-        "sha256": "48061bcbc3a1a147c628dacbeb96c44937f94b157854d232b8064e8eadfa808f",
-        "size": 173,
-        "source_mode": "0o755",
-        "source_sha256": "b0cb664f8e1b1cd465d5093ccd54920b6d9745844f01ccb15cd40b168ce70663",
-        "source_size": 175
+        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/GoalProgressCalculator.kt",
+        "mode": "0o600",
+        "sha256": "b131b6c184f2280b902424c77f2f3486f26b7be8ea3bb96019c84e1a3f4686c1",
+        "size": 5763,
+        "source_mode": "0o600",
+        "source_sha256": "3ec2eaedb2dc20299d8053cd895188d5b6d2458028238af82520aa5dccd29529",
+        "source_size": 5794
       },
       {
         "action": "modify",
-        "path": ".devtool.toml",
-        "mode": "0o644",
-        "sha256": "4d287bb5ac9b26e5f4d1f453fbc9df4d55c8954384d69e64accf05e64e92e4df",
-        "size": 22498,
-        "source_mode": "0o644",
-        "source_sha256": "3d738e924e2143def85dcdc612af707a979a66e64ac740f3327ecda92809a407",
-        "source_size": 22296
+        "path": "core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyAnalyticsDao.kt",
+        "mode": "0o600",
+        "sha256": "db3ef05a6c176bce8a7acda11f0076de77c24d584dcfc39da7896af8ed4d3b3b",
+        "size": 4166,
+        "source_mode": "0o600",
+        "source_sha256": "5fa518c4448c1407a4310113c53f52d23672d4d662fa4811e597b361a22b865a",
+        "source_size": 4191
       },
       {
         "action": "modify",
-        "path": "CHANGELOG.md",
-        "mode": "0o644",
-        "sha256": "db79a62a9067322af385e25019a5533f971d75e291b5c6972da27cc946c0b0d4",
-        "size": 90621,
-        "source_mode": "0o644",
-        "source_sha256": "ecdde5c6d3fe7756b7d64e7f79257409c531cb35b33ffd7a8683f8a3a63a8b24",
-        "source_size": 90312
-      },
-      {
-        "action": "add",
-        "path": "REMEDIATION_OV_30R2_STUDYFLOW_PARITY_PROPER_VALIDATION_SEAL.md",
-        "mode": "0o644",
-        "sha256": "746c4a951bf5dde84db7a39820163ad9225763ae63b04ecad0b03e24160afaa2",
-        "size": 748
+        "path": "feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/PlanWorkspaceScreen.kt",
+        "mode": "0o600",
+        "sha256": "c060391d1a11d2610e4b86162ac941af120668d6f11b0d61a0ebac54ced52970",
+        "size": 57592,
+        "source_mode": "0o600",
+        "source_sha256": "8ed66b5ca32c86295545316e07ba0a6acd3f67ff19a51a3197c9fb15467a3c84",
+        "source_size": 57562
       },
       {
         "action": "modify",
-        "path": "build.gradle.kts",
-        "mode": "0o644",
-        "sha256": "aa7f1826221ce75d47b7cd27248b7c568b5e148c6060543c5f7bccfccda80c49",
-        "size": 110660,
-        "source_mode": "0o644",
-        "source_sha256": "969905e4f3afc61d9f6fdfd264c981cad46d93d294ab8e8de5260875a45bbeb3",
-        "source_size": 109654
+        "path": "core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSeal.kt",
+        "mode": "0o600",
+        "sha256": "074dff9d440bb7edfa9029550da00da629a3e32b3dc18d3268c00bfd04987d7e",
+        "size": 18186,
+        "source_mode": "0o600",
+        "source_sha256": "ba4995e46e6f7e5aa9380de7135ecf2dad6c9242f0ae39a596385a128873f4dc",
+        "source_size": 17848
       },
       {
-        "action": "add",
-        "path": "docs/remediation/OV30R2_STUDYFLOW_PARITY_PROPER_VALIDATION_SEAL.md",
-        "mode": "0o644",
-        "sha256": "9d02b470523b6e41d64941b6a6db9f0e236f309415a2919bc35d75fd7570cdee",
-        "size": 1074
+        "action": "modify",
+        "path": "core/domain/src/test/kotlin/com/mikeyphw/studyflow/core/domain/BackupRestoreDrillSealTest.kt",
+        "mode": "0o600",
+        "sha256": "dfff7f02ce237c2fc865851ae6b92c31359d9df53ce20dd0a02d4838b012fca7",
+        "size": 8009,
+        "source_mode": "0o600",
+        "source_sha256": "2bcc9cdb12b19430216c29047ec437bcc3201758f140306a3d04bf08b48d51dc",
+        "source_size": 8100
       },
       {
-        "action": "add",
-        "path": "scripts/validate_ov30r2_studyflow_parity_proper_validation_seal.sh",
-        "mode": "0o755",
-        "sha256": "314683398e088bb2c8a1e5c88d7ca301f749ef49c4af2834c7d04eb8ea3d4153",
-        "size": 135
+        "action": "modify",
+        "path": "protocol/semantic/v1/golden-vectors.json",
+        "mode": "0o600",
+        "sha256": "bd85212daf696e6c18ffafb98b79f658f73dab5d41d4070cd8abd59168081f96",
+        "size": 12459,
+        "source_mode": "0o600",
+        "source_sha256": "c4d1fbe6d238e3c99f979bd63056d83bc2717d565f00ef802fd77428cdaa2535",
+        "source_size": 12444
       },
       {
-        "action": "add",
-        "path": "scripts/verify_ov30r2_studyflow_parity_proper_validation_seal.py",
-        "mode": "0o755",
-        "sha256": "c62214e0c93e4a37fd038f895b76b7dfbaeef3476d0a5bf3570e3bc6b8910d03",
-        "size": 3306
+        "action": "modify",
+        "path": "web/src/semantic_golden.ts",
+        "mode": "0o600",
+        "sha256": "33830995cd4cae2b97fcac4c3f7248a6b4bc07b7fb068da88f6891ac61129f38",
+        "size": 4373,
+        "source_mode": "0o600",
+        "source_sha256": "f76c7e4961e7921e65154ed97b079a58f2c6dcf4ed5555004a4eeea77b68c338",
+        "source_size": 4400
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime/semantic_golden.js",
+        "mode": "0o600",
+        "sha256": "949d7c73eaa71d4bb908e213b9f16b01276242b1a58e6b99c1a42252b7c2fdbc",
+        "size": 4707,
+        "source_mode": "0o600",
+        "source_sha256": "a35ede736798dfaa48c4a73c3b81c3023a08ecc58dec7aa374c274a6889312b0",
+        "source_size": 4736
+      },
+      {
+        "action": "modify",
+        "path": "web/runtime-parity-manifest.json",
+        "mode": "0o600",
+        "sha256": "e3fd83dee44d6dbfc828ba01156fc5d93d008fa8b1c0c3074dc140bc0e2db234",
+        "size": 8871,
+        "source_mode": "0o600",
+        "source_sha256": "d2e48ba387085083d80f43ec91edfc792faac7ae7d0830813bc756761bc08fdc",
+        "source_size": 8871
       }
     ]
   }

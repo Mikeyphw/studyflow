@@ -323,7 +323,7 @@
         "pauseDurationSeconds": 1800
       },
       "expected": {
-        "netMinutes": 0.0
+        "netMinutes": 30.0
       }
     },
     {
@@ -334,7 +334,7 @@
         "pauseDurationSeconds": 61
       },
       "expected": {
-        "netMinutes": 60.0
+        "netMinutes": 61.016666666666666
       }
     },
     {

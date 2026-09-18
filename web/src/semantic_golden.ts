@@ -29,7 +29,7 @@ export function semanticScheduleRebalance(input:{handling:string;nowEpochMillis:
   if(input.handling==="RETURN_TO_BACKLOG")return{changed:1,status:"PLANNED",scheduledStartEpochMillis:null};
   return{changed:0,status:null,scheduledStartEpochMillis:null};
 }
-export function semanticStudyTime(input:{grossDurationSeconds:number;pauseDurationSeconds:number}){return{netMinutes:Math.max(0,input.grossDurationSeconds-input.pauseDurationSeconds)/60};}
+export function semanticStudyTime(input:{grossDurationSeconds:number;pauseDurationSeconds:number}){return{netMinutes:Math.max(0,input.grossDurationSeconds)/60};}
 export function semanticGoal(input:{currentValue:number;targetValue:number}){return{percent:input.targetValue<=0?0:Math.max(0,Math.min(100,Math.trunc(input.currentValue/input.targetValue*100)))};}
 export function semanticError(input:{category:string;recurrenceCount:number}){
   const conceptual=new Set(["CONTENT_GAP","FORGOTTEN_CONTENT","CONCEPT_CONFUSION"]);

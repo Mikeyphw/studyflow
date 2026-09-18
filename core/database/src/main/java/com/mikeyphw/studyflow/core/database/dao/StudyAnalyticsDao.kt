@@ -26,7 +26,7 @@ interface StudyAnalyticsDao {
     @Query(
         """
         SELECT
-            (SELECT coalesce(sum(CAST(max(s.grossDurationSeconds - s.pauseDurationSeconds, 0) / 60 AS INTEGER)), 0)
+            (SELECT coalesce(sum(CAST(max(s.grossDurationSeconds, 0) / 60 AS INTEGER)), 0)
                 FROM study_sessions s
                 WHERE s.studyPlanId = :planId AND s.status = 'COMPLETED'
                     AND s.startedAtEpochMillis >= :sevenDayWindowStart) AS studiedMinutesLastSevenDays,

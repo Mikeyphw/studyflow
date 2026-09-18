@@ -55,6 +55,7 @@ import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
 import com.mikeyphw.studyflow.core.domain.StudyLibrarySnapshot
 import com.mikeyphw.studyflow.core.domain.StudyProgressSnapshot
+import com.mikeyphw.studyflow.core.domain.StudySessionTimer
 import com.mikeyphw.studyflow.core.domain.PublicExamDashboardBuilder
 import com.mikeyphw.studyflow.core.domain.PublicExamDashboardSnapshot
 import com.mikeyphw.studyflow.core.domain.PublicExamDateResolver
@@ -865,7 +866,7 @@ private fun buildPublicExamPriorityRecommendations(
                 session.contributesToTopicEvidence(topic.id, subject.id)
         }
         val minutesLast7Days = topicSessions.filter { it.startedAtEpochMillis >= weekAgo }.sumOf { session ->
-            ((session.grossDurationSeconds - session.pauseDurationSeconds).coerceAtLeast(0L) / 60L).toInt()
+            (StudySessionTimer.persistedActiveSeconds(session) / 60L).toInt()
         }
         val lastStudy = topicSessions.maxOfOrNull { it.endedAtEpochMillis ?: it.startedAtEpochMillis }
         val recentPractice = topicSessions.filter { it.startedAtEpochMillis >= accuracyWindowStart }

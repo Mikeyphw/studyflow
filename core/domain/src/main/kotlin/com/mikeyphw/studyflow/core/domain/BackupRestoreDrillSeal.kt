@@ -321,7 +321,13 @@ object BackupRestoreDrillSeal {
                     checksumSha256 = sha256(annexBytes),
                 ),
             ),
-            tableRowCounts = mapOf("study_plans" to 1, "annexes" to 1, "programming_exercises" to 0, "language_idiom_cards" to 0, "material_annexes" to 0),
+            tableRowCounts = mapOf(
+                "study_plans" to 1,
+                "annexes" to 1,
+                "programming_exercises" to 0,
+                "language_idiom_cards" to 0,
+                "material_annexes" to 0,
+            ),
             metadataPrivacyMode = true,
             redactedSections = StudyPlanPrivacyPolicy.redactedSections(
                 StudyPlanExportOptions(metadataPrivacyMode = true, redactHistory = true),
@@ -357,6 +363,9 @@ object BackupRestoreDrillSeal {
                         ),
                     ),
                 ),
+                PortableTable(name = "programming_exercises", rows = emptyList()),
+                PortableTable(name = "language_idiom_cards", rows = emptyList()),
+                PortableTable(name = "material_annexes", rows = emptyList()),
             ),
         )
         StudyPlanPrivacyPolicy.validatePayload(payload)
