@@ -85,3 +85,7 @@ htmlcov/
 .DS_Store
 Thumbs.db
 # END repo-cleanup managed ignores
+
+# Personal signing material
+*.p12
+*.pfx

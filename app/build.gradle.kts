@@ -1,3 +1,43 @@
+import org.gradle.api.DefaultTask
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.TaskAction
+import java.io.File
+import java.util.Properties
+
+abstract class StudyFlowSigningStatusTask : DefaultTask() {
+    @get:Input abstract val configured: Property<Boolean>
+    @get:Input abstract val propertiesPath: Property<String>
+    @get:Input abstract val keystorePath: Property<String>
+    @get:Input abstract val keyAlias: Property<String>
+
+    @TaskAction fun reportStatus() {
+        if (configured.get()) {
+            println("StudyFlow personal signing: configured")
+            println("Properties: ${propertiesPath.get()}")
+            println("Keystore: ${keystorePath.get()}")
+            println("Alias: ${keyAlias.get()}")
+            println("Phone debug and release APKs use the same permanent certificate.")
+        } else {
+            println("StudyFlow personal signing: NOT configured")
+            println("Expected properties: ${propertiesPath.get()}")
+            println("Run bash tools/setup-personal-signing.sh before installing permanent StudyFlow builds.")
+        }
+    }
+}
+
+abstract class VerifyStudyFlowPersonalSigningConfiguredTask : DefaultTask() {
+    @get:Input abstract val configured: Property<Boolean>
+    @get:Input abstract val keystorePath: Property<String>
+
+    @TaskAction fun verifyConfigured() {
+        check(configured.get() && File(keystorePath.get()).isFile) {
+            "StudyFlow permanent personal signing is not configured. Run bash tools/setup-personal-signing.sh."
+        }
+        println("StudyFlow permanent personal signing configuration: PASS")
+    }
+}
+
 val studyFlowManifestText = file("src/main/AndroidManifest.xml").readText()
 
 fun manifestLinksXml(attribute: String, resourceName: String): Boolean = Regex(
@@ -9,16 +49,41 @@ val legacyBackupRuleLinked = manifestLinksXml("fullBackupContent", "backup_rules
 val modernBackupRuleLinked = manifestLinksXml("dataExtractionRules", "data_extraction_rules") &&
     file("src/main/res/xml/data_extraction_rules.xml").isFile
 
+val studyFlowRepositoryRoot = rootProject.projectDir.canonicalFile
+val studyFlowSigningPropertiesFile = File(
+    providers.environmentVariable("STUDYFLOW_ANDROID_SIGNING_PROPERTIES").orNull
+        ?: File(System.getProperty("user.home"), ".config/studyflow/android-signing.properties").absolutePath,
+).absoluteFile
+val studyFlowPersonalSigningConfigured = studyFlowSigningPropertiesFile.isFile
+val studyFlowSigningProperties = Properties().apply {
+    if (studyFlowPersonalSigningConfigured) studyFlowSigningPropertiesFile.inputStream().use { load(it) }
+}
+fun studyFlowSigningValue(name: String): String {
+    val value = studyFlowSigningProperties.getProperty(name).orEmpty()
+    check(value.isNotEmpty() && value.trim() != "REPLACE_ME") {
+        "StudyFlow personal signing property '$name' is missing in ${studyFlowSigningPropertiesFile.absolutePath}"
+    }
+    return value
+}
+val studyFlowPersonalSigningStoreFile = if (studyFlowPersonalSigningConfigured) {
+    check(!studyFlowSigningPropertiesFile.canonicalFile.toPath().startsWith(studyFlowRepositoryRoot.toPath())) {
+        "StudyFlow personal signing properties must live outside the repository: ${studyFlowSigningPropertiesFile.absolutePath}"
+    }
+    File(studyFlowSigningValue("storeFile")).canonicalFile.also { store ->
+        check(store.isAbsolute && store.isFile) { "StudyFlow personal signing keystore does not exist: ${store.absolutePath}" }
+        check(!store.toPath().startsWith(studyFlowRepositoryRoot.toPath())) {
+            "StudyFlow personal signing keystore must live outside the repository: ${store.absolutePath}"
+        }
+    }
+} else null
+
+// Legacy release-only environment variables remain a compatibility fallback. Personal signing wins.
 val releaseStoreFilePath = providers.environmentVariable("STUDYFLOW_RELEASE_STORE_FILE").orNull
 val releaseStorePassword = providers.environmentVariable("STUDYFLOW_RELEASE_STORE_PASSWORD").orNull
 val releaseKeyAlias = providers.environmentVariable("STUDYFLOW_RELEASE_KEY_ALIAS").orNull
 val releaseKeyPassword = providers.environmentVariable("STUDYFLOW_RELEASE_KEY_PASSWORD").orNull
-val releaseSigningConfigured = listOf(
-    releaseStoreFilePath,
-    releaseStorePassword,
-    releaseKeyAlias,
-    releaseKeyPassword,
-).all { value -> !value.isNullOrBlank() }
+val releaseSigningConfigured = listOf(releaseStoreFilePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword)
+    .all { value -> !value.isNullOrBlank() }
 
 plugins {
     id("studyflow.android.application")
@@ -39,8 +104,15 @@ android {
         buildConfig = true
     }
 
-    if (releaseSigningConfigured) {
-        signingConfigs {
+    signingConfigs {
+        if (studyFlowPersonalSigningConfigured) {
+            create("studyFlowPersonal") {
+                storeFile = studyFlowPersonalSigningStoreFile
+                storePassword = studyFlowSigningValue("storePassword")
+                keyAlias = studyFlowSigningValue("keyAlias")
+                keyPassword = studyFlowSigningValue("keyPassword")
+            }
+        } else if (releaseSigningConfigured) {
             create("studyFlowRelease") {
                 storeFile = file(requireNotNull(releaseStoreFilePath))
                 storePassword = requireNotNull(releaseStorePassword)
@@ -51,10 +123,15 @@ android {
     }
 
     buildTypes {
+        getByName("debug") {
+            if (studyFlowPersonalSigningConfigured) signingConfig = signingConfigs.getByName("studyFlowPersonal")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles("proguard-rules.pro")
-            if (releaseSigningConfigured) {
+            if (studyFlowPersonalSigningConfigured) {
+                signingConfig = signingConfigs.getByName("studyFlowPersonal")
+            } else if (releaseSigningConfigured) {
                 signingConfig = signingConfigs.getByName("studyFlowRelease")
             }
         }
@@ -138,6 +215,44 @@ val verifyPhoneReleaseSigningPreflight = tasks.register<Exec>("verifyPhoneReleas
     description = "Fails fast when StudyFlow phone Release signing inputs are incomplete or invalid."
     workingDir(rootProject.projectDir)
     commandLine("python3", "scripts/ov01_release_gate.py", "signing", "--surface", "phone")
+}
+
+// Bridge the permanent properties into the existing release gate without exposing them in the repository.
+if (studyFlowPersonalSigningConfigured) {
+    verifyPhoneReleaseSigningPreflight.configure {
+        environment("STUDYFLOW_RELEASE_STORE_FILE", studyFlowPersonalSigningStoreFile!!.absolutePath)
+        environment("STUDYFLOW_RELEASE_STORE_PASSWORD", studyFlowSigningValue("storePassword"))
+        environment("STUDYFLOW_RELEASE_KEY_ALIAS", studyFlowSigningValue("keyAlias"))
+        environment("STUDYFLOW_RELEASE_KEY_PASSWORD", studyFlowSigningValue("keyPassword"))
+    }
+}
+
+tasks.register<StudyFlowSigningStatusTask>("studyFlowSigningStatus") {
+    group = "help"
+    description = "Show whether StudyFlow phone debug and release use the permanent personal certificate."
+    configured.set(studyFlowPersonalSigningConfigured)
+    propertiesPath.set(studyFlowSigningPropertiesFile.absolutePath)
+    keystorePath.set(studyFlowPersonalSigningStoreFile?.absolutePath.orEmpty())
+    keyAlias.set(if (studyFlowPersonalSigningConfigured) studyFlowSigningValue("keyAlias") else "")
+}
+
+tasks.register<VerifyStudyFlowPersonalSigningConfiguredTask>("verifyStudyFlowPersonalSigningConfigured") {
+    group = "verification"
+    description = "Fail unless permanent StudyFlow personal signing is configured outside the repository."
+    configured.set(studyFlowPersonalSigningConfigured)
+    keystorePath.set(studyFlowPersonalSigningStoreFile?.absolutePath.orEmpty())
+}
+
+tasks.register("assemblePersonalDebug") {
+    group = "build"
+    description = "Build the phone debug APK with the permanent StudyFlow personal certificate."
+    dependsOn("verifyStudyFlowPersonalSigningConfigured", "assembleDebug")
+}
+
+tasks.register("assemblePersonalRelease") {
+    group = "build"
+    description = "Build the phone release APK with the permanent StudyFlow personal certificate."
+    dependsOn("verifyStudyFlowPersonalSigningConfigured", "assembleRelease")
 }
 
 tasks.configureEach {

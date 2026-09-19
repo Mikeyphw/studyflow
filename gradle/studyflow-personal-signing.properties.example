@@ -1,0 +1,7 @@
+# Schema only. Never store real signing secrets in the repository.
+# tools/setup-personal-signing.sh writes the real owner-only file to:
+# ~/.config/studyflow/android-signing.properties
+storeFile=/absolute/path/outside/repo/studyflow-personal.p12
+storePassword=REPLACE_ME
+keyAlias=studyflow
+keyPassword=REPLACE_ME
