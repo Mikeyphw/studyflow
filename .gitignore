@@ -83,3 +83,6 @@ Thumbs.db
 
 # Devtool local runtime state
 .devtool/
+
+# Local backup files
+*.before-*
