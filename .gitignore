@@ -71,15 +71,6 @@ htmlcov/
 # Node generated state
 **/node_modules/
 
-# Devtool runtime state.
-# Intentionally DO NOT ignore .devtool/artifacts.d.
-**/.devtool/state/
-**/.devtool/reports/
-**/.devtool/tmp/
-**/.devtool/build-artifacts/
-**/.devtool/artifacts/registry.json
-**/.devtool/artifacts/registry.lock
-**/.devtool/test-history.json
 
 # OS noise
 .DS_Store
@@ -89,3 +80,6 @@ Thumbs.db
 # Personal signing material
 *.p12
 *.pfx
+
+# Devtool local runtime state
+.devtool/
