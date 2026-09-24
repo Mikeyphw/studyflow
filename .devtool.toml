@@ -29,6 +29,22 @@ platform = "android"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
+inputs = [
+    ".devtool.toml",
+    "settings.gradle.kts",
+    "build.gradle.kts",
+    "gradle/**",
+    "build-logic/**",
+    "app/**",
+    "core/**",
+    "feature/**",
+    "protocol/**",
+    "tools/**",
+]
+outputs = [
+    "app/build/**",
+    "build/devtool/**",
+]
 
 [targets.studyflow_android.android]
 variant = "debug"
@@ -221,6 +237,21 @@ platform = "desktop"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
+inputs = [
+    ".devtool.toml",
+    "settings.gradle.kts",
+    "build.gradle.kts",
+    "gradle/**",
+    "build-logic/**",
+    "desktopApp/**",
+    "core/**",
+    "feature/**",
+    "protocol/**",
+]
+outputs = [
+    "desktopApp/build/**",
+    "build/devtool/**",
+]
 
 [targets.studyflow_desktop.gradle]
 version = "9.7.1"
@@ -290,8 +321,18 @@ runner = "node"
 platform = "web"
 root = "web"
 execution_environment = "native-termux"
-inputs = ["src/**", "tests/**", "scripts/**", "package.json", "tsconfig.json", "sw.js"]
-outputs = ["dist/**"]
+inputs = [
+    "web/src/**",
+    "web/tests/**",
+    "web/scripts/**",
+    "web/package.json",
+    "web/package-lock.json",
+    "web/tsconfig.json",
+    "web/sw.js",
+]
+outputs = [
+    "web/dist/**",
+]
 
 [targets.studyflow_web.validation]
 max_workers = 2
@@ -315,6 +356,21 @@ platform = "tv"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
+inputs = [
+    ".devtool.toml",
+    "settings.gradle.kts",
+    "build.gradle.kts",
+    "gradle/**",
+    "build-logic/**",
+    "app-tv/**",
+    "core/**",
+    "feature/**",
+    "protocol/**",
+]
+outputs = [
+    "app-tv/build/**",
+    "build/devtool/**",
+]
 
 [targets.studyflow_tv.android]
 variant = "debug"
@@ -399,6 +455,22 @@ platform = "tv"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
+inputs = [
+    ".devtool.toml",
+    "settings.gradle.kts",
+    "build.gradle.kts",
+    "gradle/**",
+    "build-logic/**",
+    "app-tv/**",
+    "core/**",
+    "feature/**",
+    "protocol/**",
+    "docs/release/**",
+]
+outputs = [
+    "app-tv/build/**",
+    "build/devtool/**",
+]
 
 [targets.studyflow_tv_release.android]
 variant = "release"
@@ -478,6 +550,23 @@ platform = "android"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
+inputs = [
+    ".devtool.toml",
+    "settings.gradle.kts",
+    "build.gradle.kts",
+    "gradle/**",
+    "build-logic/**",
+    "app/**",
+    "core/**",
+    "feature/**",
+    "protocol/**",
+    "docs/release/**",
+]
+outputs = [
+    "app/build/**",
+    "build/devtool/**",
+    "artifacts/**",
+]
 
 [targets.studyflow_release.android]
 variant = "release"
@@ -561,6 +650,25 @@ platform = "shared"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
+inputs = [
+    ".devtool.toml",
+    "settings.gradle.kts",
+    "build.gradle.kts",
+    "gradle/**",
+    "build-logic/**",
+    "app/**",
+    "app-tv/**",
+    "desktopApp/**",
+    "core/**",
+    "feature/**",
+    "protocol/**",
+    "docs/quality/**",
+    "scripts/**",
+    "tools/**",
+]
+outputs = [
+    "build/devtool/**",
+]
 
 [targets.studyflow_quality.gradle]
 version = "9.7.1"
@@ -690,6 +798,18 @@ platform = "shared"
 root = "."
 execution_environment = "native-termux"
 chroot_name = "androidos"
+inputs = [
+    ".devtool.toml",
+    "protocol/**",
+    "app/**",
+    "app-tv/**",
+    "desktopApp/**",
+    "web/**",
+    "docs/validation/**",
+]
+outputs = [
+    "build/devtool/**",
+]
 
 [targets.studyflow_parity.gradle]
 version = "9.7.1"
