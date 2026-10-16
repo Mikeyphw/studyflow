@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""Offline, secret-free structural checks for StudyFlow's Devtool/Actions bridge.
+
+This is not a GitHub runner acceptance test or a release qualification.
+"""
+from __future__ import annotations
+
+import argparse
+import importlib.util
+from pathlib import Path
+import re
+import sys
+import subprocess
+import zipfile
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise AssertionError(message)
+
+
+def checked_text(relative: str) -> str:
+    p = ROOT / relative
+    require(p.is_file() and not p.is_symlink(), f"missing/unsafe file: {relative}")
+    return p.read_text(encoding="utf-8")
+
+
+def source_contract() -> None:
+    settings = checked_text("settings.gradle.kts")
+    for module in ('":app"', '":app-tv"', '":desktopApp"'):
+        require(module in settings, f"Gradle module not included: {module}")
+    for module, pkg in (("app", "com.mikeyphw.studyflow"),
+                        ("app-tv", "com.mikeyphw.studyflow.tv")):
+        gradle = checked_text(f"{module}/build.gradle.kts")
+        require('id("studyflow.android.application")' in gradle,
+                f"convention-plugin identity changed in {module}")
+        require(f'applicationId = "{pkg}"' in gradle, f"package changed: {module}")
+    convention = checked_text("build-logic/convention/src/main/kotlin/AndroidConvention.kt")
+    require('compileSdk = 36' in convention and 'buildToolsVersion = "36.0.0"' in convention,
+            "Android 36 build prerequisites changed")
+    require('STUDYFLOW_NDK_VERSION = "29.0.14206865"' in convention, "pinned NDK changed")
+    require('JavaVersion.VERSION_21' in convention, "Java source/target toolchain changed")
+    require('gradle-9.7.1-bin.zip' in checked_text("gradle/wrapper/gradle-wrapper.properties"),
+            "Gradle wrapper version changed")
+    require((ROOT / "gradle/wrapper/gradle-wrapper.jar").is_file(), "Gradle wrapper jar missing")
+    targets = checked_text(".devtool.toml")
+    for target in ("studyflow_android", "studyflow_tv", "studyflow_desktop", "studyflow_web"):
+        require(f"[targets.{target}]" in targets, f"Devtool target unavailable: {target}")
+    require('"build":' in checked_text("web/package.json"), "web npm build task missing")
+
+
+def workflow_contract() -> None:
+    android_path = ".github/workflows/devtool-android-build.yml"
+    ci_path = ".github/workflows/studyflow-ci.yml"
+    android = checked_text(android_path)
+    ci = checked_text(ci_path)
+    # Basic fail-closed checks run without PyYAML (not preinstalled on GitHub runners).
+    for needle in ("workflow_dispatch:", "project_dir:", "module:", "variant:",
+                   "format:", "options: [app, app-tv]", "options: [debug]",
+                   "options: [apk, aab]", "test \"$VARIANT\" = debug",
+                   "test \"$(git rev-parse HEAD)\" = \"$GITHUB_SHA\"",
+                   "sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0' 'ndk;29.0.14206865'",
+                   '"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs',  "--verify-aab",
+                   "actions/upload-artifact@v4", "if-no-files-found: error"):
+        require(needle in android, f"Android workflow lacks mandatory control: {needle}")
+    for needle in ("workflow_dispatch:", "pull_request:", "push:",
+                   "options: [all, android, desktop, web]", "npm ci", "npm test",
+                   "npm run build", ":desktopApp:test", ":app:testReleaseUnitTest",
+                   ":app-tv:testDebugUnitTest", "lintDebug", '"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs'):
+        require(needle in ci, f"CI workflow lacks required lane/control: {needle}")
+    for name, content in ((android_path, android), (ci_path, ci)):
+        require(re.search(r"(?m)^permissions:\s*\n\s+contents: read\s*$", content) is not None,
+                f"{name}: missing least-privilege workflow permissions")
+        for banned in ('secrets.', 'pull_request_target:', 'permissions: write-all', 'DEVTOOL_RELEASE_KEYSTORE_B64'):
+            require(banned not in content, f"{name}: unsafe credential or trigger token {banned!r}")
+    require("assembleRelease" not in android and "bundleRelease" not in android,
+            "debug-only Actions workflow must not package release")
+
+    # The full schema parse is an optional additional check, not a hidden CI dependency.
+    if importlib.util.find_spec("yaml") is not None:
+        import yaml
+        for relative in (android_path, ci_path):
+            obj = yaml.safe_load(checked_text(relative))
+            require(isinstance(obj, dict) and isinstance(obj.get("jobs"), dict),
+                    f"invalid YAML jobs: {relative}")
+            triggers = obj.get("on", obj.get(True))
+            require(isinstance(triggers, dict) and "workflow_dispatch" in triggers,
+                    f"missing dispatch in parsed YAML: {relative}")
+            if relative == android_path:
+                entries = triggers["workflow_dispatch"]["inputs"]
+                require(set(entries) == {"project_dir", "module", "variant", "format"},
+                        "Android inputs have changed")
+                for field, expected in (("project_dir", ["."]), ("module", ["app", "app-tv"]),
+                                        ("variant", ["debug"]), ("format", ["apk", "aab"])):
+                    require(entries[field].get("options") == expected,
+                            f"unexpected Android dispatch choices: {field}")
+            else:
+                require({"source", "web", "desktop", "android"}.issubset(obj["jobs"]),
+                        "CI lost a supported client lane")
+
+
+
+def verify_aab_file(path: Path) -> None:
+    """Verify exactly one JAR signer and its cryptographic AAB signature.
+
+    Strict jarsigner rejects otherwise-correct Android debug self-signed certs, so
+    follow Devtool's non-strict, explicit-verified-verdict contract instead.
+    """
+    require(path.is_file() and not path.is_symlink() and path.stat().st_size > 0,
+            "missing or unsafe AAB")
+    try:
+        with zipfile.ZipFile(path) as archive:
+            names = {entry.filename.upper() for entry in archive.infolist() if not entry.is_dir()}
+    except (zipfile.BadZipFile, OSError, ValueError) as e:
+        raise AssertionError("invalid AAB ZIP") from e
+    signatures = {n[9:-3] for n in names if n.startswith('META-INF/')
+                  and n.count('/') == 1 and n.endswith('.SF')}
+    blocks = {n[9:-4] for n in names if n.startswith('META-INF/')
+              and n.count('/') == 1 and n.endswith(('.RSA', '.DSA'))}
+    blocks |= {n[9:-3] for n in names if n.startswith('META-INF/')
+               and n.count('/') == 1 and n.endswith('.EC')}
+    require(len(signatures) == 1 and signatures == blocks and bool(next(iter(signatures), '')),
+            "unsigned/multiple-signer AAB rejected")
+    try:
+        outcome = subprocess.run(['jarsigner', '-verify', '-verbose', str(path)],
+                                 capture_output=True, text=True, timeout=60, check=False)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise AssertionError('AAB signature tool not available') from e
+    report = outcome.stdout + '\n' + outcome.stderr
+    verdicts = [line.strip().lower() for line in report.splitlines()
+                if line.strip().lower() in ('jar verified.', 'jar is unsigned.',
+                                             'jar verified, with signer errors.')]
+    require(outcome.returncode == 0 and verdicts == ['jar verified.']
+            and 'unsigned entries' not in report.lower()
+            and re.search(r'(?m)^\s*\?\s+\d+\s+', report) is None,
+            'AAB JAR signature incomplete, invalid, or unsigned')
+    print('StudyFlow AAB signature: verified (debug candidate, not release)')
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source-only", action="store_true", help="compatibility alias; all tests are static")
+    parser.add_argument("--verify-aab", type=Path, help="verify AAB JAR signature (no release claim)")
+    args = parser.parse_args()
+    try:
+        if args.verify_aab is not None:
+            verify_aab_file(args.verify_aab)
+            return 0
+        source_contract()
+        workflow_contract()
+    except (AssertionError, OSError, ValueError) as error:
+        print(f"StudyFlow GitHub Actions integration: FAIL: {error}", file=sys.stderr)
+        return 1
+    print("StudyFlow GitHub Actions integration: static PASS (no remote CI executed)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

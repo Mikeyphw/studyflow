@@ -1,0 +1,121 @@
+# StudyFlow Android debug build, controlled through Devtool's GitHub Actions provider.
+# Release signing remains local. This workflow never receives signing credentials.
+name: StudyFlow Devtool Android Build
+on:
+  workflow_dispatch:
+    inputs:
+      project_dir:
+        description: 'Checked-in Gradle root (StudyFlow requires .)'
+        type: choice
+        required: true
+        default: '.'
+        options: ['.']
+      module:
+        description: 'Android application module'
+        type: choice
+        required: true
+        default: app
+        options: [app, app-tv]
+      variant:
+        description: 'Only independently verifiable debug builds are supported'
+        type: choice
+        required: true
+        default: debug
+        options: [debug]
+      format:
+        description: 'Android package output'
+        type: choice
+        required: true
+        default: apk
+        options: [apk, aab]
+permissions:
+  contents: read
+concurrency:
+  group: studyflow-devtool-android-${{ github.ref }}-${{ inputs.module }}-${{ inputs.format }}
+  cancel-in-progress: false
+jobs:
+  build:
+    name: ${{ inputs.module }} debug ${{ inputs.format }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Checkout exact selected source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate source identity and requested task
+        shell: bash
+        env:
+          MODULE: ${{ inputs.module }}
+          VARIANT: ${{ inputs.variant }}
+          FORMAT: ${{ inputs.format }}
+          PROJECT_DIR: ${{ inputs.project_dir }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$PROJECT_DIR" = '.'
+          case "$MODULE" in app|app-tv) ;; *) exit 2 ;; esac
+          test "$VARIANT" = debug
+          case "$FORMAT" in apk|aab) ;; *) exit 2 ;; esac
+          test -f "${MODULE}/build.gradle.kts"
+          test -f gradle/wrapper/gradle-wrapper.jar
+          test -f gradle/wrapper/gradle-wrapper.properties
+          python3 scripts/verify_studyflow_actions.py --source-only
+          echo "STUDYFLOW_MODULE=$MODULE" >> "$GITHUB_ENV"
+          echo "STUDYFLOW_FORMAT=$FORMAT" >> "$GITHUB_ENV"
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Android SDK tools
+        uses: android-actions/setup-android@v4
+      - name: Install pinned StudyFlow SDK and NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0' 'ndk;29.0.14206865'
+      - name: Gradle build cache
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build requested debug Android package
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          case "$STUDYFLOW_FORMAT" in
+            apk) task=assembleDebug ;;
+            aab) task=bundleDebug ;;
+          esac
+          ./gradlew --no-daemon --max-workers=2 ":${STUDYFLOW_MODULE}:${task}"
+      - name: Verify package and stage one artifact
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$STUDYFLOW_FORMAT" in
+            apk) directory="${STUDYFLOW_MODULE}/build/outputs/apk/debug" ;;
+            aab) directory="${STUDYFLOW_MODULE}/build/outputs/bundle/debug" ;;
+          esac
+          test -d "$directory" && test ! -L "$directory"
+          mapfile -d '' -t packages < <(find "$directory" -maxdepth 1 -type f -name "*.${STUDYFLOW_FORMAT}" -print0)
+          test "${#packages[@]}" -eq 1
+          test ! -L "${packages[0]}"
+          output="${RUNNER_TEMP}/studyflow-debug.${STUDYFLOW_FORMAT}"
+          cp -- "${packages[0]}" "$output"
+          test -s "$output"
+          if [[ "$STUDYFLOW_FORMAT" == apk ]]; then
+            "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$output"
+          else
+            # AAB debug signing may use a self-signed key, which -strict rejects.
+            # Verify real signer entries, cryptographic status, and no unsigned members.
+            python3 scripts/verify_studyflow_actions.py --verify-aab "$output"
+          fi
+          sha256sum "$output"
+          echo "package=$output" >> "$GITHUB_OUTPUT"
+      - name: Upload selected, debug-only package
+        uses: actions/upload-artifact@v4
+        with:
+          name: studyflow-${{ inputs.module }}-debug-${{ inputs.format }}-${{ github.run_id }}
+          path: ${{ steps.package.outputs.package }}
+          if-no-files-found: error
+          retention-days: 7
