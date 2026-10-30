@@ -10,11 +10,16 @@ on:
         required: true
         type: choice
         default: all
-        options: [all, android, desktop, web]
+        options: [all, android, desktop, web, deep]
+      expected_sha:
+        description: 'Required for dispatch: reviewed 40-character commit SHA'
+        required: true
+        type: string
+        default: ''
 permissions:
   contents: read
 concurrency:
-  group: studyflow-ci-${{ github.ref }}
+  group: studyflow-ci-${{ github.event_name }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
   cancel-in-progress: true
 jobs:
   source:
@@ -25,7 +30,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - run: python3 scripts/verify_studyflow_actions.py --source-only
+      - name: Verify checkout and mandatory dispatch source SHA
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+            test "$EXPECTED_SHA" = "$GITHUB_SHA"
+          fi
+      - name: Verify Devtool configuration and GitHub-only Gradle policies
+        run: |
+          python3 scripts/verify_studyflow_actions.py --source-only
+          python3 scripts/studyflow_ci_gradle_profile.py --check-source
   web:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.lane == 'all' || inputs.lane == 'web' }}
     needs: source
@@ -131,3 +150,66 @@ jobs:
           path: ${{ steps.output.outputs.package }}
           if-no-files-found: error
           retention-days: 7
+
+  # Opt-in deep source/Gradle contracts: all Gradle work executes on GitHub, never Termux.
+  # Each matrix cell uses the canonical, deduplicated .devtool.toml task profile.
+  deep-contracts:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.lane == 'deep' }}
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        profile:
+          - android-contracts
+          - tv-contracts
+          - desktop-contracts
+          - quality-contracts
+          - parity-contracts
+    name: Devtool ${{ matrix.profile }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+      - name: Install pinned Android SDK / NDK for contract graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0' 'ndk;29.0.14206865'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Node toolchain for cross-client parity
+        if: ${{ matrix.profile == 'parity-contracts' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Prepare web runtime for parity checks
+        if: ${{ matrix.profile == 'parity-contracts' }}
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+      - name: Run canonical StudyFlow Devtool Gradle target profile
+        shell: bash
+        env:
+          STUDYFLOW_CI_PROFILE: ${{ matrix.profile }}
+          STUDYFLOW_CI_RECEIPT: ${{ runner.temp }}/studyflow-devtool-profile.json
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          python3 scripts/studyflow_ci_gradle_profile.py --run "$STUDYFLOW_CI_PROFILE" --receipt "$STUDYFLOW_CI_RECEIPT"
+      - name: Preserve reviewed task plan and outcome (even on failure)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studyflow-devtool-${{ matrix.profile }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/studyflow-devtool-profile.json
+          if-no-files-found: error
+          retention-days: 14

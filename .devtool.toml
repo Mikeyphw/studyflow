@@ -890,82 +890,31 @@ command = ["python3", "scripts/devtool_actions_contract.py"]
 inputs = [".devtool.toml", ".github/workflows/*.yml", "scripts/devtool_actions_contract.py"]
 metadata = { read_only = true }
 
+[targets.studyflow_android.jobs.ci-github-gradle-policy]
+runner = "command"
+command = ["python3", "scripts/studyflow_ci_gradle_profile.py", "--check-source"]
+inputs = [".devtool.toml", "scripts/studyflow_ci_gradle_profile.py", ".github/workflows/*.yml"]
+metadata = { read_only = true }
+
 [targets.studyflow_android.workflows]
 ci-preflight = [
   { id = "actions-contract", ref = "job:ci-actions-contract", depends_on = [] },
   { id = "source-contract", ref = "job:ci-source-contract", depends_on = ["actions-contract"] },
-]
-ci-local = [
-  { id = "actions-contract", ref = "job:ci-actions-contract", depends_on = [] },
-  { id = "source-contract", ref = "job:ci-source-contract", depends_on = ["actions-contract"] },
-  { id = "android-test", ref = "runner:android#test", depends_on = ["source-contract"] },
-]
-ci-workspace = [
-  { id = "actions-contract", ref = "job:ci-actions-contract", depends_on = [] },
-  { id = "source-contract", ref = "job:ci-source-contract", depends_on = ["actions-contract"] },
-  { id = "android-test", ref = "runner:android#test", depends_on = ["source-contract"] },
-  { id = "tv-test", ref = "target:studyflow_tv#test", depends_on = ["source-contract"] },
-  { id = "desktop-test", ref = "target:studyflow_desktop#test", depends_on = ["source-contract"] },
-  { id = "web-test", ref = "target:studyflow_web#test", depends_on = ["source-contract"] },
+  { id = "github-gradle-policy", ref = "job:ci-github-gradle-policy", depends_on = ["source-contract"] },
 ]
 ci-source = [
   { id = "actions-contract", ref = "job:ci-actions-contract", depends_on = [] },
   { id = "source-contract", ref = "job:ci-source-contract", depends_on = ["actions-contract"] },
+  { id = "github-gradle-policy", ref = "job:ci-github-gradle-policy", depends_on = ["source-contract"] },
 ]
 
 [wrapper]
 schema = 2
-default_command = "build"
-
-[wrapper.commands.build]
-description = "build through canonical Devtool and EXO"
-devtool = "build"
-target = "studyflow_android"
-allow_passthrough = true
-
-[wrapper.commands.tv]
-description = "tv through canonical Devtool and EXO"
-devtool = "build"
-target = "studyflow_tv"
-allow_passthrough = true
-
-[wrapper.commands.desktop]
-description = "desktop through canonical Devtool and EXO"
-devtool = "build"
-target = "studyflow_desktop"
-allow_passthrough = true
-
-[wrapper.commands.web]
-description = "web through canonical Devtool and EXO"
-devtool = "build"
-target = "studyflow_web"
-allow_passthrough = true
-
-[wrapper.commands.test]
-description = "test through canonical Devtool and EXO"
-devtool = "test"
-target = "studyflow_android"
-allow_passthrough = true
-
-[wrapper.commands.validate]
-description = "validate through canonical Devtool and EXO"
-devtool = "validate"
-target = "studyflow_android"
-allow_passthrough = true
+default_command = "ci-source"
 
 [wrapper.commands.ci-preflight]
-description = "ci-preflight through canonical Devtool and EXO"
+description = "Read-only Actions and GitHub-only Gradle policy checks"
 workflow = "ci-preflight"
-target = "studyflow_android"
-
-[wrapper.commands.ci-local]
-description = "ci-local through canonical Devtool and EXO"
-workflow = "ci-local"
-target = "studyflow_android"
-
-[wrapper.commands.ci-workspace]
-description = "ci-workspace through canonical Devtool and EXO"
-workflow = "ci-workspace"
 target = "studyflow_android"
 
 [targets.studyflow_android.jobs.ci-source-contract]
@@ -975,6 +924,6 @@ inputs = [".devtool.toml", "scripts/verify_studyflow_actions.py", ".github/workf
 metadata = { read_only = true }
 
 [wrapper.commands.ci-source]
-description = "Read-only project-specific source and CI contract with EXO evidence"
+description = "Read-only StudyFlow source and Actions contracts; never runs Gradle"
 workflow = "ci-source"
 target = "studyflow_android"

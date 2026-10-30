@@ -66,7 +66,7 @@ def workflow_contract() -> None:
                    "actions/upload-artifact@v4", "if-no-files-found: error"):
         require(needle in android, f"Android workflow lacks mandatory control: {needle}")
     for needle in ("workflow_dispatch:", "pull_request:", "push:",
-                   "options: [all, android, desktop, web]", "npm ci", "npm test",
+                   "options: [all, android, desktop, web, deep]", "expected_sha:", "deep-contracts:", "npm ci", "npm test",
                    "npm run build", ":desktopApp:test", ":app:testReleaseUnitTest",
                    ":app-tv:testDebugUnitTest", "lintDebug", '"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs'):
         require(needle in ci, f"CI workflow lacks required lane/control: {needle}")
@@ -75,6 +75,17 @@ def workflow_contract() -> None:
                 f"{name}: missing least-privilege workflow permissions")
         for banned in ('secrets.', 'pull_request_target:', 'permissions: write-all', 'DEVTOOL_RELEASE_KEYSTORE_B64'):
             require(banned not in content, f"{name}: unsafe credential or trigger token {banned!r}")
+    require('test "$EXPECTED_SHA" = "$GITHUB_SHA"' in android and
+            'test "$EXPECTED_SHA" = "$GITHUB_SHA"' in ci,
+            "Both dispatch workflows must reject a mismatched reviewed source SHA")
+    for path, source in ((android_path, android), (ci_path, ci)):
+        require(re.search(r"(?ms)^      expected_sha:\n(?:        [^\n]*\n)*?        required: true\s*$", source) is not None,
+                f"{path}: expected_sha must be required for manual dispatch")
+    require("github.event_name == 'workflow_dispatch' && github.run_id || github.ref" in ci,
+            "Manual deep jobs must not be cancelled by ordinary push CI")
+    require("if-no-files-found: error" in ci, "Deep receipt upload must reject absent receipts")
+    require("python3 scripts/studyflow_ci_gradle_profile.py --run" in ci,
+            "CI deep contract lane must execute the canonical Devtool Gradle profile")
     require("assembleRelease" not in android and "bundleRelease" not in android,
             "debug-only Actions workflow must not package release")
 
@@ -90,14 +101,14 @@ def workflow_contract() -> None:
                     f"missing dispatch in parsed YAML: {relative}")
             if relative == android_path:
                 entries = triggers["workflow_dispatch"]["inputs"]
-                require(set(entries) == {"project_dir", "module", "variant", "format"},
+                require(set(entries) == {"expected_sha", "project_dir", "module", "variant", "format"},
                         "Android inputs have changed")
                 for field, expected in (("project_dir", ["."]), ("module", ["app", "app-tv"]),
                                         ("variant", ["debug"]), ("format", ["apk", "aab"])):
                     require(entries[field].get("options") == expected,
                             f"unexpected Android dispatch choices: {field}")
             else:
-                require({"source", "web", "desktop", "android"}.issubset(obj["jobs"]),
+                require({"source", "web", "desktop", "android", "deep-contracts"}.issubset(obj["jobs"]),
                         "CI lost a supported client lane")
 
 

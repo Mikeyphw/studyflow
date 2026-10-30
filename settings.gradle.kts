@@ -1,5 +1,3 @@
-// OV01 dependency integrity: repositories remain centralized here; project dependency locking is
-// enabled in the root build; the canonical integrity refresh materializes SHA-256 verification metadata.
 pluginManagement {
     includeBuild("build-logic")
     repositories {
@@ -9,6 +7,16 @@ pluginManagement {
     }
 }
 
+// StudyFlow policy: Gradle tasks must execute on GitHub Actions, not locally.
+// This is an accidental-execution guard, not an authentication boundary.
+if (System.getenv("GITHUB_ACTIONS") != "true" ||
+    System.getenv("CI") != "true" ||
+    System.getenv("RUNNER_OS") != "Linux") {
+    error("STUDYFLOW_GITHUB_ONLY_GRADLE: run Gradle via the GitHub Actions workflows")
+}
+
+// OV01 dependency integrity: repositories remain centralized here; project dependency locking is
+// enabled in the root build; the canonical integrity refresh materializes SHA-256 verification metadata.
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {

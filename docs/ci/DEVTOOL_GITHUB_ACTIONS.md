@@ -1,7 +1,8 @@
 # StudyFlow — Devtool GitHub Actions integration
 
-This is the repository-local Actions bridge for `~/Code/studyflow`. It does not modify existing
-Devtool native Termux targets, Gradle convention plugins, personal signing, or app data.
+> **2026-10-30 update:** GitHub Actions is now the sole intended Gradle execution host. For mandatory manual-dispatch input (`expected_sha`), the opt-in deep target-contract matrix, task evidence and the source-only local wrapper, read [GitHub-only Gradle adoption](DEVTOOL_GITHUB_ONLY_GRADLE_20261030.md). The examples below include the mandatory commit pin and current hosted policy.
+
+This is the repository-local Actions bridge for `~/Code/studyflow`. The R2 adoption also adds source-level guards to root and included-build Gradle settings; it does not modify user data, Gradle convention plugins or existing personal signing files.
 
 ## What is shipped
 
@@ -21,8 +22,7 @@ all historical repository gates.
 
 ## One-time activation (Termux/Zsh)
 
-Apply the overlay from a **clean** StudyFlow Git worktree (source-bound safety).
-After application, commit the four newly added files and push the branch.
+Apply the source-bound replacement overlay to the exact original StudyFlow snapshot (without first applying OV01). Review the complete `git diff`, then commit all actual changes and push the branch.
 GitHub only registers workflow YAML present in the remote repository. Workflow dispatch
 from GitHub may additionally require a workflow file on the repository default branch;
 if the workflow is not shown in `actions workflows`, merge the workflow definition first.
@@ -32,9 +32,8 @@ cd "$HOME/Code/studyflow"
 python3 scripts/verify_studyflow_actions.py
 
 git status --short
-git add .github/workflows/devtool-android-build.yml \
-  .github/workflows/studyflow-ci.yml \
-  scripts/verify_studyflow_actions.py docs/ci/DEVTOOL_GITHUB_ACTIONS.md
+git add .devtool.toml .github/workflows/ settings.gradle.kts \
+  build-logic/settings.gradle.kts scripts/ docs/ci/
 git commit -m 'Enable StudyFlow builds and CI through Devtool GitHub Actions'
 git push
 ```
@@ -54,20 +53,21 @@ assume the branch contains the workflows and is dispatchable on GitHub.
 ```sh
 REPO="$HOME/Code/studyflow"
 REF="$(git -C "$REPO" branch --show-current)"
+SHA="$(git -C "$REPO" rev-parse HEAD)"
 
 # Verify the workflow source and inputs remotely, without triggering a job.
 devtool -r "$REPO" actions plan devtool-android-build.yml --ref "$REF" \
-  --input project_dir=. --input module=app \
+  --input expected_sha="$SHA" --input project_dir=. --input module=app \
   --input variant=debug --input format=apk --json
 
 # Launch phone APK build. Change module=app-tv for TV.
 devtool -r "$REPO" actions run devtool-android-build.yml --ref "$REF" \
-  --input project_dir=. --input module=app \
+  --input expected_sha="$SHA" --input project_dir=. --input module=app \
   --input variant=debug --input format=apk --yes --json
 
 # For all four client lanes in CI:
 devtool -r "$REPO" actions run studyflow-ci.yml --ref "$REF" \
-  --input lane=all --yes --json
+  --input lane=all --input expected_sha="$SHA" --yes --json
 ```
 
 Devtool's generic **`actions android discover/plan/run`** currently cannot identify
@@ -109,8 +109,7 @@ Artifact collection requires the GitHub run to have completed successfully and i
 
 ## Boundaries and limitations
 
-- Only **debug builds** are offered remotely. Keep the existing permanent personal
-  signing process on the device. No signing keys or passwords are uploaded to GitHub.
+- Only **debug builds** are offered remotely. Existing local Gradle-based release tasks are no longer an allowed workflow under the GitHub-only policy. No signing keys or passwords are uploaded to GitHub; a secure hosted release/signing path remains a separate design gate.
 - GitHub runners can test/compile but do not replace real Android device tests.
 - Source snapshots can include newer Gradle, SDK, or npm requirements; update both CI
   workflows and the static verifier together when changing those baselines.

@@ -1,41 +1,13 @@
-# Devtool orchestration convergence: studyflow
+# Devtool orchestration in StudyFlow
 
-This overlay uses explicit MP03 dependency DAGs, target-local jobs, safe parallel scheduling, and the native EXO run ledger. It is intentionally layered: `./devtoolw` -> canonical Devtool `wrapper exec` -> local target jobs/workflows -> EXO. Remote GitHub Actions remains `devtool actions` (not an unsupported `wrapper devtool="actions"`).
+Effective from the GitHub-only Gradle adoption overlay of 2026-10-30. Read the detailed [GitHub-only Gradle guide](DEVTOOL_GITHUB_ONLY_GRADLE_20261030.md) and [cumulative improvement ledger](DEVTOOL_IMPROVEMENT_LEDGER.md).
 
-## Local repository operations
+- **Local Termux:** `./devtoolw ci-source` (also the wrapper default) invokes three read-only source contracts through native Devtool target-local EXO jobs and an explicit MP03 dependency DAG. `devtool --repo "$PWD" workflows --json` and `preflight --workflow ci-source --target studyflow_android --json` are read-only. `python3 scripts/studyflow_ci_gradle_profile.py --plan android-contracts` prints the canonical Gradle task plan without invoking Gradle.
+- **GitHub Actions:** `devtool actions plan/run studyflow-ci.yml --ref BRANCH --input lane=deep --input expected_sha=FULL_SHA --json` is the deep Gradle route. Existing push/PR Android, TV, desktop and web CI remains fast; the deep lane is opt-in.
+- **Debug packages:** `devtool actions plan/run devtool-android-build.yml --ref BRANCH --input expected_sha=FULL_SHA --input project_dir=. --input module=app --input variant=debug --input format=apk --json`. After the run, use `actions view/watch/artifacts/android collect` to reconcile the exact run, SHA, package and signing evidence.
 
-```bash
-./devtoolw --help
-./devtoolw ci-preflight    # read-only CI workflow presence; EXO run evidence
-./devtoolw ci-local        # local tests/contract, not a GitHub run
-./devtoolw build           # canonical target build
+The local wrapper intentionally does not provide `build`, `test`, `validate`, `tv`, `desktop`, `ci-local`, or `ci-workspace` aliases any more. Direct `devtool build` or a direct Gradle command remains addressable, but ordinary configuration is refused outside GitHub Actions by root and included-build settings guards. This is environment-based accidental-execution protection, not a security sandbox. Do not attempt local Gradle through alternate settings or spoofed environment markers. The retained `.devtool.toml` native Gradle targets are canonical metadata for the hosted task bridge; changing their execution environment to an unsupported GitHub mode is neither necessary nor safe.
 
-devtool --repo "$PWD" workflows --json
-devtool --repo "$PWD" jobs --json
-devtool --repo "$PWD" workflows --json   # Native DAG graph + execution-wave schedule
-devtool --repo "$PWD" invoke ci-preflight --target studyflow_android  # Optional direct invocation
-devtool --repo "$PWD" runs --help
-```
+GitHub build/task receipts are **not** release attestation or native EXO Gradle runtime evidence. Generic `actions plan/run` is used for StudyFlow because direct static Android discovery currently does not support its Gradle project layout. Never use `--discovery-mode gradle` locally just to bypass this limitation.
 
-## Remote GitHub Actions
-
-```bash
-devtool --repo "$PWD" actions diagnose --json
-devtool --repo "$PWD" actions workflows --json
-```
-
-Run `devtool --repo "$PWD" actions plan WORKFLOW.yml --ref BRANCH --json` first, then `actions run WORKFLOW.yml --ref BRANCH --yes --json` to dispatch. Inspect `actions runs`, `actions jobs`, `actions watch`, and `actions artifacts`; use `actions resume --request-id ID` for uncertain dispatches and do not re-dispatch blindly. Github success is not release or device qualification. Keep artifact and source-SHA checks before acceptance.
-
-Expected workflow files: .github/workflows/devtool-android-build.yml, .github/workflows/studyflow-ci.yml.
-
-## Safety
-
-- `ci-preflight` is a read-only workflow *presence* check only, not a GitHub status or security approval.
-- `ci-local` executes canonical local tests and cannot build or sign a release implicitly.
-- Wrapper uses only Devtool-supported native actions or named `invoke` workflows. **No nested Devtool actions dispatch inside an EXO job.**
-- Existing target/job DAGs, Gradle/Go runners, device gates and release authority are preserved.
-- Source-bound update requires the exact uploaded configuration variant, a clean Git worktree, and refuses unexpected existing files.
-
-## Source contract DAG
-
-`./devtoolw ci-source` runs an existing project-specific static validator under Devtool EXO. `ci-preflight` depends on this validator. It does not dispatch GitHub jobs or qualify a signed release.
+Manual GitHub Actions dispatches require `expected_sha`; deep jobs use a distinct concurrency identity from push CI and fail the receipt upload on missing evidence. Source-only negative tests use a fake stub rather than Gradle. See [hard audit](STUDYFLOW_DEVTOOL_OV01_HARD_AUDIT.md).

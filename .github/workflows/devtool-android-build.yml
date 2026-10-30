@@ -4,6 +4,11 @@ name: StudyFlow Devtool Android Build
 on:
   workflow_dispatch:
     inputs:
+      expected_sha:
+        description: 'Required reviewed 40-character commit SHA; rejects moving refs'
+        required: true
+        type: string
+        default: ''
       project_dir:
         description: 'Checked-in Gradle root (StudyFlow requires .)'
         type: choice
@@ -50,9 +55,12 @@ jobs:
           VARIANT: ${{ inputs.variant }}
           FORMAT: ${{ inputs.format }}
           PROJECT_DIR: ${{ inputs.project_dir }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
           test "$PROJECT_DIR" = '.'
           case "$MODULE" in app|app-tv) ;; *) exit 2 ;; esac
           test "$VARIANT" = debug
