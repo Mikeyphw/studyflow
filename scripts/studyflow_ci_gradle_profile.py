@@ -23,7 +23,7 @@ PROFILES = {
     "tv-contracts": ("studyflow_tv", "test"),
     "desktop-contracts": ("studyflow_desktop", "test"),
     "quality-contracts": ("studyflow_quality", "build"),
-    "parity-contracts": ("studyflow_parity", "build"),
+    "parity-contracts": ("studyflow_parity", "validation.phases.preflight"),
 }
 TASK = re.compile(r"(?:(?::[A-Za-z][A-Za-z0-9_-]*)+:)?[A-Za-z][A-Za-z0-9_-]*\Z")
 SHA = re.compile(r"[0-9a-f]{40}\Z")
@@ -42,10 +42,20 @@ def profile_plan(profile: str) -> dict:
     expected_runner = "android" if profile in {"android-contracts", "tv-contracts"} else "gradle"
     if selected.get("runner") != expected_runner:
         raise ValueError(f"Unexpected Devtool runner: {target}")
-    tasks = selected["tasks"][operation]
+    if operation == "validation.phases.preflight":
+        if profile != "parity-contracts":
+            raise ValueError("Only parity CI may select the source-only native preflight")
+        tasks = selected["validation"]["phases"]["preflight"]
+    else:
+        tasks = selected["tasks"][operation]
     if not isinstance(tasks, list) or not tasks or any(not isinstance(t, str) or not TASK.fullmatch(t) for t in tasks):
         raise ValueError(f"Invalid Gradle task list: {target}#{operation}")
     tasks = list(dict.fromkeys(tasks))
+    if profile == "parity-contracts":
+        if "verifyRelFinalRoadmapPromiseAudit" not in tasks or "verifyOv30R2AllTargetProperValidationSeals" not in tasks:
+            raise ValueError("Unsigned parity plan lost canonical Devtool preflight coverage")
+        if "verifyRelFinalTerminalSeal" in tasks or any(t.startswith((":app:assembleRelease", ":app:bundleRelease", ":app:packageRelease", ":app:signRelease")) for t in tasks):
+            raise ValueError("Unsigned parity plan includes release-qualified packaging or terminal seal")
     if profile == "android-contracts":
         # The phone module sets testBuildType="release". Release JVM *tests*
         # are not signed APK/AAB builds. The real signed-output gate stays in
@@ -88,6 +98,10 @@ def source_check() -> None:
                      "-r requirements-test.txt", "-r web/requirements-test.txt"):
         if fragment not in ci:
             raise ValueError(f"Hosted CI lacks pinned Python test prerequisite: {fragment}")
+    for marker in ("matrix.profile == 'android-contracts' || matrix.profile == 'parity-contracts'",
+                   "npm ci", "npm run build"):
+        if marker not in ci:
+            raise ValueError(f"Hosted CI missing native pinned TypeScript environment: {marker}")
     # No local launcher/wrapper alias is allowed to run Gradle as a CI shortcut.
     config = tomllib.loads((ROOT / ".devtool.toml").read_text(encoding="utf-8"))
     commands = config.get("wrapper", {}).get("commands", {})

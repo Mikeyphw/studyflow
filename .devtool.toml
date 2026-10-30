@@ -283,6 +283,21 @@ test = [
   ":core:portability:test",
   "verifyDesktopDov08PersistentWorkspace",
   "verifyDesktopDov09PlanContentLifecycle",
+  "verifyDesktopDov10PlannerAdaptiveWorkflows",
+  "verifyDesktopDov11SessionRuntime",
+  "verifyDesktopDov12QuestionPracticeExecution",
+  "verifyDesktopDov13MockExamStudio",
+  "verifyDesktopDov14ReviewsSrsErrorNotebook",
+  "verifyDesktopDov15LibraryFilesMaterialViewers",
+  "verifyDesktopDov16WritingWorkspace",
+  "verifyDesktopDov17ContentModesExecution",
+  "verifyDesktopDov18PublicExamParity",
+  "verifyDesktopDov19ReadinessCoachingReports",
+  "verifyDesktopDov20PortabilityBackupMigration",
+  "verifyDesktopDov21EnPtBrLocalization",
+  "verifyDesktopDov22SystemLightDarkAppearance",
+  "verifyDesktopDov24FullApplicableParitySeal",
+
   ":desktopApp:test",
 ]
 lint = []
@@ -315,6 +330,21 @@ unit-test = [
   ":core:portability:test",
   "verifyDesktopDov08PersistentWorkspace",
   "verifyDesktopDov09PlanContentLifecycle",
+  "verifyDesktopDov10PlannerAdaptiveWorkflows",
+  "verifyDesktopDov11SessionRuntime",
+  "verifyDesktopDov12QuestionPracticeExecution",
+  "verifyDesktopDov13MockExamStudio",
+  "verifyDesktopDov14ReviewsSrsErrorNotebook",
+  "verifyDesktopDov15LibraryFilesMaterialViewers",
+  "verifyDesktopDov16WritingWorkspace",
+  "verifyDesktopDov17ContentModesExecution",
+  "verifyDesktopDov18PublicExamParity",
+  "verifyDesktopDov19ReadinessCoachingReports",
+  "verifyDesktopDov20PortabilityBackupMigration",
+  "verifyDesktopDov21EnPtBrLocalization",
+  "verifyDesktopDov22SystemLightDarkAppearance",
+  "verifyDesktopDov24FullApplicableParitySeal",
+
   ":desktopApp:test",
 ]
 package = []

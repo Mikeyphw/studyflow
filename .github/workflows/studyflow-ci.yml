@@ -204,18 +204,20 @@ jobs:
           sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0' 'ndk;29.0.14206865'
       - uses: gradle/actions/setup-gradle@v4
       - name: Node toolchain for cross-client parity
-        if: ${{ matrix.profile == 'parity-contracts' }}
+        if: ${{ matrix.profile == 'android-contracts' || matrix.profile == 'parity-contracts' }}
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: web/package-lock.json
+      - name: Install pinned TypeScript environment for native/Web contracts
+        if: ${{ matrix.profile == 'android-contracts' || matrix.profile == 'parity-contracts' }}
+        working-directory: web
+        run: npm ci
       - name: Prepare web runtime for parity checks
         if: ${{ matrix.profile == 'parity-contracts' }}
         working-directory: web
-        run: |
-          npm ci
-          npm run build
+        run: npm run build
       - name: Run canonical StudyFlow Devtool Gradle target profile
         shell: bash
         env:

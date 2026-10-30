@@ -94,6 +94,9 @@ def workflow_contract() -> None:
             "Deep successful results must verify a completed passed receipt")
     require("python3 scripts/studyflow_ci_gradle_profile.py --run" in ci,
             "CI deep contract lane must execute the canonical Devtool Gradle profile")
+    require("matrix.profile == 'android-contracts' || matrix.profile == 'parity-contracts'" in ci
+            and "Install pinned TypeScript environment for native/Web contracts" in ci,
+            "Android and parity deep profiles require pinned TypeScript installed from web/npm lock")
     require("assembleRelease" not in android and "bundleRelease" not in android,
             "debug-only Actions workflow must not package release")
     require(":app:testDebugUnitTest" not in ci and ":app:assembleRelease" not in ci

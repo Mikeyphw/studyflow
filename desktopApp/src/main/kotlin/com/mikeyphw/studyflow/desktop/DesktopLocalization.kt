@@ -294,6 +294,8 @@ class DesktopTextCatalog private constructor(
                 "Edital, legislação, ciclo e painel compartilham semântica com estado durável no Desktop.",
             "Reports omit freeform study notes and stay inside the Desktop workspace." to
                 "Relatórios omitem notas livres e ficam no workspace do Desktop.",
+            "No shareable endpoint is being advertised from loopback-only desktop addresses." to
+                "Nenhum endpoint compartilhável é anunciado a partir dos endereços de loopback do Desktop.",
             "SFLP peer integration is unavailable in this desktop composition root." to
                 "A integração SFLP não está disponível nesta composição do Desktop.",
             "These are intentionally not implemented until native desktop adapters are introduced:" to
