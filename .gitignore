@@ -86,3 +86,8 @@ Thumbs.db
 
 # Local backup files
 *.before-*
+
+# Devtool transient state (explicit OV01 contract paths)
+**/.devtool/artifacts/registry.json
+**/.devtool/artifacts/registry.lock
+**/.devtool/test-history.json

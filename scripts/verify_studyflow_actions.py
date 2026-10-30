@@ -72,7 +72,7 @@ def workflow_contract() -> None:
         require(needle in android, f"Android workflow lacks mandatory control: {needle}")
     for needle in ("workflow_dispatch:", "pull_request:", "push:",
                    "options: [all, android, desktop, web, deep]", "expected_sha:", "deep-contracts:", "npm ci", "npm test",
-                   "npm run build", ":desktopApp:test", ":app:testReleaseUnitTest",
+                   "npm run build", ":desktopApp:test", ":app:testDebugUnitTest",
                    ":app-tv:testDebugUnitTest", "lintDebug", '"$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs'):
         require(needle in ci, f"CI workflow lacks required lane/control: {needle}")
     for name, content in ((android_path, android), (ci_path, ci)):
@@ -96,6 +96,20 @@ def workflow_contract() -> None:
             "CI deep contract lane must execute the canonical Devtool Gradle profile")
     require("assembleRelease" not in android and "bundleRelease" not in android,
             "debug-only Actions workflow must not package release")
+    require(":app:testReleaseUnitTest" not in ci and ":app:assembleRelease" not in ci,
+            "unsigned CI must not invoke signing-dependent Android Release tasks")
+    import tomllib
+    devtool_cfg = tomllib.loads(checked_text('.devtool.toml'))
+    web_cfg = devtool_cfg['targets']['studyflow_web']
+    require(web_cfg['root'] == 'web' and 'src/**' in web_cfg['inputs']
+            and 'package.json' in web_cfg['inputs'] and 'dist/**' in web_cfg['outputs']
+            and not any(p.startswith('web/') for p in web_cfg['inputs'] + web_cfg['outputs']),
+            'Devtool web input/output paths must be target-root relative')
+    signing = checked_text('app/build.gradle.kts')
+    require('name.startsWith("packageRelease") && name != "packageReleaseResources"' in signing and
+            'name.startsWith("packageRelease") ||' not in signing and
+            'dependsOn(verifyPhoneReleaseSigningPreflight)' in signing,
+            'Release signing gate must cover output packaging, not unit-test resource packaging')
 
     # The full schema parse is an optional additional check, not a hidden CI dependency.
     if importlib.util.find_spec("yaml") is not None:

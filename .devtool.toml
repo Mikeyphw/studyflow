@@ -134,7 +134,7 @@ test = [
   ":feature:settings:testDebugUnitTest",
   ":feature:subjects:testDebugUnitTest",
   ":feature:workspace:testDebugUnitTest",
-  ":app:testReleaseUnitTest",
+  ":app:testDebugUnitTest",
   "verifyTermuxRuntimeFoundation",
   "verifyProgrammingCourseUi",
   "verifyCodingExerciseTermuxExecution",
@@ -281,6 +281,8 @@ test = [
   ":core:link:test",
   ":core:model:test",
   ":core:portability:test",
+  "verifyDesktopDov08PersistentWorkspace",
+  "verifyDesktopDov09PlanContentLifecycle",
   ":desktopApp:test",
 ]
 lint = []
@@ -311,6 +313,8 @@ unit-test = [
   ":core:link:test",
   ":core:model:test",
   ":core:portability:test",
+  "verifyDesktopDov08PersistentWorkspace",
+  "verifyDesktopDov09PlanContentLifecycle",
   ":desktopApp:test",
 ]
 package = []
@@ -322,16 +326,16 @@ platform = "web"
 root = "web"
 execution_environment = "native-termux"
 inputs = [
-    "web/src/**",
-    "web/tests/**",
-    "web/scripts/**",
-    "web/package.json",
-    "web/package-lock.json",
-    "web/tsconfig.json",
-    "web/sw.js",
+    "src/**",
+    "tests/**",
+    "scripts/**",
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "sw.js",
 ]
 outputs = [
-    "web/dist/**",
+    "dist/**",
 ]
 
 [targets.studyflow_web.validation]

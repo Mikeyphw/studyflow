@@ -46,6 +46,10 @@ def profile_plan(profile: str) -> dict:
     if not isinstance(tasks, list) or not tasks or any(not isinstance(t, str) or not TASK.fullmatch(t) for t in tasks):
         raise ValueError(f"Invalid Gradle task list: {target}#{operation}")
     tasks = list(dict.fromkeys(tasks))
+    if profile == "android-contracts":
+        banned = {":app:testReleaseUnitTest", ":app:assembleRelease", ":app:bundleRelease"}
+        if any(t in banned or t.startswith(":app:packageRelease") for t in tasks):
+            raise ValueError("Unsigned Android deep profile requested a signing-dependent Release task")
     return {"schema": "studyflow.devtool.github-gradle-plan.v1", "profile": profile,
             "target": target, "operation": operation, "tasks": tasks,
             "config_sha256": hashlib.sha256(source).hexdigest(),

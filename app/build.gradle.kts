@@ -262,7 +262,7 @@ tasks.configureEach {
     val releasePackagingTask =
         name == "assembleRelease" ||
             name == "bundleRelease" ||
-            name.startsWith("packageRelease") ||
+            (name.startsWith("packageRelease") && name != "packageReleaseResources") ||
             name.startsWith("signRelease")
     if (releasePackagingTask) {
         dependsOn(verifyPhoneReleaseSigningPreflight)

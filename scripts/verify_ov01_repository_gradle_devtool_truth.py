@@ -82,16 +82,26 @@ if repo_match:
     )
     for owner in (
         "verifyAndroidFocusShellFinalSeal",
-        "verifyPhase56_57ReleaseReadiness",
-        "verifyPhase58_59WarningHygiene",
-        "verifyPhase60_61ContentReportSeal",
-        "verifyPhase62OnboardingSeal",
-        "verifyPhase63_64ExamRunbookSprintSeal",
         "verifyPostPhase64FinalValidationRefresh",
         "verifyFinalSourceAcceptance",
         "verifyRemediationOv13",
     ):
-        require(owner in body, f"S0-03: aggregate lost explicit owner {owner}")
+        require(owner in body, f"S0-03: active aggregate lost explicit owner {owner}")
+    # Archival verifiers intentionally moved to an explicit, separately invoked
+    # aggregate. Requiring them in the active gate is historical contract drift.
+    archive_match = re.search(r'tasks\.register\("verifyArchivedRepositoryContracts"\) \{(?P<body>.*?)\n\}', build, re.S)
+    require(archive_match is not None, "S0-03: archived aggregate missing")
+    if archive_match:
+        archived = archive_match.group("body")
+        for owner in (
+            "verifyPhase56_57ReleaseReadiness",
+            "verifyPhase58_59WarningHygiene",
+            "verifyPhase60_61ContentReportSeal",
+            "verifyPhase62OnboardingSeal",
+            "verifyPhase63_64ExamRunbookSprintSeal",
+        ):
+            require(owner in archived, f"S0-03: archived aggregate lost explicit owner {owner}")
+            require(owner not in body, f"S0-03: archived owner leaked into active gate {owner}")
 for script in (
     "verify_android_focus_shell_r2.py",
     "verify_final_app_acceptance.py",
@@ -125,15 +135,27 @@ require(manifest_path.is_file(), "S0-05: root devtool-overlay.json missing")
 if manifest_path.is_file():
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        require(
-            manifest.get("name") == "studyflow_ov01_repository_gradle_devtool_truth_baseline_v1" or str(manifest.get("name", "")).startswith("studyflow_ov30r2_"),
-            "S0-05: root devtool-overlay.json is not the OV01 manifest",
-        )
+        # The root manifest is retained as historical overlay provenance. Its
+        # current name identifies the legitimate OV02 SFLP/programming overlay;
+        # rewriting it to a fake OV01 manifest would destroy that provenance.
+        require(manifest.get("schema_version") == 1 and manifest.get("type") == "overlay",
+                "S0-05: root overlay provenance schema/type invalid")
+        # Preserve this immutable historical manifest's identity. A future
+        # deliberate provenance migration must update this reviewed baseline.
+        require(manifest.get("name") == "studyflow_failure_audit_ov02_sflp_programming_contracts_v1" and
+                manifest.get("target") == "studyflow_android",
+                "S0-05: root overlay provenance has been replaced or drifted")
+        require(isinstance(manifest.get("inventory", {}).get("entries"), list) and
+                bool(manifest.get("inventory", {}).get("entries")),
+                "S0-05: historical overlay inventory missing")
         inventory_paths = [entry.get("path", "") for entry in manifest.get("inventory", {}).get("entries", [])]
         require(
-            not any(path.startswith(".devtool/") for path in inventory_paths),
-            "S0-06: overlay illegally inventories Devtool runtime state",
+            not any(not isinstance(path, str) or path.startswith(".devtool/") or
+                    path.startswith("/") or ".." in Path(path).parts for path in inventory_paths),
+            "S0-06: historical overlay inventories unsafe paths or Devtool runtime state",
         )
+        require(len(inventory_paths) == len(set(inventory_paths)),
+                "S0-05: historical overlay inventory contains duplicate paths")
     except Exception as exc:
         FAILURES.append(f"S0-05: invalid devtool-overlay.json: {exc}")
 for ignored in (

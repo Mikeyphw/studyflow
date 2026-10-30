@@ -45,6 +45,7 @@ jobs:
         run: |
           python3 scripts/verify_studyflow_actions.py --source-only
           python3 scripts/studyflow_ci_gradle_profile.py --check-source
+          python3 scripts/test_studyflow_ov01_r4_contracts.py
   web:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.lane == 'all' || inputs.lane == 'web' }}
     needs: source
@@ -102,7 +103,7 @@ jobs:
       matrix:
         include:
           - module: app
-            test_task: ':app:testReleaseUnitTest'
+            test_task: ':app:testDebugUnitTest'
           - module: app-tv
             test_task: ':app-tv:testDebugUnitTest'
     steps:
