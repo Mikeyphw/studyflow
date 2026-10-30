@@ -1,0 +1,3 @@
+# Hosted Python test dependencies; used by web and deep Devtool contract jobs.
+# No Android/Gradle task needs to execute locally.
+Pillow==12.0.0

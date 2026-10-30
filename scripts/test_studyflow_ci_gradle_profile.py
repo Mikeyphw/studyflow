@@ -25,6 +25,8 @@ def test() -> None:
     with tempfile.TemporaryDirectory(prefix='studyflow-gh-only-source-test-') as folder:
         repo = Path(folder)
         shutil.copyfile(ROOT / '.devtool.toml', repo / '.devtool.toml')
+        (repo / 'app').mkdir()
+        shutil.copyfile(ROOT / 'app/build.gradle.kts', repo / 'app/build.gradle.kts')
         wrapper = repo / 'gradlew'
         marker = repo / 'stub-invoked'
         # This stub only writes a marker and exits 17; it is NOT Gradle.

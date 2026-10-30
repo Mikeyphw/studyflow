@@ -40,3 +40,12 @@
 4. **Historical root overlay:** preserve and pin the currently reviewed historical OV02 manifest name; arbitrary name substitutions must fail.
 
 **R4R2 is a complete replacement for R4 and targets the same committed base. Do not apply R4 first.** No local Gradle task execution. R4R2 acceptance on GitHub is still pending.
+
+## OV01-R4R3 hosted corrective update — 2026-10-30
+
+After R4R2 push (`29d06f2d6030bca751bbc94dcc275f62172b394f`), run `41132452684` exposed two further gaps:
+
+1. The phone app has `testBuildType = "release"`. Its `testDebugUnitTest` task does **not** exist. Restore the Release *unit-test* name in ordinary CI and canonical Devtool Android test profile. Retain R4R2's Release *packaging* signing gate and its exact `packageReleaseResources` exemption. This does not authorize unsigned Release APKs or AABs.
+2. `web/tests/test_w13_pwa_offline.py` requires Pillow for real PNG dimensions. Add a reviewed `Pillow==12.0.0` Python test dependency and hosted Python 3.12 installs in web and deep lanes; preserve the test and its failure behavior.
+
+R4R3 repairs the R4R2 source and its previously incorrect self-verification, adds negative regression tests and updates the cumulative ledger. No Gradle runs locally. Review and apply R4R3 **on top of committed R4R2**, never against pre-R4. Source hashes in overlay inventory are fail-closed. Standard and deep hosted acceptance remain pending after commit/push.

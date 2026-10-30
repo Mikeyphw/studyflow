@@ -47,9 +47,23 @@ def profile_plan(profile: str) -> dict:
         raise ValueError(f"Invalid Gradle task list: {target}#{operation}")
     tasks = list(dict.fromkeys(tasks))
     if profile == "android-contracts":
-        banned = {":app:testReleaseUnitTest", ":app:assembleRelease", ":app:bundleRelease"}
-        if any(t in banned or t.startswith(":app:packageRelease") for t in tasks):
-            raise ValueError("Unsigned Android deep profile requested a signing-dependent Release task")
+        # The phone module sets testBuildType="release". Release JVM *tests*
+        # are not signed APK/AAB builds. The real signed-output gate stays in
+        # app/build.gradle.kts, where packageReleaseResources is exempted.
+        phone_gradle = (ROOT / "app/build.gradle.kts").read_text(encoding="utf-8")
+        if not re.search(r'testBuildType\s*=\s*"release"', phone_gradle):
+            raise ValueError("Phone JVM task selection disagrees with testBuildType")
+        if ":app:testReleaseUnitTest" not in tasks or ":app:testDebugUnitTest" in tasks:
+            raise ValueError("Unsigned Android profile must use the configured Release JVM test task")
+        for task in tasks:
+            if not task.startswith(":app:"):
+                continue
+            name = task.rsplit(":", 1)[-1]
+            if (name.startswith(("assembleRelease", "bundleRelease", "packageRelease",
+                                 "signRelease", "publishRelease"))
+                    or (name.startswith("test") and "Release" in name
+                        and name != "testReleaseUnitTest")):
+                raise ValueError("Unsigned Android profile requested a Release packaging task")
     return {"schema": "studyflow.devtool.github-gradle-plan.v1", "profile": profile,
             "target": target, "operation": operation, "tasks": tasks,
             "config_sha256": hashlib.sha256(source).hexdigest(),
@@ -67,6 +81,13 @@ def source_check() -> None:
     for fragment in ("expected_sha:", "deep-contracts:", "studyflow_ci_gradle_profile.py", "if: always()", "if-no-files-found: warn", "--init-receipt"):
         if fragment not in ci:
             raise ValueError(f"CI workflow lacks Devtool profile control: {fragment}")
+    requirements = (ROOT / "web/requirements-test.txt").read_text(encoding="utf-8")
+    if [line.strip() for line in requirements.splitlines() if line.strip() and not line.lstrip().startswith("#")] != ["Pillow==12.0.0"]:
+        raise ValueError("Web Pillow test dependency must be pinned and reviewable")
+    for fragment in ("actions/setup-python@v5", "python-version: '3.12'",
+                     "-r requirements-test.txt", "-r web/requirements-test.txt"):
+        if fragment not in ci:
+            raise ValueError(f"Hosted CI lacks pinned Python test prerequisite: {fragment}")
     # No local launcher/wrapper alias is allowed to run Gradle as a CI shortcut.
     config = tomllib.loads((ROOT / ".devtool.toml").read_text(encoding="utf-8"))
     commands = config.get("wrapper", {}).get("commands", {})

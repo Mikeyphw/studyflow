@@ -134,7 +134,7 @@ test = [
   ":feature:settings:testDebugUnitTest",
   ":feature:subjects:testDebugUnitTest",
   ":feature:workspace:testDebugUnitTest",
-  ":app:testDebugUnitTest",
+  ":app:testReleaseUnitTest",
   "verifyTermuxRuntimeFoundation",
   "verifyProgrammingCourseUi",
   "verifyCodingExerciseTermuxExecution",
@@ -331,6 +331,7 @@ inputs = [
     "scripts/**",
     "package.json",
     "package-lock.json",
+    "requirements-test.txt",
     "tsconfig.json",
     "sw.js",
 ]

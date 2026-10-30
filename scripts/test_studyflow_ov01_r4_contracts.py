@@ -34,7 +34,7 @@ def main():
     web = targets['studyflow_web']
     assert_true(web['root'] == 'web', 'Web Devtool target root changed')
     assert_true({'src/**', 'tests/**', 'scripts/**', 'package.json', 'package-lock.json',
-                 'tsconfig.json', 'sw.js'}.issubset(set(web['inputs'])),
+                 'tsconfig.json', 'sw.js', 'requirements-test.txt'}.issubset(set(web['inputs'])),
                 'Target-relative web inputs missing')
     assert_true('dist/**' in web['outputs'], 'Target-relative web output missing')
     from pathlib import PurePosixPath
@@ -51,15 +51,16 @@ def main():
     assert_true(required_desktop.issubset(set(desktop_phases)),
                 'Desktop DOV08/DOV09 missing from native Devtool validation phases')
     android = targets['studyflow_android']['tasks']['test']
-    assert_true(':app:testDebugUnitTest' in android, 'Unsigned deep CI does not select debug JVM tests')
-    assert_true(':app:testReleaseUnitTest' not in android,
-                'Unsigned deep CI retains signing-sensitive release test')
-    workflow = (ROOT / '.github/workflows/studyflow-ci.yml').read_text()
-    assert_true("test_task: ':app:testDebugUnitTest'" in workflow,
-                'Standard CI does not select debug JVM tests')
-    assert_true('testReleaseUnitTest' not in workflow and 'assembleRelease' not in workflow,
-                'Unsigned standard CI accidentally requests release tasks')
     app_build = (ROOT / 'app/build.gradle.kts').read_text()
+    assert_true('testBuildType = "release"' in app_build,
+                'Phone JVM tests are not configured for Release')
+    assert_true(':app:testReleaseUnitTest' in android, 'Deep CI lacks actual configured phone JVM test task')
+    assert_true(':app:testDebugUnitTest' not in android, 'Deep CI selected nonexistent phone Debug JVM test task')
+    workflow = (ROOT / '.github/workflows/studyflow-ci.yml').read_text()
+    assert_true("test_task: ':app:testReleaseUnitTest'" in workflow,
+                'Standard CI does not select the configured Release JVM test task')
+    assert_true(":app:testDebugUnitTest" not in workflow and 'assembleRelease' not in workflow,
+                'Unsigned standard CI accidentally requests nonexistent debug or packaged release tasks')
     assert_true('dependsOn(verifyPhoneReleaseSigningPreflight)' in app_build,
                 'Actual Release packaging lost mandatory signing preflight')
     # Do not attach the signing gate to AGP packageReleaseResources: Release JVM
@@ -82,7 +83,7 @@ def main():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     real = mod.profile_plan('android-contracts')
-    assert_true(':app:testDebugUnitTest' in real['tasks'], 'Hosted profile does not use debug')
+    assert_true(':app:testReleaseUnitTest' in real['tasks'], 'Hosted profile does not use configured Release JVM tests')
     with patch.dict(mod.PROFILES, {'android-contracts':('studyflow_android','test')}):
         assert_true(mod.profile_plan('android-contracts')['qualified_release'] is False,
                     'Unsigned deep plan improperly claims release qualification')
@@ -93,24 +94,26 @@ def main():
     with tempfile.TemporaryDirectory(prefix='studyflow-r4-source-') as tmp:
         fake = pathlib.Path(tmp)
         contents = (ROOT / '.devtool.toml').read_text()
-        mutated = contents.replace('  ":app:testDebugUnitTest",',
-                                   '  ":app:testReleaseUnitTest",', 1)
+        mutated = contents.replace('  ":app:testReleaseUnitTest",',
+                                   '  ":app:assembleRelease",', 1)
         assert_true(mutated != contents, 'Could not form negative profile fixture')
         (fake / '.devtool.toml').write_text(mutated)
+        (fake / 'app').mkdir()
+        (fake / 'app/build.gradle.kts').write_text(app_build)
         with mock_patch.object(mod,'ROOT',fake):
             try:
                 mod.profile_plan('android-contracts')
             except ValueError as exc:
-                assert_true('signing-dependent Release' in str(exc), str(exc))
+                assert_true('Release' in str(exc), str(exc))
             else:
-                raise AssertionError('Release task mutation escaped unsigned profile policy')
+                raise AssertionError('Release packaging mutation escaped unsigned profile policy')
     # Keep historical source provenance meaningful rather than accepting arbitrary
     # fake root manifests that only satisfy schema/type checks.
     import json
     history = json.loads((ROOT / 'devtool-overlay.json').read_text())
     assert_true(history['name'] == 'studyflow_failure_audit_ov02_sflp_programming_contracts_v1',
                 'Root overlay provenance identity drifted')
-    print('STUDYFLOW_OV01_R4R2_HOSTED_SOURCE_CONTRACTS: PASS (no Gradle execution)')
+    print('STUDYFLOW_OV01_R4R3_HOSTED_SOURCE_CONTRACTS: PASS (no Gradle execution)')
 
 
 if __name__ == '__main__':
