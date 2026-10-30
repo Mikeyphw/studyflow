@@ -52,6 +52,15 @@ def test() -> None:
                 env = {'GITHUB_ACTIONS': 'true', 'CI':'true', 'RUNNER_OS':'Linux',
                        'GITHUB_EVENT_NAME':'workflow_dispatch', 'GITHUB_SHA':sha,
                        'GITHUB_RUN_ID':'123', 'GITHUB_RUN_ATTEMPT':'2'}
+                # Source-only receipt exists before Gradle setup; no stub dispatched.
+                with patch.dict(os.environ, env):
+                    profile.init_receipt('android-contracts', receipt)
+                preflight_receipt = json.loads(receipt.read_text())
+                assert preflight_receipt['status'] == 'blocked_before_gradle'
+                assert preflight_receipt['failure_stage'] == 'hosted_prerequisites'
+                assert preflight_receipt['build_executed'] is False
+                assert preflight_receipt['git_sha'] == sha
+                assert not marker.exists()
                 with patch.dict(os.environ, env):
                     assert profile.run('android-contracts', receipt) == 17
                 result = json.loads(receipt.read_text())

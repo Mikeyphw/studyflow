@@ -172,6 +172,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Initialize pre-Gradle receipt (source-only)
+        shell: bash
+        env:
+          STUDYFLOW_CI_PROFILE: ${{ matrix.profile }}
+          STUDYFLOW_CI_RECEIPT: ${{ runner.temp }}/studyflow-devtool-profile.json
+        run: |
+          python3 scripts/studyflow_ci_gradle_profile.py --init-receipt "$STUDYFLOW_CI_PROFILE" --receipt "$STUDYFLOW_CI_RECEIPT"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -205,11 +212,17 @@ jobs:
           set -euo pipefail
           chmod +x ./gradlew
           python3 scripts/studyflow_ci_gradle_profile.py --run "$STUDYFLOW_CI_PROFILE" --receipt "$STUDYFLOW_CI_RECEIPT"
+      - name: Verify successful hosted Gradle receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '.status == "passed" and .exit_code == 0 and .build_executed == true' \
+            "$RUNNER_TEMP/studyflow-devtool-profile.json"
       - name: Preserve reviewed task plan and outcome (even on failure)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: studyflow-devtool-${{ matrix.profile }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/studyflow-devtool-profile.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14

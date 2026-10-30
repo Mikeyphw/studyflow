@@ -33,3 +33,18 @@ Last examined: 2026-10-30. Source: StudyFlow `8997be26`; Devtool `8a356a9` in pr
 | SF-DT-16 | P1 | Original OV01 docs retained obsolete four-file commit and local Gradle-release instructions | Refresh docs and block legacy local Gradle release until hosted route exists | Hosted secure release design |
 
 **R2 evidence:** source-only Python contracts, negative fake-runner tests, YAML structure, source-bound overlay integrity, static Devtool validation; no actual Gradle or GitHub Actions build executed. Exact results are recorded in `STUDYFLOW_DEVTOOL_OV01_HARD_AUDIT.md`.
+
+## GitHub Actions run 41119482183 — wrapper-validation incident (2026-10-30)
+
+| ID | Priority | Evidence | Fix in OV01-R3 | Acceptance |
+| --- | --- | --- | --- | --- |
+| SF-DT-17 | P1 | All five `deep-contracts` jobs rejected `gradle/wrapper/gradle-wrapper.jar` in `gradle/actions/setup-gradle@v4`, before any Gradle execution. Original repository JAR was a custom 5,361-byte one-class bootstrap (SHA-256 `000a9d3e40bf33c4786ec759fc7dc79ca60f3a67b98902fd46e0f21c0464f250`), whereas Gradle's official 9.7.1 wrapper checksum is `7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d`. The Gradle distribution ZIP checksum already matches upstream. | R3 attempt failed when its network-dependent preflight followed a redirect to HTTP 404 (run `51a27a1e1aa949848a27982e2f0249c9`); Devtool verified rollback of six restored and one added paths. R3R2 instead requires staging the official JAR before the Devtool transaction, validates its published SHA-256, then installs it offline during the atomic preflight. Wrapper validation remains enabled. | Stage the wrapper before apply, verify `sha256sum` locally, commit binary, run hosted deep profiles again. No Gradle run locally. |
+| SF-DT-18 | P2 | Five accompanying upload failures reported `if-no-files-found: error` because setup failed before `studyflow_ci_gradle_profile.py` could write a receipt. | Initialize `blocked_before_gradle` receipt immediately after checkout and upload it on failure; use `warn` for pathological failures before checkout, while explicitly requiring a completed successful receipt after a successful Gradle invocation. | Hosted setup-failure negative acceptance plus successful profile receipt. |
+
+**Evidence boundary:** Root-cause analysis and source-only tests are complete. Downloading the official wrapper and CI build acceptance require the user's Termux/GitHub execution. The R3R2 Devtool transaction requires no network: stage a separately downloaded, SHA-256-verified official wrapper using the provided helper first. The overlay carries no unverified third-party binary. All Gradle tasks remain hosted.
+
+### OV01-R3R2: failed R3 download remediation (2026-10-30)
+
+- **Evidence:** R3 preflight returned HTTP 404 after redirect and Devtool restored all six modified files and the wrapper, removed the one newly added document, and verified the rollback (`51a27a1e1aa949848a27982e2f0249c9`). This failure was caused by a brittle distribution endpoint dependency inside the transaction, not a Gradle build failure.
+- **Correction:** Use an offline after-extract preflight. User stages the official 9.7.1 wrapper before applying via a separate fetch script with independent download candidates and a hard-coded upstream checksum. The preflight verifies both the staged SHA-256 and the current repository wrapper identity; it never calls a network service or Gradle.
+- **Acceptance:** Offline missing/invalid-staged-file rejection verified, source-only suite verified. **Success-path install of the authentic wrapper and hosted deep builds pending** until a verified binary is staged in Termux.

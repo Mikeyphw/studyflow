@@ -44,7 +44,12 @@ def source_contract() -> None:
     require('JavaVersion.VERSION_21' in convention, "Java source/target toolchain changed")
     require('gradle-9.7.1-bin.zip' in checked_text("gradle/wrapper/gradle-wrapper.properties"),
             "Gradle wrapper version changed")
-    require((ROOT / "gradle/wrapper/gradle-wrapper.jar").is_file(), "Gradle wrapper jar missing")
+    wrapper = ROOT / "gradle/wrapper/gradle-wrapper.jar"
+    require(wrapper.is_file() and not wrapper.is_symlink(), "Gradle wrapper jar missing or unsafe")
+    import hashlib
+    expected_wrapper_sha = "7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d"
+    require(hashlib.sha256(wrapper.read_bytes()).hexdigest() == expected_wrapper_sha,
+            "Unofficial Gradle wrapper JAR; use verified Gradle 9.7.1 wrapper")
     targets = checked_text(".devtool.toml")
     for target in ("studyflow_android", "studyflow_tv", "studyflow_desktop", "studyflow_web"):
         require(f"[targets.{target}]" in targets, f"Devtool target unavailable: {target}")
@@ -83,7 +88,10 @@ def workflow_contract() -> None:
                 f"{path}: expected_sha must be required for manual dispatch")
     require("github.event_name == 'workflow_dispatch' && github.run_id || github.ref" in ci,
             "Manual deep jobs must not be cancelled by ordinary push CI")
-    require("if-no-files-found: error" in ci, "Deep receipt upload must reject absent receipts")
+    require("if-no-files-found: warn" in ci and "--init-receipt" in ci,
+            "Deep receipt must be initialized before hosted Gradle setup and uploaded on failure")
+    require("Verify successful hosted Gradle receipt" in ci,
+            "Deep successful results must verify a completed passed receipt")
     require("python3 scripts/studyflow_ci_gradle_profile.py --run" in ci,
             "CI deep contract lane must execute the canonical Devtool Gradle profile")
     require("assembleRelease" not in android and "bundleRelease" not in android,

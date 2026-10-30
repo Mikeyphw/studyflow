@@ -60,7 +60,7 @@ def source_check() -> None:
     for fragment in ("expected_sha:", 'required: true', 'test "$EXPECTED_SHA" = "$GITHUB_SHA"', "actions/upload-artifact@v4"):
         if fragment not in android:
             raise ValueError(f"Android workflow lacks source/receipt control: {fragment}")
-    for fragment in ("expected_sha:", "deep-contracts:", "studyflow_ci_gradle_profile.py", "if: always()", "if-no-files-found: error"):
+    for fragment in ("expected_sha:", "deep-contracts:", "studyflow_ci_gradle_profile.py", "if: always()", "if-no-files-found: warn", "--init-receipt"):
         if fragment not in ci:
             raise ValueError(f"CI workflow lacks Devtool profile control: {fragment}")
     # No local launcher/wrapper alias is allowed to run Gradle as a CI shortcut.
@@ -89,6 +89,29 @@ def git_head() -> str:
     if not SHA.fullmatch(sha):
         raise ValueError("Invalid Git source SHA")
     return sha
+
+
+def init_receipt(profile: str, receipt_file: Path) -> None:
+    """Record a source-bound, non-build initial receipt *before* runner setup.
+
+    Remains available when setup-java, Android SDK, or setup-gradle fails.
+    Does not execute Gradle and does not claim a completed result.
+    """
+    if os.environ.get("GITHUB_ACTIONS") != "true" or os.environ.get("CI") != "true":
+        raise ValueError("Hosted receipt initialization requires GitHub Actions")
+    expected_sha = os.environ.get("GITHUB_SHA", "").lower()
+    if not SHA.fullmatch(expected_sha) or git_head() != expected_sha:
+        raise ValueError("GitHub Actions checkout/source SHA mismatch")
+    if receipt_file.resolve().is_relative_to(ROOT.resolve()):
+        raise ValueError("Receipt path must be outside checked-out sources")
+    receipt_file.parent.mkdir(parents=True, exist_ok=True)
+    receipt = {**profile_plan(profile), "git_sha": expected_sha,
+               "github_run_id": os.environ.get("GITHUB_RUN_ID", ""),
+               "github_run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", ""),
+               "created_at_utc": datetime.now(timezone.utc).isoformat(),
+               "status": "blocked_before_gradle", "failure_stage": "hosted_prerequisites",
+               "exit_code": None, "build_executed": False, "native_exo_gradle_execution": False}
+    receipt_file.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
 
 
 def run(profile: str, receipt_file: Path) -> int:
@@ -136,6 +159,7 @@ def main() -> int:
     flags = parser.add_mutually_exclusive_group(required=True)
     flags.add_argument("--check-source", action="store_true")
     flags.add_argument("--plan", choices=sorted(PROFILES))
+    flags.add_argument("--init-receipt", choices=sorted(PROFILES))
     flags.add_argument("--run", choices=sorted(PROFILES))
     parser.add_argument("--receipt", type=Path)
     args = parser.parse_args()
@@ -144,6 +168,9 @@ def main() -> int:
             source_check()
         elif args.plan:
             print(json.dumps(profile_plan(args.plan), indent=2))
+        elif args.init_receipt:
+            receipt = args.receipt or Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "studyflow-devtool-profile.json"
+            init_receipt(args.init_receipt, receipt)
         else:
             receipt = args.receipt or Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "studyflow-devtool-profile.json"
             return run(args.run, receipt)
