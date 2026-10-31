@@ -56,7 +56,7 @@ def main():
             else: raise AssertionError('mismatched testBuildType accepted')
     # Actual artifact output signing remains mandatory and source visible.
     build=(ROOT/'app/build.gradle.kts').read_text()
-    assert 'name.startsWith("packageRelease") && name != "packageReleaseResources"' in build
+    assert 'name.startsWith("packageRelease") &&\n                name != "packageReleaseResources" &&\n                !name.contains("UnitTest")' in build
     assert all(t in build for t in ('name == "assembleRelease"','name == "bundleRelease"',
                                     'name.startsWith("signRelease")','dependsOn(verifyPhoneReleaseSigningPreflight)'))
     print('STUDYFLOW_R4R3_NEGATIVE_CONTRACTS: PASS (no Gradle execution)')

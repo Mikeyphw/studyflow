@@ -208,8 +208,9 @@ dependencies {
 
 
 // OV01: fail release packaging on missing/partial signing credentials before release build work.
-// `mustRunAfter` has no effect for ordinary Release unit tests/lint unless the preflight is also
-// in the graph, so source validation can still run without production signing secrets.
+// Release JVM test packaging (packageReleaseUnitTestForUnitTest) and resource
+// preparation are not signed application outputs. They must never imply this gate.
+// `mustRunAfter` only orders tasks if both are in the graph; it does not add a dependency.
 val verifyPhoneReleaseSigningPreflight = tasks.register<Exec>("verifyPhoneReleaseSigningPreflight") {
     group = "verification"
     description = "Fails fast when StudyFlow phone Release signing inputs are incomplete or invalid."
@@ -262,7 +263,9 @@ tasks.configureEach {
     val releasePackagingTask =
         name == "assembleRelease" ||
             name == "bundleRelease" ||
-            (name.startsWith("packageRelease") && name != "packageReleaseResources") ||
+            (name.startsWith("packageRelease") &&
+                name != "packageReleaseResources" &&
+                !name.contains("UnitTest")) ||
             name.startsWith("signRelease")
     if (releasePackagingTask) {
         dependsOn(verifyPhoneReleaseSigningPreflight)

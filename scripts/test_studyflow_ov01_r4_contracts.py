@@ -65,7 +65,7 @@ def main():
                 'Actual Release packaging lost mandatory signing preflight')
     # Do not attach the signing gate to AGP packageReleaseResources: Release JVM
     # tests transitively require this resource task even when no APK/AAB is built.
-    assert_true('name.startsWith("packageRelease") && name != "packageReleaseResources"' in app_build,
+    assert_true('name.startsWith("packageRelease") &&\n                name != "packageReleaseResources" &&\n                !name.contains("UnitTest")' in app_build,
                 'Release signing must guard package outputs while excluding only resource preparation')
     assert_true('name.startsWith("packageRelease") ||' not in app_build,
                 'Release resource packaging still triggers signing preflight')

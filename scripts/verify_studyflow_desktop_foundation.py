@@ -8,7 +8,9 @@ hooks are ready for the next overlays.
 from __future__ import annotations
 
 from pathlib import Path
+import ast
 import re
+import tomllib
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +38,8 @@ def main() -> int:
         build = read("build.gradle.kts")
         desktop_readme = read("desktopApp/README.md")
         gitignore = read(".gitignore")
+        formatter = read("scripts/verify_formatting.py")
+        config = tomllib.loads(devtool)
 
         require('default_target = "studyflow_android"' in devtool,
                 ".devtool.toml workspace default must select the primary Android target")
@@ -61,8 +65,16 @@ def main() -> int:
         require('kotlin-jvm = { id = "org.jetbrains.kotlin.jvm"' in versions,
                 "version catalog must expose the Kotlin JVM plugin alias")
 
-        require('"desktopApp"' in build,
-                "desktopApp must be part of quality source roots")
+        require("desktopApp/**" in config["targets"]["studyflow_quality"]["inputs"],
+                "desktopApp must be included in Devtool quality source inputs")
+        roots = next((ast.literal_eval(node.value) for node in ast.parse(formatter).body
+                      if isinstance(node, ast.Assign) and any(
+                          isinstance(target, ast.Name) and target.id == "ROOTS"
+                          for target in node.targets)), ())
+        require("desktopApp" in roots,
+                "desktopApp must be part of actual formatting quality source roots")
+        require('tasks.register<Exec>("verifyFormatting")' in build,
+                "root Gradle quality gate must run the source-root formatter")
         require('tasks.register<Exec>("verifyStudyFlowDesktopFoundation")' in build,
                 "root build must register verifyStudyFlowDesktopFoundation")
         aggregate_start = build.index('tasks.register("verifyStudyFlowDesktopAllContracts")')

@@ -118,7 +118,7 @@ def workflow_contract() -> None:
             and not any(p.startswith('web/') for p in web_cfg['inputs'] + web_cfg['outputs']),
             'Devtool web input/output paths must be target-root relative')
     signing = checked_text('app/build.gradle.kts')
-    require('name.startsWith("packageRelease") && name != "packageReleaseResources"' in signing and
+    require('name.startsWith("packageRelease") &&\n                name != "packageReleaseResources" &&\n                !name.contains("UnitTest")' in signing and
             'name.startsWith("packageRelease") ||' not in signing and
             'dependsOn(verifyPhoneReleaseSigningPreflight)' in signing,
             'Release signing gate must cover output packaging, not unit-test resource packaging')

@@ -62,6 +62,16 @@ def main() -> None:
         "verify_studyflow_gradle_task_graph_optimization_v4.py",
     }
     require(post_rel_final == expected_post_rel_final, "post-REL-FINAL verifier set drifted")
+    # Separate the frozen REL-FINAL historical ledger from later verifier growth.
+    # A new verifier requires explicit classification; do not silently accept it.
+    additional_raw = inventory.get("additional_verifiers_since_rel_final_boundary", [])
+    require(isinstance(additional_raw, list) and len(additional_raw) == len(set(additional_raw)),
+            "additional verifier inventory has duplicate or invalid members")
+    require(inventory.get("additional_verifier_count") == 54 and len(additional_raw) == 54,
+            "reviewed post-boundary verifier count drifted")
+    additional = set(additional_raw)
+    require(not additional.intersection(expected_legacy | post_rel_final),
+            "additional verifier inventory overlaps the immutable historical classification")
     policy = audit.get("audit_execution_policy", {})
     require(
         policy.get("exhaustive_static_audit") == "artifact_validation_before_gradle",
@@ -87,7 +97,9 @@ def main() -> None:
     actual.discard(Path(__file__).name)
     require(post_rel_final <= actual, "post-REL-FINAL verifier file is missing")
     actual -= post_rel_final
-    require(actual == expected_legacy, "legacy verifier inventory changed without updating REL-FINAL audit")
+    actual -= additional
+    require(actual == expected_legacy,
+            "REL-FINAL legacy or additional verifier inventory drifted from reviewed snapshot")
 
     families = {item.get("id"): item for item in audit.get("roadmap_families", [])}
     for family in (
