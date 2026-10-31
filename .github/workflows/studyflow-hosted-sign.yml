@@ -1,0 +1,156 @@
+# REL-HOSTED-02. Protected manual signing of verified, immutable hosted candidates.
+# No untrusted PRs, no Gradle, no publishing, no final release verdict.
+name: StudyFlow Protected GitHub Signing
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_run_id:
+        description: 'Successful unsigned-candidate workflow run ID'
+        required: true
+        type: string
+      candidate_sha:
+        description: 'Exact 40-character source SHA of that unsigned-candidate run'
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: studyflow-github-signing-${{ inputs.candidate_run_id }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    name: Validate immutable unsigned candidates without secrets
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Audit pinned source run (no secrets)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.candidate_sha }}
+          CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+        run: |
+          set -euo pipefail
+          python3 scripts/studyflow_github_signing.py check-run \
+            --candidate-sha "$SOURCE_SHA" --candidate-run-id "$CANDIDATE_RUN"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+      - name: Install verification tools (no Gradle)
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'build-tools;36.0.0'
+      - name: Download phone candidate by exact GitHub run
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.candidate_run_id }}
+          name: studyflow-hosted-app-unsigned-${{ inputs.candidate_run_id }}
+          path: ${{ runner.temp }}/unsigned/phone
+      - name: Download TV candidate by exact GitHub run
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.candidate_run_id }}
+          name: studyflow-hosted-app-tv-unsigned-${{ inputs.candidate_run_id }}
+          path: ${{ runner.temp }}/unsigned/tv
+      - name: Verify exact SHA, package identity, unsigned state and per-file digests
+        env:
+          SOURCE_SHA: ${{ inputs.candidate_sha }}
+          CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+        run: |
+          set -euo pipefail
+          python3 scripts/studyflow_github_signing.py verify-candidates \
+            --input-root "$RUNNER_TEMP/unsigned" \
+            --candidate-sha "$SOURCE_SHA" --candidate-run-id "$CANDIDATE_RUN" \
+            --apksigner "$ANDROID_HOME/build-tools/36.0.0/apksigner" \
+            --apkanalyzer "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"
+  sign:
+    needs: validate
+    name: Protected private-key signing (requires reviewer approval)
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    environment: studyflow-signing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Reverify successful candidate run before handling any key
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.candidate_sha }}
+          CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+        run: |
+          set -euo pipefail
+          python3 scripts/studyflow_github_signing.py check-run \
+            --candidate-sha "$SOURCE_SHA" --candidate-run-id "$CANDIDATE_RUN"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+      - name: Install pinned signing and inspection tools (no Gradle)
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'build-tools;36.0.0'
+      - name: Re-download phone and TV candidates (immutable run)
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.candidate_run_id }}
+          pattern: studyflow-hosted-*-unsigned-${{ inputs.candidate_run_id }}
+          path: ${{ runner.temp }}/raw
+      - name: Copy exact artifact directories; reject unrecognized input layout
+        env:
+          CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/unsigned"
+          test -d "$RUNNER_TEMP/raw/studyflow-hosted-app-unsigned-$CANDIDATE_RUN"
+          test -d "$RUNNER_TEMP/raw/studyflow-hosted-app-tv-unsigned-$CANDIDATE_RUN"
+          mv "$RUNNER_TEMP/raw/studyflow-hosted-app-unsigned-$CANDIDATE_RUN" "$RUNNER_TEMP/unsigned/phone"
+          mv "$RUNNER_TEMP/raw/studyflow-hosted-app-tv-unsigned-$CANDIDATE_RUN" "$RUNNER_TEMP/unsigned/tv"
+      - name: Sign using protected environment secrets and pinned certificate
+        env:
+          SOURCE_SHA: ${{ inputs.candidate_sha }}
+          CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+          STUDYFLOW_SIGNING_P12_BASE64: ${{ secrets.STUDYFLOW_SIGNING_P12_BASE64 }}
+          STUDYFLOW_SIGNING_STORE_PASSWORD: ${{ secrets.STUDYFLOW_SIGNING_STORE_PASSWORD }}
+          STUDYFLOW_SIGNING_KEY_PASSWORD: ${{ secrets.STUDYFLOW_SIGNING_KEY_PASSWORD }}
+          STUDYFLOW_SIGNING_KEY_ALIAS: ${{ secrets.STUDYFLOW_SIGNING_KEY_ALIAS }}
+          STUDYFLOW_SIGNING_CERT_SHA256: ${{ secrets.STUDYFLOW_SIGNING_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 scripts/studyflow_github_signing.py sign \
+            --input-root "$RUNNER_TEMP/unsigned" \
+            --output-root "$RUNNER_TEMP/studyflow-signed" \
+            --candidate-sha "$SOURCE_SHA" --candidate-run-id "$CANDIDATE_RUN" \
+            --apksigner "$ANDROID_HOME/build-tools/36.0.0/apksigner" \
+            --apkanalyzer "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" \
+            --zipalign "$ANDROID_HOME/build-tools/36.0.0/zipalign" \
+            --jarsigner "$(command -v jarsigner)"
+      - name: Upload signed phone APK/AAB plus non-release receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: studyflow-signed-app-from-${{ inputs.candidate_run_id }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/studyflow-signed/phone/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload signed TV APK/AAB plus non-release receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: studyflow-signed-app-tv-from-${{ inputs.candidate_run_id }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/studyflow-signed/tv/
+          if-no-files-found: error
+          retention-days: 7
