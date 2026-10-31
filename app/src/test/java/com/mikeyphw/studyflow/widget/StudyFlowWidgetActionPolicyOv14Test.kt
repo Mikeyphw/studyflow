@@ -41,7 +41,7 @@ class StudyFlowWidgetActionPolicyOv14Test {
         correctAnswers = 0,
         concentrationRating = null,
         difficultyRating = null,
-        notes = null,
+        notes = "",
         targetDurationMinutes = 30,
     )
 }

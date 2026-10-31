@@ -123,6 +123,9 @@ def workflow_contract() -> None:
             'dependsOn(verifyPhoneReleaseSigningPreflight)' in signing,
             'Release signing gate must cover output packaging, not unit-test resource packaging')
 
+    require("python3 scripts/test_studyflow_ov01_r4r6_contracts.py" in ci,
+            "CI must execute R4R6 desktop/web/widget regression source gate")
+
     # The full schema parse is an optional additional check, not a hidden CI dependency.
     if importlib.util.find_spec("yaml") is not None:
         import yaml

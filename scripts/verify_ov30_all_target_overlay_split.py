@@ -59,6 +59,20 @@ def values(block):
         if isinstance(value, list): out.extend(str(x) for x in value)
     return out
 
+def web_seal_order_ok(command):
+    """Preserve both seals and their intentional pre-validation order.
+
+    Both checks run before compilation, lint, tests, release checks, or packaging.
+    A bare legacy seal, a reversed order, and omitted seals are all rejected.
+    """
+    if not isinstance(command, str):
+        return False
+    segments = [part.strip() for part in command.split('&&')]
+    return len(segments) >= 3 and segments[:2] == [
+        'npm run ov30r2:proper-validation-seal',
+        'npm run ov30:target-seal',
+    ] and all(segments)
+
 def main():
     devtool=tomllib.loads((ROOT/'.devtool.toml').read_text(encoding='utf-8'))
     pkg=json.loads((ROOT/'web/package.json').read_text(encoding='utf-8'))
@@ -79,7 +93,9 @@ def main():
         if target == 'studyflow_web':
             scripts=pkg.get('scripts',{})
             require('ov30:target-seal' in scripts, 'web target seal npm script missing')
-            require(str(scripts.get('build','')).startswith('npm run ov30:target-seal && '), 'web build must call target seal')
+            for operation in ('build', 'test', 'lint', 'release:check'):
+                require(web_seal_order_ok(scripts.get(operation, '')),
+                        f'web {operation} must run pinned OV30R2 and OV30 target seals first')
         else:
             require(task in values(targets[target]), f'{target} does not reference own OV30 task')
     parity=targets.get('studyflow_parity',{})
