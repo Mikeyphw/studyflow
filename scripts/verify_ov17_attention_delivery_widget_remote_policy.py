@@ -24,7 +24,6 @@ checks: list[tuple[str, str, str]] = [
     ("DS2-40-self-healing", "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt", "launchSelfHealingInvalidationObserver"),
     ("DS2-40-retry-delay", "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt", "delay(5_000L)"),
     ("validation-task", "build.gradle.kts", "verifyOv17AttentionDeliveryWidgetRemotePolicy"),
-    ("validation-hook", ".devtool-artifact/validation/validate.sh", "verifyOv17AttentionDeliveryWidgetRemotePolicy"),
 ]
 
 errors: list[str] = []
@@ -41,9 +40,12 @@ for ident, rel, needle in checks:
     if needle not in text:
         errors.append(f"{ident}: {rel} does not contain {needle!r}")
 
-validate = (ROOT / ".devtool-artifact/validation/validate.sh").read_text(errors="replace")
-if "gradle --stop" in validate or "./gradlew --stop" in validate:
-    errors.append("validation hook must not stop Gradle daemons")
+# Artifact hook is transaction-scoped: GitHub checkouts do not contain it.
+active_path = ROOT / ".devtool-artifact/validation/validate.sh"
+if active_path.is_file():
+    validate = active_path.read_text(errors="replace")
+    if "gradle --stop" in validate or "./gradlew --stop" in validate:
+        errors.append("active Devtool hook must not stop Gradle daemons")
 script = (ROOT / "scripts/validate_ov17_attention_delivery_widget_remote_policy.sh").read_text(errors="replace")
 if "gradle " in script or "./gradlew" in script:
     errors.append("OV17 validation script must not nest Gradle")

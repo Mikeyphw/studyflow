@@ -8,7 +8,9 @@ tasks.register<Exec>("verifyStableToolchainBaseline") {
 
 tasks.register<Exec>("verifyFormatting") {
     group = "verification"
-    description = "Checks source files for tabs, trailing whitespace, missing final newlines, and overlong Kotlin lines."
+    description =
+        "Checks source files for tabs, trailing whitespace, missing final newlines, and overlong " +
+        "Kotlin lines."
     commandLine("python3", "scripts/verify_formatting.py")
 }
 
@@ -2345,7 +2347,9 @@ tasks.register<Exec>("verifyOv01RepositoryGradleDevtoolTruth") {
 // OV09 — SFLP native/Web interoperability transport.
 tasks.register<Exec>("verifyOv09SflpNativeWebInterop") {
     group = "verification"
-    description = "Validates OV09 native/Web SFLP WebSocket, pairing, journal, identity and routed-RPC interoperability."
+    description =
+        "Validates OV09 native/Web SFLP WebSocket, pairing, journal, identity and routed-RPC " +
+        "interoperability."
     dependsOn(
         ":core:link:test",
         ":app:compileDebugKotlin",
@@ -2359,7 +2363,9 @@ tasks.register<Exec>("verifyOv09SflpNativeWebInterop") {
 // OV10 — SFLP trust, pairing, authorization & transport security.
 tasks.register<Exec>("verifyOv10SflpTrustSecurity") {
     group = "verification"
-    description = "Validates OV10 SFLP trust, encrypted pairing, protocol/capability authorization and LAN credential hardening."
+    description =
+        "Validates OV10 SFLP trust, encrypted pairing, protocol/capability authorization and LAN " +
+        "credential hardening."
     dependsOn(
         ":core:link:test",
         ":core:tvcontrol:test",
@@ -2375,7 +2381,9 @@ tasks.register<Exec>("verifyOv10SflpTrustSecurity") {
 // OV11 — SFLP reconciliation, frontier, retry & corruption recovery.
 tasks.register<Exec>("verifyOv11SflpReconciliationRecovery") {
     group = "verification"
-    description = "Validates OV11 contiguous frontiers, persisted retry gating, peer isolation, corruption recovery and real browser/native interop."
+    description =
+        "Validates OV11 contiguous frontiers, persisted retry gating, peer isolation, corruption " +
+        "recovery and real browser/native interop."
     dependsOn(
         ":core:link:test",
         ":desktopApp:test",
@@ -2389,7 +2397,9 @@ tasks.register<Exec>("verifyOv11SflpReconciliationRecovery") {
 // OV12 — SFLP live session, projection, material, share & backup RPC semantics.
 tasks.register<Exec>("verifyOv12SflpAdvancedRpcSemantics") {
     group = "verification"
-    description = "Validates OV12 advanced SFLP RPC semantics for live-session fencing, projection, material streaming, share/import, Web-TV input and account/backup targets."
+    description =
+        "Validates OV12 advanced SFLP RPC semantics for live-session fencing, projection, material " +
+        "streaming, share/import, Web-TV input and account/backup targets."
     dependsOn(
         ":core:link:test",
         ":core:tvcontrol:test",
@@ -2404,7 +2414,9 @@ tasks.register<Exec>("verifyOv12SflpAdvancedRpcSemantics") {
 // OV13 — Android peer lifecycle & LAN discovery recovery.
 tasks.register<Exec>("verifyOv13AndroidPeerLifecycleLanRecovery") {
     group = "verification"
-    description = "Validates OV13 Android peer lifecycle, LAN permission gating, restartable NSD/discovery, IPv6 scoped endpoints, QR reachability, and SAF grant cleanup."
+    description =
+        "Validates OV13 Android peer lifecycle, LAN permission gating, restartable NSD/discovery, " +
+        "IPv6 scoped endpoints, QR reachability, and SAF grant cleanup."
     dependsOn(
         ":core:link:test",
         ":core:tvlink:compileDebugKotlin",
@@ -2417,7 +2429,9 @@ tasks.register<Exec>("verifyOv13AndroidPeerLifecycleLanRecovery") {
 // OV14 — Android receiver, deep-link, widget & device-target durability.
 tasks.register<Exec>("verifyOv14AndroidReceiverWidgetDurability") {
     group = "verification"
-    description = "Validates OV14 receiver-bound TV sessions, durable reminder/widget broadcast handling, deep-link persistence, configured-plan widgets, and collision-proof domain action keys."
+    description =
+        "Validates OV14 receiver-bound TV sessions, durable reminder/widget broadcast handling, " +
+        "deep-link persistence, configured-plan widgets, and collision-proof domain action keys."
     dependsOn(
         ":core:tvcontrol:test",
         ":core:tvlink:compileDebugKotlin",
@@ -2432,7 +2446,9 @@ tasks.register<Exec>("verifyOv14AndroidReceiverWidgetDurability") {
 // OV15 — Android product-flow and UI/domain honesty.
 tasks.register<Exec>("verifyOv15AndroidProductFlowHonesty") {
     group = "verification"
-    description = "Validates OV15 Android question editor/practice honesty, active-session plan guards, partial load states, local date countdowns and bounded imports."
+    description =
+        "Validates OV15 Android question editor/practice honesty, active-session plan guards, partial " +
+        "load states, local date countdowns and bounded imports."
     dependsOn(
         ":feature:practice:testDebugUnitTest",
         ":feature:plans:testDebugUnitTest",
@@ -2447,7 +2463,9 @@ tasks.register<Exec>("verifyOv15AndroidProductFlowHonesty") {
 // OV16 — Attention scheduler, quiet-hours & durable wakeups.
 tasks.register<Exec>("verifyOv16AttentionSchedulerDurableWakeups") {
     group = "verification"
-    description = "Validates OV16 ATT10-first quiet-hours rearm, mirror escalation wakeups, future review alarms, exact session/widget scheduling and permission-denied delivery truth."
+    description =
+        "Validates OV16 ATT10-first quiet-hours rearm, mirror escalation wakeups, future review " +
+        "alarms, exact session/widget scheduling and permission-denied delivery truth."
     dependsOn(
         ":core:link:test",
         ":core:domain:test",
@@ -2461,7 +2479,10 @@ tasks.register<Exec>("verifyOv16AttentionSchedulerDurableWakeups") {
 // OV17 — Attention delivery, widget resilience & remote policy.
 tasks.register<Exec>("verifyOv17AttentionDeliveryWidgetRemotePolicy") {
     group = "verification"
-    description = "Validates OV17 per-widget isolation, recipient ATT10 remote delivery policy, timezone refresh, expired snooze purge, stable notification IDs and self-healing invalidation observers."
+    description =
+        "Validates OV17 per-widget isolation, recipient ATT10 remote delivery policy, timezone " +
+        "refresh, expired snooze purge, stable notification IDs and self-healing invalidation " +
+        "observers."
     dependsOn(
         ":core:link:test",
         ":core:domain:test",
@@ -2474,7 +2495,10 @@ tasks.register<Exec>("verifyOv17AttentionDeliveryWidgetRemotePolicy") {
 
 tasks.register<Exec>("verifyOv18NativeTvDurableStateActionJournal") {
     group = "verification"
-    description = "Validates OV18 native TV durable command sequencing, outbox persistence, explicit backpressure, wall-clock-free admission, UI-state checkpoints and commit-before-success pairing."
+    description =
+        "Validates OV18 native TV durable command sequencing, outbox persistence, explicit " +
+        "backpressure, wall-clock-free admission, UI-state checkpoints and commit-before-success " +
+        "pairing."
     dependsOn(
         ":core:tvcontrol:test",
         ":core:tvlink:compileDebugKotlin",
@@ -2488,7 +2512,9 @@ tasks.register<Exec>("verifyOv18NativeTvDurableStateActionJournal") {
 // OV19 — Native TV practice, mock, review & schedule truth.
 tasks.register<Exec>("verifyOv19NativeTvPracticeMockReviewScheduleTruth") {
     group = "verification"
-    description = "Validates OV19 native TV practice reachability, mock execution semantics, review grade intent, schedule labels and canonical source IDs."
+    description =
+        "Validates OV19 native TV practice reachability, mock execution semantics, review grade " +
+        "intent, schedule labels and canonical source IDs."
     dependsOn(
         ":core:domain:test",
         ":core:tvcontrol:test",
@@ -2503,7 +2529,10 @@ tasks.register<Exec>("verifyOv19NativeTvPracticeMockReviewScheduleTruth") {
 // OV20 — Native TV materials, focus, layout & projection resilience.
 tasks.register<Exec>("verifyOv20NativeTvMaterialsFocusProjectionResilience") {
     group = "verification"
-    description = "Validates OV20 TV-transferable materials, renderer-backed PDF navigation, captured media playback position, dynamic focus wiring, scroll-safe rows and failure-isolated presentation feeds."
+    description =
+        "Validates OV20 TV-transferable materials, renderer-backed PDF navigation, captured media " +
+        "playback position, dynamic focus wiring, scroll-safe rows and failure-isolated presentation " +
+        "feeds."
     dependsOn(
         ":core:tvcontrol:test",
         ":app:compileDebugKotlin",
@@ -2516,7 +2545,9 @@ tasks.register<Exec>("verifyOv20NativeTvMaterialsFocusProjectionResilience") {
 // OV21 — Unified TV control, pairing, relay, cast & attention plane.
 tasks.register<Exec>("verifyOv21UnifiedTvControlPlane") {
     group = "verification"
-    description = "Validates OV21 unified TV control plane envelopes across local TCP, browser relay, cast, domain acknowledgements and TV attention ingress."
+    description =
+        "Validates OV21 unified TV control plane envelopes across local TCP, browser relay, cast, " +
+        "domain acknowledgements and TV attention ingress."
     dependsOn(
         ":core:tvcontrol:test",
         ":core:tvlink:compileDebugKotlin",
@@ -2528,7 +2559,9 @@ tasks.register<Exec>("verifyOv21UnifiedTvControlPlane") {
 // OV22 — Desktop persistence, atomicity, restore & file safety.
 tasks.register<Exec>("verifyOv22DesktopPersistenceAtomicRestoreFileSafety") {
     group = "verification"
-    description = "Validates OV22 Desktop nonblocking UI actions, referential cleanup, atomic linked commits, point-in-time restore reload, schema migration, workspace locking and file secrecy."
+    description =
+        "Validates OV22 Desktop nonblocking UI actions, referential cleanup, atomic linked commits, " +
+        "point-in-time restore reload, schema migration, workspace locking and file secrecy."
     dependsOn(
         ":core:domain:test",
         ":core:portability:test",
@@ -2541,7 +2574,9 @@ tasks.register<Exec>("verifyOv22DesktopPersistenceAtomicRestoreFileSafety") {
 // OV23 — Desktop runtime, UX, tray & SFLP correctness.
 tasks.register<Exec>("verifyOv23DesktopRuntimeUxSflpCorrectness") {
     group = "verification"
-    description = "Validates OV23 Desktop runtime copy, tray action isolation, SFLP endpoint truth, retry-aware sync status and local-time labels."
+    description =
+        "Validates OV23 Desktop runtime copy, tray action isolation, SFLP endpoint truth, retry-aware " +
+        "sync status and local-time labels."
     dependsOn(
         ":core:link:test",
         ":desktopApp:compileKotlin",
@@ -2553,35 +2588,47 @@ tasks.register<Exec>("verifyOv23DesktopRuntimeUxSflpCorrectness") {
 // OV24 — Web persistence, bootstrap, portable import & secret hygiene.
 tasks.register<Exec>("verifyOv24WebPersistenceBootstrapPortableSecretHygiene") {
     group = "verification"
-    description = "Validates OV24 IndexedDB durability/CAS, visible bootstrap failures, BFCache recovery, bounded Web imports, attachment cleanup, async success truth, portable focus sanitization and password hygiene."
+    description =
+        "Validates OV24 IndexedDB durability/CAS, visible bootstrap failures, BFCache recovery, " +
+        "bounded Web imports, attachment cleanup, async success truth, portable focus sanitization " +
+        "and password hygiene."
     commandLine("bash", "scripts/validate_ov24_web_persistence_bootstrap_portable_secret_hygiene.sh")
 }
 
 // OV25 — Web attention, push, Web-TV timing & route safety.
 tasks.register<Exec>("verifyOv25WebAttentionPushTvTimingRouteSafety") {
     group = "verification"
-    description = "Validates OV25 relay-backed Web Push truth, durable Browser-TV mock checkpoints, pairing throttling, acknowledgement-based attention drain, notification admission, terminal action fencing, internal routes and visible foreground fallback."
+    description =
+        "Validates OV25 relay-backed Web Push truth, durable Browser-TV mock checkpoints, pairing " +
+        "throttling, acknowledgement-based attention drain, notification admission, terminal action " +
+        "fencing, internal routes and visible foreground fallback."
     commandLine("bash", "scripts/validate_ov25_web_attention_push_tv_timing_route_safety.sh")
 }
 
 // OV28 — Language review correctness & Desktop specialized parity.
 tasks.register<Exec>("verifyOv28LanguageReviewDesktopSpecializedParity") {
     group = "verification"
-    description = "Validates OV28 language review correctness, deterministic choice ordering and Desktop specialized graph persistence/execution parity."
+    description =
+        "Validates OV28 language review correctness, deterministic choice ordering and Desktop " +
+        "specialized graph persistence/execution parity."
     commandLine("bash", "scripts/validate_ov28_language_review_desktop_specialized_parity.sh")
 }
 
 // OV26 — Specialized content production data & UI.
 tasks.register<Exec>("verifyOv26SpecializedContentDataUi") {
     group = "verification"
-    description = "Validates OV26 Room-backed specialized repositories, UI snapshots, safe command templates, analytics and import apply workflows."
+    description =
+        "Validates OV26 Room-backed specialized repositories, UI snapshots, safe command templates, " +
+        "analytics and import apply workflows."
     commandLine("bash", "scripts/validate_ov26_specialized_content_data_ui.sh")
 }
 
 // OV27 — Termux execution pipeline & sandbox correctness.
 tasks.register<Exec>("verifyOv27TermuxExecutionPipelineSandboxCorrectness") {
     group = "verification"
-    description = "Validates OV27 four-stage durable Termux execution, quote-safe tokenization, workspace confinement and exact request/result correlation."
+    description =
+        "Validates OV27 four-stage durable Termux execution, quote-safe tokenization, workspace " +
+        "confinement and exact request/result correlation."
     commandLine("bash", "scripts/validate_ov27_termux_execution_pipeline_sandbox_correctness.sh")
 }
 
@@ -2593,14 +2640,18 @@ tasks.register<Exec>("verifyOv29ExhaustiveVerifierInventory") {
 
 tasks.register<Exec>("verifyWebStaleDistReleaseIntegrity") {
     group = "verification"
-    description = "Rejects stale Web release dist assets whose runtime hashes no longer match the compiled runtime output."
+    description =
+        "Rejects stale Web release dist assets whose runtime hashes no longer match the compiled " +
+        "runtime output."
     commandLine("python3", "scripts/verify_web_stale_dist_release_integrity.py")
 }
 
 // OV29 — Behavioral validation, debug labs & release-truth gates.
 tasks.register<Exec>("verifyOv29BehavioralValidationReleaseTruthGates") {
     group = "verification"
-    description = "Validates OV29 behavioral CMOV gates, Debug Workbench lab semantics, exhaustive verifier inventory, Web dist freshness and release-truth wiring."
+    description =
+        "Validates OV29 behavioral CMOV gates, Debug Workbench lab semantics, exhaustive verifier " +
+        "inventory, Web dist freshness and release-truth wiring."
     dependsOn("verifyOv29ExhaustiveVerifierInventory", "verifyWebStaleDistReleaseIntegrity")
     commandLine("bash", "scripts/validate_ov29_behavioral_validation_release_truth_gates.sh")
 }
@@ -2745,7 +2796,16 @@ tasks.register<Exec>("verifyOv30R2StudyflowParityProperValidationSeal") {
 tasks.register("verifyOv30R2AllTargetProperValidationSeals") {
     group = "verification"
     description = "Runs every OV30R2 per-target proper validation seal."
-    dependsOn("verifyOv30R2StudyflowAndroidProperValidationSeal", "verifyOv30R2StudyflowDesktopProperValidationSeal", "verifyOv30R2StudyflowWebProperValidationSeal", "verifyOv30R2StudyflowTvProperValidationSeal", "verifyOv30R2StudyflowReleaseProperValidationSeal", "verifyOv30R2StudyflowTvReleaseProperValidationSeal", "verifyOv30R2StudyflowQualityProperValidationSeal", "verifyOv30R2StudyflowParityProperValidationSeal")
+    dependsOn(
+        "verifyOv30R2StudyflowAndroidProperValidationSeal",
+        "verifyOv30R2StudyflowDesktopProperValidationSeal",
+        "verifyOv30R2StudyflowWebProperValidationSeal",
+        "verifyOv30R2StudyflowTvProperValidationSeal",
+        "verifyOv30R2StudyflowReleaseProperValidationSeal",
+        "verifyOv30R2StudyflowTvReleaseProperValidationSeal",
+        "verifyOv30R2StudyflowQualityProperValidationSeal",
+        "verifyOv30R2StudyflowParityProperValidationSeal"
+    )
 }
 
 

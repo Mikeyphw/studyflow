@@ -1,9 +1,12 @@
 package com.mikeyphw.studyflow
 
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.w3c.dom.Element
+import javax.xml.parsers.DocumentBuilderFactory
 
 class ManifestSecuritySourceContractTest {
     private fun repoFile(path: String): File {
@@ -22,7 +25,26 @@ class ManifestSecuritySourceContractTest {
         assertTrue("android:allowBackup=\"false\"" in manifest)
         assertTrue("@xml/backup_rules" in manifest)
         assertTrue("@xml/data_extraction_rules" in manifest)
-        assertFalse("<queries" in manifest)
+        // Package visibility is permitted only for the explicit Termux command integration.
+        // Do not accept arbitrary package queries or broad implicit intent visibility.
+        val factory = DocumentBuilderFactory.newInstance().apply {
+            isNamespaceAware = true
+            setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+        }
+        val document = factory.newDocumentBuilder().parse(repoFile("app/src/main/AndroidManifest.xml"))
+        val queryNodes = document.getElementsByTagName("queries")
+        assertEquals(1, queryNodes.length)
+        val queryChildren = queryNodes.item(0).childNodes.let { children ->
+            (0 until children.length).mapNotNull { children.item(it) as? Element }
+        }
+        assertEquals(listOf("package", "intent"), queryChildren.map { it.tagName })
+        val androidNs = "http://schemas.android.com/apk/res/android"
+        assertEquals("com.termux", queryChildren[0].getAttributeNS(androidNs, "name"))
+        val intentChildren = queryChildren[1].childNodes.let { children ->
+            (0 until children.length).mapNotNull { children.item(it) as? Element }
+        }
+        assertEquals(listOf("action"), intentChildren.map { it.tagName })
+        assertEquals("com.termux.RUN_COMMAND", intentChildren[0].getAttributeNS(androidNs, "name"))
         assertTrue(Regex("StudyReminderLaunchActivity[\\s\\S]*?android:exported=\\\"false\\\"")
             .containsMatchIn(manifest))
 

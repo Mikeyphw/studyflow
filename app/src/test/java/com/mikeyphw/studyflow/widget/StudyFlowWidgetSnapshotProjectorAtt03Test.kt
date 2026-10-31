@@ -125,6 +125,32 @@ class StudyFlowWidgetSnapshotProjectorAtt03Test {
         assertEquals(nextStart, snapshot.nextRefreshEpochMillis)
     }
 
+    @Test
+    fun imminentReviewDeadlineRemainsExactWithoutAnActiveSession() {
+        val reviewAt = now + 15_000L
+        val snapshot = StudyFlowWidgetSnapshotProjector.project(
+            plan = plan(),
+            schedule = StudySchedule(
+                studyPlanId = StudyPlanId("plan"),
+                strategy = null,
+                scheduleRules = emptyList(),
+                plannedActivities = emptyList(),
+            ),
+            reviewQueue = ReviewQueue(
+                due = emptyList(),
+                upcoming = listOf(review("soon", reviewAt)),
+                completedToday = emptyList(),
+                flashcards = emptyList(),
+                errors = emptyList(),
+            ),
+            activeSession = null,
+            liveActiveSeconds = null,
+            nowEpochMillis = now,
+            zoneId = zone,
+        )
+        assertEquals(reviewAt, snapshot.nextRefreshEpochMillis)
+    }
+
     private fun plan() = StudyPlan(
         id = StudyPlanId("plan"),
         name = "ATT03 plan",

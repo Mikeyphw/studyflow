@@ -25,7 +25,12 @@ tv = text("core/tvlink/src/main/kotlin/com/mikeyphw/studyflow/core/tvlink/StudyF
 saf = text("app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt")
 core = text("core/link/src/main/kotlin/com/mikeyphw/studyflow/core/link/StudyFlowPeerLifecycle.kt")
 build = text("build.gradle.kts")
-validation = text(".devtool-artifact/validation/validate.sh")
+# Stable GitHub validation uses the tracked script; the transient artifact hook
+# is optional here, and checked only if the transaction created it.
+validation = text("scripts/validate_ov13_android_peer_lifecycle_lan_recovery.sh")
+artifact_hook = ROOT / ".devtool-artifact/validation/validate.sh"
+if artifact_hook.is_file():
+    validation += "\n" + artifact_hook.read_text(encoding="utf-8")
 
 check(
     "S5-01",
@@ -95,7 +100,7 @@ check(
     "OV13-GRADLE-HOOK",
     "Integrated validation task and artifact hook are wired without stopping Gradle daemons",
     "verifyOv13AndroidPeerLifecycleLanRecovery" in build
-    and "verifyOv13AndroidPeerLifecycleLanRecovery" in validation
+    and "verify_ov13_android_peer_lifecycle_lan_recovery.py" in validation
     and "--stop" not in validation
     and "gradle --stop" not in validation,
 )

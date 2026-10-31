@@ -25,8 +25,23 @@ for marker in (
 ):
     if marker not in manifest:
         failures.append(f"manifest missing viewer marker: {marker}")
-if "<queries>" in manifest:
-    failures.append("viewer must not broaden package visibility when implicit ACTION_VIEW is sufficient")
+# Termux visibility is a later, explicitly scoped integration; the viewer must
+# still use implicit ACTION_VIEW, not an unrestricted or viewer-specific query.
+import xml.etree.ElementTree as ET
+try:
+    manifest_root = ET.fromstring(manifest)
+    query_roots = manifest_root.findall("queries")
+    android = "{http://schemas.android.com/apk/res/android}name"
+    allowed = (len(query_roots) == 1 and len(query_roots[0]) == 2
+               and [child.tag for child in query_roots[0]] == ["package", "intent"]
+               and query_roots[0][0].get(android) == "com.termux"
+               and len(query_roots[0][1]) == 1
+               and query_roots[0][1][0].tag == "action"
+               and query_roots[0][1][0].get(android) == "com.termux.RUN_COMMAND")
+    if not allowed:
+        failures.append("viewer package visibility must be scoped only to Termux RUN_COMMAND")
+except ET.ParseError:
+    failures.append("invalid AndroidManifest XML")
 
 paths = text("app/src/main/res/xml/file_provider_paths.xml")
 if "shareable-annexes/" not in paths or "<files-path" not in paths:

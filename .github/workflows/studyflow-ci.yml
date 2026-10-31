@@ -48,6 +48,7 @@ jobs:
           python3 scripts/test_studyflow_ov01_r4_contracts.py
           python3 scripts/test_studyflow_ov01_r4r5_contracts.py
           python3 scripts/test_studyflow_ov01_r4r6_contracts.py
+          python3 scripts/test_studyflow_ov01_r4r7_contracts.py
   web:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.lane == 'all' || inputs.lane == 'web' }}
     needs: source

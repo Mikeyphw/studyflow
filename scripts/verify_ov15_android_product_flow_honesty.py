@@ -69,10 +69,20 @@ require(
     "length > MaxTextBytes",
 )
 require("build.gradle.kts", "verifyOv15AndroidProductFlowHonesty", ":feature:practice:testDebugUnitTest")
-require(".devtool-artifact/validation/validate.sh", "verifyOv15AndroidProductFlowHonesty")
-validation_hook = (ROOT / ".devtool-artifact/validation/validate.sh").read_text()
-if "gradle --stop" in validation_hook:
-    raise SystemExit("validation hook must not stop Gradle daemons")
-checks.append((".devtool-artifact/validation/validate.sh", "no daemon stop"))
+# .devtool-artifact is transaction-scoped, not a GitHub checkout source file.
+# The durable, checked-in Gradle task and runner are the hosted verification authority.
+runner_path = "scripts/validate_ov15_android_product_flow_honesty.sh"
+require(runner_path, "python3 scripts/verify_ov15_android_product_flow_honesty.py")
+runner = (ROOT / runner_path).read_text(encoding="utf-8")
+if "gradle --stop" in runner or "./gradlew --stop" in runner:
+    raise SystemExit("OV15 runner must not stop Gradle daemons")
+checks.append((runner_path, "permanent source validation, no daemon stop"))
+# When an actual Devtool artifact is active its hook remains subject to safety checks.
+active_hook_path = ROOT / ".devtool-artifact/validation/validate.sh"
+if active_hook_path.is_file():
+    active_hook = active_hook_path.read_text(encoding="utf-8")
+    if "gradle --stop" in active_hook or "./gradlew --stop" in active_hook:
+        raise SystemExit("active Devtool hook must not stop Gradle daemons")
+    checks.append((str(active_hook_path.relative_to(ROOT)), "active hook safety"))
 require("scripts/validate_ov15_android_product_flow_honesty.sh", "verify_ov15_android_product_flow_honesty.py")
 print(f"OV15 Android product-flow honesty evidence: PASS ({len(checks)} checks)")

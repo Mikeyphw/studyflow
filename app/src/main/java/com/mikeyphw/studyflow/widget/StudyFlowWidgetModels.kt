@@ -95,7 +95,9 @@ object StudyFlowWidgetSnapshotProjector {
             sessionFinish,
             sessionMinuteTick,
             nextMidnight,
-        ).filter { it >= nowEpochMillis + MinimumRefreshDelayMillis }
+        // Keep imminent domain boundaries (even under one minute); the Android alarm
+        // scheduler separately applies its one-second safety floor to dispatch.
+        ).filter { it > nowEpochMillis }
             .minOrNull()
             ?: nextMidnight
 
