@@ -250,7 +250,9 @@ class AndroidStudyFlowNsdDiscovery(
         scheduler.schedule(
             {
                 synchronized(lifecycleLock) {
-                    if (desiredStarted && localNetworkPermissionGranted() && (!discoveryStarted || !registrationStarted)) {
+                    if (desiredStarted && localNetworkPermissionGranted() &&
+                        (!discoveryStarted || !registrationStarted)
+                    ) {
                         if (!registrationStarted) startRegistrationLocked(port)
                         if (!discoveryStarted) startDiscoveryLocked()
                     }

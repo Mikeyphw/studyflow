@@ -96,7 +96,9 @@ class AndroidStudyFlowLinkPeer(
     private var browserBridgeEndpoint: StudyFlowTransportEndpoint? = null
     @Volatile
     private var lifecycleStatus: AndroidStudyFlowPeerLifecycleStatus =
-        if (isLocalPeerEnabled()) AndroidStudyFlowPeerLifecycleStatus.STOPPED else AndroidStudyFlowPeerLifecycleStatus.DISABLED
+        if (isLocalPeerEnabled())
+            AndroidStudyFlowPeerLifecycleStatus.STOPPED
+        else AndroidStudyFlowPeerLifecycleStatus.DISABLED
     @Volatile
     private var lastStartupFailure: String? = null
 
@@ -195,7 +197,10 @@ class AndroidStudyFlowLinkPeer(
             runCatching { com.mikeyphw.studyflow.core.link.StudyFlowManualEndpointParser.parse(hint) }.getOrNull()
         }.filter(StudyFlowLanEndpointResolver::isExternallyReachableEndpoint)
         if (endpoints.isNotEmpty()) runtime.rememberEndpoints(record.peer.deviceId, endpoints)
-        runtime.grantWorkspaceAccess(StudyFlowProductStateContract.WorkspaceId, record.peer.deviceId, StudyFlowWorkspaceAccess.WRITE)
+        runtime.grantWorkspaceAccess(
+            StudyFlowProductStateContract.WorkspaceId, record.peer.deviceId,
+            StudyFlowWorkspaceAccess.WRITE
+        )
         return record
     }
 
@@ -232,7 +237,9 @@ class AndroidStudyFlowLinkPeer(
 
     fun registerWritableWorkspace(workspaceId: StudyFlowWorkspaceId) {
         runtime.workspace(workspaceId)
-        trustedPeers().filter { it.peer.capabilities.contains(StudyFlowLinkCapabilities.WorkspaceWrite) }.forEach { peer ->
+        trustedPeers()
+            .filter { it.peer.capabilities.contains(StudyFlowLinkCapabilities.WorkspaceWrite) }
+            .forEach { peer ->
             runtime.grantWorkspaceAccess(workspaceId, peer.peer.deviceId, StudyFlowWorkspaceAccess.WRITE)
         }
     }
@@ -289,7 +296,9 @@ class AndroidStudyFlowLinkPeer(
         serverEndpoint = null
         browserBridgeEndpoint = null
         started.set(false)
-        lifecycleStatus = if (markDisabled) AndroidStudyFlowPeerLifecycleStatus.DISABLED else AndroidStudyFlowPeerLifecycleStatus.STOPPED
+        lifecycleStatus = if (markDisabled)
+            AndroidStudyFlowPeerLifecycleStatus.DISABLED
+        else AndroidStudyFlowPeerLifecycleStatus.STOPPED
     }
 
     override fun close() {

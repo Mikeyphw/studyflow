@@ -448,7 +448,8 @@ class DesktopAppState(
         )
     }
 
-    fun writingWorkspaceState(): DesktopWritingWorkspaceState = services.writingWorkspaceController.state().also { state ->
+    fun writingWorkspaceState(): DesktopWritingWorkspaceState =
+        services.writingWorkspaceController.state().also { state ->
         state.record?.let { record ->
             if (writingPromptDraft.isBlank()) writingPromptDraft = record.prompt
             if (writingTextDraft.isBlank()) writingTextDraft = record.draftText

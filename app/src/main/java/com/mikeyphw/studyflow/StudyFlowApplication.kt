@@ -452,7 +452,9 @@ private class DefaultAppContainer(
                             .filter { it.operationType == StudyFlowProductStateContract.TvDomainAction }
                             .forEach { operation ->
                                 runCatching {
-                                    val action = StudyFlowLinkCodec.decodePayload(StudyFlowTvDomainAction.serializer(), operation.payload)
+                                    val action = StudyFlowLinkCodec.decodePayload(
+                                        StudyFlowTvDomainAction.serializer(), operation.payload
+                                    )
                                     tvDomainActionExecutor.execute(action)
                                 }
                             }

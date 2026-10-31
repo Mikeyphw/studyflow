@@ -122,7 +122,8 @@ class DesktopStudyFlowLinkService(
             .map(StudyFlowTransportEndpoint::canonicalUri)
             .distinct()
         require(hints.isNotEmpty()) {
-            "No shareable Desktop LAN endpoint is available; pair by entering this desktop from the other device or add a reachable relay/manual endpoint."
+            "No shareable Desktop LAN endpoint is available; " +
+                "pair by entering this desktop from the other device or add a reachable relay/manual endpoint."
         }
         return runtime.createPairingOffer(hints).also {
             currentOffer = it
@@ -143,7 +144,11 @@ class DesktopStudyFlowLinkService(
             }.getOrNull()
         }
         if (endpoints.isNotEmpty()) runtime.rememberEndpoints(record.peer.deviceId, endpoints)
-        synchronized(activeWorkspaces) { activeWorkspaces.forEach { runtime.grantWorkspaceAccess(it, record.peer.deviceId, StudyFlowWorkspaceAccess.WRITE) } }
+        synchronized(activeWorkspaces) {
+            activeWorkspaces.forEach {
+                runtime.grantWorkspaceAccess(it, record.peer.deviceId, StudyFlowWorkspaceAccess.WRITE)
+            }
+        }
         lastStatus = "Paired with ${record.peer.displayName}"
         return record
     }
@@ -216,7 +221,9 @@ class DesktopStudyFlowLinkService(
         val wsPort = browserBridgeEndpoint?.port
         val endpoints = DesktopStudyFlowLinkUxPolicy.shareableEndpoints(
             if (wsPort == null) tcpEndpoints else (
-                tcpEndpoints.map { it.copy(scheme = StudyFlowTransportScheme.WEBSOCKET, port = wsPort, path = "/sflp") } + tcpEndpoints
+                tcpEndpoints.map {
+                    it.copy(scheme = StudyFlowTransportScheme.WEBSOCKET, port = wsPort, path = "/sflp")
+                } + tcpEndpoints
             ).distinct()
         )
         val pending = workspaceId?.let { runtime.workspace(it).outgoingQueue.entries().size } ?: 0
@@ -257,7 +264,8 @@ class DesktopStudyFlowLinkService(
                 )
             },
             status = lastStatus,
-            healthMessage = "pending=$pending endpoints=${endpoints.size} trusted=${runtime.trustManager.rememberedPeers().size}",
+            healthMessage = "pending=$pending endpoints=${endpoints.size} " +
+                "trusted=${runtime.trustManager.rememberedPeers().size}",
         ).let { state ->
             state.copy(capabilityMessage = DesktopStudyFlowLinkUxPolicy.capabilityMessage(state))
         }

@@ -151,14 +151,26 @@ class AndroidStudyFlowLinkStatePersistence(context: Context) {
         }
 
         override fun put(member: StudyFlowWorkspaceMember) { synchronized(preferences) {
-            val next = list().filterNot { it.workspaceId == member.workspaceId && it.deviceId == member.deviceId } + member
-            preferences.edit().putString(MembershipKey, StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next)).apply()
+            val next = list().filterNot {
+                it.workspaceId == member.workspaceId && it.deviceId == member.deviceId
+            } + member
+            preferences.edit()
+                .putString(MembershipKey, StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next))
+                .apply()
         } }
 
-        override fun remove(workspaceId: StudyFlowWorkspaceId, deviceId: StudyFlowDeviceId): Boolean = synchronized(preferences) {
-            val current = list(); val next = current.filterNot { it.workspaceId == workspaceId && it.deviceId == deviceId }
+        override fun remove(
+            workspaceId: StudyFlowWorkspaceId,
+            deviceId: StudyFlowDeviceId
+        ): Boolean = synchronized(preferences) {
+            val current = list();
+            val next = current.filterNot {
+                it.workspaceId == workspaceId && it.deviceId == deviceId
+            }
             if (next.size == current.size) false else {
-                preferences.edit().putString(MembershipKey, StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next)).apply(); true
+                preferences.edit()
+                    .putString(MembershipKey, StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next))
+                    .apply(); true
             }
         }
     }
@@ -208,7 +220,10 @@ class AndroidStudyFlowLinkStatePersistence(context: Context) {
 
     private fun endpointRecords(): List<StudyFlowPeerEndpointRecord> =
         preferences.getString(EndpointsKey, null)?.let { encoded ->
-            decodeOrQuarantine(EndpointsKey, StudyFlowPersistedStateKind.ENDPOINTS, encoded, fallback = { emptyList() }) {
+            decodeOrQuarantine(
+                EndpointsKey, StudyFlowPersistedStateKind.ENDPOINTS, encoded,
+                fallback = { emptyList() }
+            ) {
                 StudyFlowPeerPersistenceCodec.decodePeerEndpoints(it)
             }
         }.orEmpty()
@@ -216,13 +231,18 @@ class AndroidStudyFlowLinkStatePersistence(context: Context) {
     private fun journalSnapshot(workspaceId: StudyFlowWorkspaceId): StudyFlowJournalSnapshot {
         val key = journalKey(workspaceId)
         return preferences.getString(key, null)?.let { encoded ->
-            decodeOrQuarantine(key, StudyFlowPersistedStateKind.JOURNAL, encoded, fallback = { StudyFlowJournalSnapshot(workspaceId) }) {
+            decodeOrQuarantine(
+                key, StudyFlowPersistedStateKind.JOURNAL, encoded,
+                fallback = { StudyFlowJournalSnapshot(workspaceId) }
+            ) {
                 StudyFlowPeerPersistenceCodec.decodeJournal(workspaceId, it)
             }
         } ?: StudyFlowJournalSnapshot(workspaceId)
     }
 
-    private fun queueSnapshot(workspaceId: StudyFlowWorkspaceId): com.mikeyphw.studyflow.core.link.StudyFlowOutgoingQueueSnapshot {
+    private fun queueSnapshot(
+        workspaceId: StudyFlowWorkspaceId
+    ): com.mikeyphw.studyflow.core.link.StudyFlowOutgoingQueueSnapshot {
         val key = queueKey(workspaceId)
         return preferences.getString(key, null)?.let { encoded ->
             decodeOrQuarantine(

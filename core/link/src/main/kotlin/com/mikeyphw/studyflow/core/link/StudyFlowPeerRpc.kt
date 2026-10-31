@@ -121,7 +121,10 @@ class StudyFlowPeerServer(
                     continue
                 }
                 if (request.messageType != StudyFlowLinkMessageType.REQUEST) {
-                    sendError(link, request, StudyFlowLinkErrorCodes.InvalidMessage, "Only SFLP requests are accepted", false)
+                    sendError(
+                        link, request, StudyFlowLinkErrorCodes.InvalidMessage,
+                        "Only SFLP requests are accepted", false
+                    )
                     continue
                 }
                 when (request.name) {
@@ -162,8 +165,14 @@ class StudyFlowPeerServer(
             sendError(link, request, "link.identity_mismatch", "Pairing peer does not match envelope sender", false)
             return
         }
-        if (StudyFlowLinkProtocol.negotiate(localIdentity.descriptor.protocolSupport, pairing.peer.protocolSupport) == null) {
-            sendError(link, request, StudyFlowLinkErrorCodes.IncompatibleProtocol, "Pairing peer has no compatible protocol", false)
+        if (StudyFlowLinkProtocol.negotiate(
+                localIdentity.descriptor.protocolSupport, pairing.peer.protocolSupport
+            ) == null
+        ) {
+            sendError(
+                link, request, StudyFlowLinkErrorCodes.IncompatibleProtocol,
+                "Pairing peer has no compatible protocol", false
+            )
             return
         }
         when (val result = pairingAuthority.accept(pairing, clock.nowEpochMillis())) {
@@ -257,20 +266,33 @@ class StudyFlowPeerServer(
             return
         }
         val required = when (request.name) {
-            StudyFlowPeerRpcMessageNames.SyncApply -> setOf(StudyFlowLinkCapabilities.WorkspaceSync, StudyFlowLinkCapabilities.WorkspaceWrite)
-            StudyFlowSyncMessageNames.Frontier, StudyFlowSyncMessageNames.Pull -> setOf(StudyFlowLinkCapabilities.WorkspaceSync, StudyFlowLinkCapabilities.WorkspaceRead)
+            StudyFlowPeerRpcMessageNames.SyncApply -> setOf(
+                StudyFlowLinkCapabilities.WorkspaceSync,
+                StudyFlowLinkCapabilities.WorkspaceWrite
+            )
+            StudyFlowSyncMessageNames.Frontier, StudyFlowSyncMessageNames.Pull -> setOf(
+                StudyFlowLinkCapabilities.WorkspaceSync,
+                StudyFlowLinkCapabilities.WorkspaceRead
+            )
             else -> emptySet()
         }
         if (!authenticatedRecord.peer.capabilities.containsAll(required)) {
-            sendError(link, request, StudyFlowLinkErrorCodes.UnsupportedCapability, "Peer did not advertise required sync capability", false)
+            sendError(
+                link, request, StudyFlowLinkErrorCodes.UnsupportedCapability,
+                "Peer did not advertise required sync capability", false
+            )
             return
         }
         val membershipAllowed = when (request.name) {
-            StudyFlowPeerRpcMessageNames.SyncApply -> workspaceMembership?.canWrite(request.workspaceId, authenticatedPeer) != false
+            StudyFlowPeerRpcMessageNames.SyncApply ->
+                workspaceMembership?.canWrite(request.workspaceId, authenticatedPeer) != false
             else -> workspaceMembership?.canRead(request.workspaceId, authenticatedPeer) != false
         }
         if (!membershipAllowed) {
-            sendError(link, request, "link.workspace_access_denied", "Peer lacks workspace membership for this sync operation", false)
+            sendError(
+                link, request, "link.workspace_access_denied",
+                "Peer lacks workspace membership for this sync operation", false
+            )
             return
         }
         val workspace = workspaces.workspace(request.workspaceId)
@@ -509,7 +531,8 @@ class StudyFlowPeerServer(
     ) {
         link.send(
             StudyFlowLinkEnvelope(
-                protocol = if (StudyFlowLinkProtocol.CurrentSupport.contains(request.protocol)) request.protocol else StudyFlowLinkProtocol.Current,
+                protocol = if (StudyFlowLinkProtocol.CurrentSupport.contains(request.protocol))
+                    request.protocol else StudyFlowLinkProtocol.Current,
                 messageId = messageIds.next("error"),
                 workspaceId = request.workspaceId,
                 senderDeviceId = localIdentity.descriptor.deviceId,
@@ -684,7 +707,9 @@ class StudyFlowRemoteSyncPeerSession(
         link.send(request)
         val response = link.receive() ?: error("Peer closed the SFLP connection")
         require(response.correlationId == request.messageId) { "SFLP response correlation mismatch" }
-        require(StudyFlowLinkProtocol.CurrentSupport.contains(response.protocol)) { "Peer returned an unsupported SFLP protocol" }
+        require(StudyFlowLinkProtocol.CurrentSupport.contains(response.protocol)) {
+            "Peer returned an unsupported SFLP protocol"
+        }
         require(response.protocol == request.protocol) { "SFLP response protocol does not match the request" }
         if (response.messageType == StudyFlowLinkMessageType.ERROR) {
             val error = StudyFlowLinkCodec.decodePayload(StudyFlowLinkError.serializer(), response.payload)
@@ -751,7 +776,9 @@ class StudyFlowNetworkPairingClient(
             link.send(request)
             val response = link.receive() ?: error("Pairing host closed the connection")
             require(response.correlationId == request.messageId) { "Pairing response correlation mismatch" }
-            require(StudyFlowLinkProtocol.CurrentSupport.contains(response.protocol)) { "Pairing response uses an unsupported protocol" }
+            require(StudyFlowLinkProtocol.CurrentSupport.contains(response.protocol)) {
+                "Pairing response uses an unsupported protocol"
+            }
             require(response.protocol == request.protocol) { "Pairing response protocol mismatch" }
             require(response.senderDeviceId == expectedHostDeviceId) { "Pairing response came from an unexpected host" }
             require(response.workspaceId == StudyFlowLinkSystemWorkspaceId) { "Pairing response workspace mismatch" }
@@ -759,8 +786,12 @@ class StudyFlowNetworkPairingClient(
                 val error = StudyFlowLinkCodec.decodePayload(StudyFlowLinkError.serializer(), response.payload)
                 throw StudyFlowRemoteProtocolException(error)
             }
-            require(response.messageType == StudyFlowLinkMessageType.RESPONSE) { "Expected a pairing RESPONSE envelope" }
-            require(response.name == StudyFlowPairingMessageNames.Grant) { "Unexpected pairing response ${response.name}" }
+            require(response.messageType == StudyFlowLinkMessageType.RESPONSE) {
+                "Expected a pairing RESPONSE envelope"
+            }
+            require(response.name == StudyFlowPairingMessageNames.Grant) {
+                "Unexpected pairing response ${response.name}"
+            }
             val grant = runCatching {
                 StudyFlowLinkCodec.decodePayload(StudyFlowPairingGrant.serializer(), response.payload)
             }.getOrElse {
@@ -1010,7 +1041,9 @@ class StudyFlowPeerRuntime(
             topology.updateNextHopHealth(
                 peerDeviceId,
                 StudyFlowPeerHealth(
-                    state = if (connected) StudyFlowPeerConnectionState.CONNECTED else StudyFlowPeerConnectionState.DEGRADED,
+                    state = if (connected)
+                        StudyFlowPeerConnectionState.CONNECTED
+                    else StudyFlowPeerConnectionState.DEGRADED,
                     lastSuccessAtEpochMillis = if (connected) clock.nowEpochMillis() else null,
                     lastFailureAtEpochMillis = if (connected) null else clock.nowEpochMillis(),
                     consecutiveFailures = if (connected) 0 else 1,
@@ -1127,12 +1160,17 @@ class StudyFlowPeerRuntime(
         peerDeviceId: StudyFlowDeviceId,
         access: StudyFlowWorkspaceAccess = StudyFlowWorkspaceAccess.WRITE,
     ): StudyFlowWorkspaceMember {
-        require(trustManager.trustedPeers().any { it.peer.deviceId == peerDeviceId }) { "Peer must be trusted before workspace access is granted" }
+        require(trustManager.trustedPeers().any { it.peer.deviceId == peerDeviceId }) {
+            "Peer must be trusted before workspace access is granted"
+        }
         return requireNotNull(workspaceMembership) { "Workspace membership persistence is not configured" }
             .grant(workspaceId, peerDeviceId, access, clock.nowEpochMillis())
     }
 
-    fun workspacePeers(workspaceId: StudyFlowWorkspaceId, requireWrite: Boolean = true): List<StudyFlowTrustedPeerRecord> =
+    fun workspacePeers(
+        workspaceId: StudyFlowWorkspaceId,
+        requireWrite: Boolean = true
+    ): List<StudyFlowTrustedPeerRecord> =
         trustManager.trustedPeers().filter { record ->
             if (requireWrite) workspaceMembership?.canWrite(workspaceId, record.peer.deviceId) != false
             else workspaceMembership?.canRead(workspaceId, record.peer.deviceId) != false
@@ -1143,11 +1181,16 @@ class StudyFlowPeerRuntime(
         bridge.captureLocalMutations(workspaceId).forEach { mutation ->
             val runtime = workspace(workspaceId)
             val op = if (mutation.tombstone) runtime.journal.appendLocalTombstone(
-                mutation.operationId, mutation.entityId, mutation.operationType, clock.nowEpochMillis(), mutation.payload
+                mutation.operationId, mutation.entityId, mutation.operationType,
+                clock.nowEpochMillis(), mutation.payload
             ) else runtime.journal.appendLocalMutation(
-                mutation.operationId, mutation.entityId, mutation.operationType, clock.nowEpochMillis(), mutation.payload
+                mutation.operationId, mutation.entityId, mutation.operationType,
+                clock.nowEpochMillis(), mutation.payload
             )
-            runtime.reconnect.enqueueLocalOperation(op, workspacePeers(workspaceId).map { it.peer.deviceId }, clock.nowEpochMillis())
+            runtime.reconnect.enqueueLocalOperation(
+                op, workspacePeers(workspaceId).map { it.peer.deviceId },
+                clock.nowEpochMillis()
+            )
             appended++
         }
         return appended

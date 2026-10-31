@@ -159,18 +159,37 @@ class DesktopStudyFlowLinkPersistence(
         override fun list(): List<StudyFlowWorkspaceMember> = synchronized(this@DesktopStudyFlowLinkPersistence) {
             val path = root.resolve("workspace-membership.json")
             readText(path)?.let { encoded ->
-                decodeOrQuarantine(path, StudyFlowPersistedStateKind.WORKSPACE_MEMBERSHIP, encoded, fallback = { emptyList() }) {
+                decodeOrQuarantine(
+                    path, StudyFlowPersistedStateKind.WORKSPACE_MEMBERSHIP, encoded,
+                    fallback = { emptyList() }
+                ) {
                     StudyFlowPeerPersistenceCodec.decodeWorkspaceMembership(it)
                 }
             }.orEmpty()
         }
         override fun put(member: StudyFlowWorkspaceMember) { synchronized(this@DesktopStudyFlowLinkPersistence) {
-            val next = list().filterNot { it.workspaceId == member.workspaceId && it.deviceId == member.deviceId } + member
-            writeText(root.resolve("workspace-membership.json"), StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next))
+            val next = list().filterNot {
+                it.workspaceId == member.workspaceId && it.deviceId == member.deviceId
+            } + member
+            writeText(
+                root.resolve("workspace-membership.json"),
+                StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next)
+            )
         } }
-        override fun remove(workspaceId: StudyFlowWorkspaceId, deviceId: StudyFlowDeviceId): Boolean = synchronized(this@DesktopStudyFlowLinkPersistence) {
-            val current = list(); val next = current.filterNot { it.workspaceId == workspaceId && it.deviceId == deviceId }
-            if (next.size == current.size) false else { writeText(root.resolve("workspace-membership.json"), StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next)); true }
+        override fun remove(
+            workspaceId: StudyFlowWorkspaceId,
+            deviceId: StudyFlowDeviceId
+        ): Boolean = synchronized(this@DesktopStudyFlowLinkPersistence) {
+            val current = list();
+            val next = current.filterNot {
+                it.workspaceId == workspaceId && it.deviceId == deviceId
+            }
+            if (next.size == current.size) false else {
+                writeText(
+                    root.resolve("workspace-membership.json"),
+                    StudyFlowPeerPersistenceCodec.encodeWorkspaceMembership(next)
+                ); true
+            }
         }
     }
 
@@ -233,7 +252,10 @@ class DesktopStudyFlowLinkPersistence(
     private fun journalSnapshot(workspaceId: StudyFlowWorkspaceId): StudyFlowJournalSnapshot {
         val path = journalPath(workspaceId)
         return readText(path)?.let { encoded ->
-            decodeOrQuarantine(path, StudyFlowPersistedStateKind.JOURNAL, encoded, fallback = { StudyFlowJournalSnapshot(workspaceId) }) {
+            decodeOrQuarantine(
+                path, StudyFlowPersistedStateKind.JOURNAL, encoded,
+                fallback = { StudyFlowJournalSnapshot(workspaceId) }
+            ) {
                 StudyFlowPeerPersistenceCodec.decodeJournal(workspaceId, it)
             }
         } ?: StudyFlowJournalSnapshot(workspaceId)
@@ -304,7 +326,10 @@ class DesktopStudyFlowLinkPersistence(
             reason = (error.message ?: error.javaClass.simpleName).take(512),
         )
         val records = corruptionRecords().plus(record).takeLast(64)
-        writeText(root.resolve("corruption-ledger.json"), StudyFlowPeerPersistenceCodec.encodeCorruptionRecords(records))
+        writeText(
+            root.resolve("corruption-ledger.json"),
+            StudyFlowPeerPersistenceCodec.encodeCorruptionRecords(records)
+        )
     }
 
     private fun sha256Hex(value: String): String = MessageDigest.getInstance("SHA-256")

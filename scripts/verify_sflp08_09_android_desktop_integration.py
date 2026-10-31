@@ -349,8 +349,8 @@ def validate_wiring_truth() -> None:
     )
 
 
-def validate_line_lengths() -> None:
-    candidates = [
+def formatting_candidates() -> list[str]:
+    return [
         "build.gradle.kts",
         *[path for path in REQUIRED if path.endswith(".kt")],
         "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAppBootstrap.kt",
@@ -361,14 +361,19 @@ def validate_line_lengths() -> None:
         "desktopApp/src/main/kotlin/com/mikeyphw/studyflow/desktop/DesktopAnalyticsSearchSettingsScreens.kt",
         "app/src/main/java/com/mikeyphw/studyflow/StudyFlowApplication.kt",
     ]
+
+
+def validate_line_lengths() -> None:
     errors: list[str] = []
-    for relative in candidates:
+    for relative in formatting_candidates():
         path = ROOT / relative
+        if not path.is_file():
+            fail(f"formatting candidate missing: {relative}")
         for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if len(line) > 120:
                 errors.append(f"{relative}:{number}:{len(line)}")
     if errors:
-        fail("line length >120: " + ", ".join(errors[:30]))
+        fail(f"{len(errors)} source lines exceed 120 columns: " + ", ".join(errors))
 
 
 def main() -> None:
