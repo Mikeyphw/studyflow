@@ -205,7 +205,8 @@ class StudyFlowOutgoingOperationQueue(
     fun peerRetryState(peerDeviceId: StudyFlowDeviceId): StudyFlowPeerRetryState? =
         store.loadPeerRetryStates(workspaceId).firstOrNull { it.peerDeviceId == peerDeviceId }
 
-    fun nextPeerAttemptAt(peerDeviceId: StudyFlowDeviceId): Long? = peerRetryState(peerDeviceId)?.nextAttemptAtEpochMillis
+    fun nextPeerAttemptAt(peerDeviceId: StudyFlowDeviceId): Long? =
+        peerRetryState(peerDeviceId)?.nextAttemptAtEpochMillis
 
     fun isPeerAttemptDue(peerDeviceId: StudyFlowDeviceId, nowEpochMillis: Long): Boolean {
         require(nowEpochMillis >= 0L) { "Retry clock must not be negative" }

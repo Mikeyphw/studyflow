@@ -406,7 +406,9 @@ class StudyReminderDeliveryCoordinator(
             ledgerEntry = ledgerEntry,
         )
         AndroidCompactCompanionStateStore(appContext).update(compactProjection)
-        StudyFlowAttentionTileService.requestRefresh(appContext)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            StudyFlowAttentionTileService.requestRefresh(appContext)
+        }
         if (
             route.owner?.deviceId != localPeer.deviceId &&
             remoteOwnerDelivered &&
@@ -583,7 +585,9 @@ class StudyReminderDeliveryCoordinator(
                 ledgerEntry = null,
             )
             AndroidCompactCompanionStateStore(appContext).update(projection)
-            StudyFlowAttentionTileService.requestRefresh(appContext)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                StudyFlowAttentionTileService.requestRefresh(appContext)
+            }
             runtimeStatusStore.markDelivered(occurrence.occurrenceId.value, clock())
             StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
             return ack

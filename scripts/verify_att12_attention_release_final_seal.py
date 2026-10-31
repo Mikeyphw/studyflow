@@ -378,9 +378,17 @@ require(
     'exclude(group = "org.jetbrains.skiko")',
     'systemProperty("java.awt.headless", "true")',
 )
+# ATT03/R4R7 keeps imminent real boundaries; the minute delay is only a fallback.
+# Checking the removed >=60s filter would incorrectly reject a tested fix.
 require(
     "app/src/main/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetModels.kt",
-    ").filter { it >= nowEpochMillis + MinimumRefreshDelayMillis }",
+    ".filter { it > nowEpochMillis }",
+    "nowEpochMillis + MinimumRefreshDelayMillis",
+)
+require(
+    "app/src/test/java/com/mikeyphw/studyflow/widget/StudyFlowWidgetSnapshotProjectorAtt03Test.kt",
+    "keepsSubMinutePlannedBoundaryForExactFreshnessScheduler",
+    "imminentReviewDeadlineRemainsExactWithoutAnActiveSession",
 )
 require(
     "web/tests/test_w14_typescript_migration.py",
