@@ -1,6 +1,6 @@
 # REL-HOSTED-01 — GitHub unsigned candidate → private signing → device evidence
 
-**Status:** source implementation only; GitHub hosted execution and device qualification pending.
+**Status:** at first hosted run 41207377489, phone unsigned candidate PASS, TV blocked by wrong JVM test task; REL-HOSTED-01-R1 corrects source, new-SHA hosted verification and device qualification pending.
 **Baseline:** `92f0538a88491356373058cb3ddecf59b60cb434`, standard CI `41171083215` (5/5), deep CI `41171084358` (5/5).
 
 ## Security and evidence scope
@@ -18,6 +18,23 @@
 - The signer emits `SIGNED_STAGE_ONLY`, never `PASS` in REL01 host/connected/journey/device reports.
   REL-FINAL must remain pending until legitimate connected signed-APK restore/restart and device
   evidence exists, plus operator checklist.
+
+## Observed hosted evidence and R1 correction (2026-10-31)
+
+- Source SHA `6178499c195952288f5e45981bf84c3601ceae3e`: regular CI
+  [41207374268](https://github.com/Mikeyphw/studyflow/actions/runs/41207374268)
+  and deep CI [41207374915](https://github.com/Mikeyphw/studyflow/actions/runs/41207374915)
+  succeeded. Hosted run [41207377489](https://github.com/Mikeyphw/studyflow/actions/runs/41207377489)
+  staged and uploaded the **phone** unsigned candidate, but **TV** failed selecting an
+  unavailable `:app-tv:testReleaseUnitTest` task before TV packaging.
+- REL-HOSTED-01-R1 selects `:app:testReleaseUnitTest` for phone and
+  `:app-tv:testDebugUnitTest` for TV (the same selection already proven in
+  standard CI), then still executes `lintRelease`, `assembleHostedCandidate`
+  and `bundleHostedCandidate` for both. A separate `always()` artifact captures
+  diagnostic reports even on failed hosted builds.
+- **Do not download/sign as a complete phone+TV candidate set using run 41207377489**:
+  it has no TV package. Dispatch the revised workflow at its **new commit SHA**
+  and require both modules' candidate jobs to pass before private signing.
 
 ## 1. One-time personal key, in Termux (no Gradle)
 

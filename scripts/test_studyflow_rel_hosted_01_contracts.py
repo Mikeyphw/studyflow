@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import re
 import tempfile
 import unittest
 import zipfile
@@ -42,14 +43,61 @@ def fixture(folder: Path) -> None:
     (folder / "hosted-candidate-manifest.json").write_text(json.dumps(payload))
 
 
+
+def validate_hosted_candidate_test_matrix(flow: str, phone_gradle: str, tv_gradle: str) -> None:
+    """Require module-specific JVM tests, not a common guessed Release task.
+
+    The TV module currently has default debug JVM tests, unlike the phone
+    module's explicit release testBuildType. Enforce this where the candidate
+    tasks are selected, not just by searching for a task name somewhere in YAML.
+    """
+    if not re.search(r'testBuildType\s*=\s*"release"', phone_gradle):
+        raise ValueError("Phone JVM test selection no longer matches testBuildType")
+    if re.search(r'testBuildType\s*=\s*"release"', tv_gradle):
+        raise ValueError("TV JVM test selection needs a deliberate source review")
+    section = flow.split("  stage:\n", 1)
+    if len(section) != 2:
+        raise ValueError("Missing unique candidate staging job")
+    stage = section[1]
+    if "  stage:\n" in stage:
+        raise ValueError("Duplicated staging job")
+    matrix = stage.split("    strategy:\n", 1)
+    if len(matrix) != 2 or "    env:\n" not in matrix[1]:
+        raise ValueError("Missing candidate stage strategy/matrix")
+    strategy = matrix[1].split("    env:\n", 1)[0]
+    mapping = re.findall(r"^          - module: ([\w-]+)\n            test_task: '([^']+)'$", strategy, re.M)
+    if mapping != [("app", ":app:testReleaseUnitTest"),
+                   ("app-tv", ":app-tv:testDebugUnitTest")]:
+        raise ValueError(f"Hosted candidate tests disagree with configured modules: {mapping}")
+    if re.search(r"^        module:\s*\[", strategy, re.M):
+        raise ValueError("Conflicting module-only matrix")
+    for token in ("          MODULE: ${{ matrix.module }}\n",
+                  "          TEST_TASK: ${{ matrix.test_task }}\n",
+                  '            "$TEST_TASK" \\\n',
+                  '            ":${MODULE}:lintRelease" \\\n',
+                  '            ":${MODULE}:assembleHostedCandidate" \\\n',
+                  '            ":${MODULE}:bundleHostedCandidate"\n'):
+        if token not in stage:
+            raise ValueError(f"Hosted candidate task execution drift: {token!r}")
+    if '":${MODULE}:testReleaseUnitTest"' in stage or '"$TEST_TASK"' not in stage:
+        raise ValueError("Candidate job must not hardcode a shared JVM test task")
+    if stage.count('TEST_TASK: ${{ matrix.test_task }}') != 1:
+        raise ValueError("Candidate JVM task binding must occur exactly once")
+
+
 class HostedCandidateContracts(unittest.TestCase):
     def test_source_workflow_security_and_production_release_gates_remain_separate(self):
         flow = file_text(".github/workflows/studyflow-hosted-release.yml")
         for token in ("workflow_dispatch:", "expected_sha:", "permissions:\n  contents: read",
                       "persist-credentials: false", "test \"$EXPECTED_SHA\" = \"$GITHUB_SHA\"",
-                      "testReleaseUnitTest", "lintRelease", "assembleHostedCandidate",
+                      "testReleaseUnitTest", "testDebugUnitTest", "lintRelease", "assembleHostedCandidate",
                       "bundleHostedCandidate", "studyflow_hosted_candidate.py stage", "upload-artifact@v4"):
             self.assertIn(token, flow)
+        validate_hosted_candidate_test_matrix(
+            flow, file_text("app/build.gradle.kts"), file_text("app-tv/build.gradle.kts"))
+        self.assertIn("Preserve hosted candidate lint and JVM test diagnostics", flow)
+        self.assertIn("if-no-files-found: warn", flow)
+        self.assertIn("if: always()", flow)
         for forbidden in ("secrets.", "assembleRelease\"", "bundleRelease\"",
                           "gradle publish", "STUDYFLOW_RELEASE_STORE_PASSWORD:", "repository_dispatch"):
             self.assertNotIn(forbidden, flow)
@@ -64,6 +112,24 @@ class HostedCandidateContracts(unittest.TestCase):
         self.assertIn('dependsOn(verifyPhoneReleaseSigningPreflight)', file_text("app/build.gradle.kts"))
         self.assertIn('require(studyFlowTvPersonalSigningConfigured || tvReleaseSigningConfigured)',
                       file_text("app-tv/build.gradle.kts"))
+
+    def test_adversarial_candidate_test_matrix_drift_rejected(self):
+        flow = file_text(".github/workflows/studyflow-hosted-release.yml")
+        phone = file_text("app/build.gradle.kts")
+        tv = file_text("app-tv/build.gradle.kts")
+        mutations = {
+            "tv_release_unit_test": flow.replace(":app-tv:testDebugUnitTest", ":app-tv:testReleaseUnitTest"),
+            "phone_debug_unit_test": flow.replace(":app:testReleaseUnitTest", ":app:testDebugUnitTest"),
+            "common_release_test": flow.replace('"$TEST_TASK"', '":${MODULE}:testReleaseUnitTest"'),
+            "wrong_matrix_binding": flow.replace("TEST_TASK: ${{ matrix.test_task }}", "TEST_TASK: ${{ matrix.module }}"),
+            "duplicate_tv_module": flow.replace("- module: app-tv", "- module: app"),
+        }
+        for label, bad_flow in mutations.items():
+            self.assertNotEqual(bad_flow, flow, label)
+            with self.subTest(label=label), self.assertRaises(ValueError):
+                validate_hosted_candidate_test_matrix(bad_flow, phone, tv)
+        with self.assertRaises(ValueError):
+            validate_hosted_candidate_test_matrix(flow, phone, tv + '\ntestBuildType = "release"\n')
 
     def test_stage_and_private_sign_require_complete_receipt_and_never_claim_release(self):
         source = file_text("scripts/studyflow_hosted_candidate.py")

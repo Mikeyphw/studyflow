@@ -46,7 +46,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [app, app-tv]
+        include:
+          - module: app
+            test_task: ':app:testReleaseUnitTest'
+          - module: app-tv
+            test_task: ':app-tv:testDebugUnitTest'
     env:
       STUDYFLOW_HOSTED_UNSIGNED_CANDIDATE: 'true'
     steps:
@@ -78,14 +82,28 @@ jobs:
         shell: bash
         env:
           MODULE: ${{ matrix.module }}
+          TEST_TASK: ${{ matrix.test_task }}
         run: |
           set -euo pipefail
           chmod +x ./gradlew
           ./gradlew --no-daemon --max-workers=2 \
-            ":${MODULE}:testReleaseUnitTest" \
+            "$TEST_TASK" \
             ":${MODULE}:lintRelease" \
             ":${MODULE}:assembleHostedCandidate" \
             ":${MODULE}:bundleHostedCandidate"
+      - name: Preserve hosted candidate lint and JVM test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studyflow-hosted-${{ matrix.module }}-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ matrix.module }}/build/reports/lint-results-*.xml
+            ${{ matrix.module }}/build/reports/lint-results-*.html
+            ${{ matrix.module }}/build/reports/lint-results-*.sarif
+            ${{ matrix.module }}/build/reports/tests/**
+            ${{ matrix.module }}/build/test-results/**
+          if-no-files-found: warn
+          retention-days: 14
       - name: Validate package identity, absence of signing and immutable SHA; stage evidence
         shell: bash
         env:
