@@ -129,25 +129,39 @@ dependencies {
     testImplementation(kotlin("test-junit"))
 }
 
-// Release signing is a packaging-time requirement, not a configuration-time requirement.
-// This keeps ordinary debug/source verification usable when a shell has only some release
-// variables exported, while still preventing unsigned or partially configured TV releases.
-// Permanent personal signing satisfies the release-signing requirement when configured.
+// REL-HOSTED-01-R2: only final signed Release outputs require credentials.
+// Intermediate Release resources are also used by unsigned hostedCandidate variants,
+// lint and JVM tests. A doFirst closure on all packageRelease* tasks both blocked
+// those legitimate paths and captured Gradle script state (configuration-cache unsafe).
+// Use the same external fail-closed, configuration-cache-safe preflight as the phone.
+val verifyTvReleaseSigningPreflight = tasks.register<Exec>("verifyTvReleaseSigningPreflight") {
+    group = "verification"
+    description = "Reject TV signed Release packaging without complete signing credentials."
+    workingDir(rootProject.projectDir)
+    commandLine("python3", "scripts/ov01_release_gate.py", "signing", "--surface", "tv")
+}
+
+// Permanent signing remains private; only a signed Release task receives these values.
+// The legacy all-four STUDYFLOW_RELEASE_* environment contract is still supported.
+if (studyFlowTvPersonalSigningConfigured) {
+    verifyTvReleaseSigningPreflight.configure {
+        environment("STUDYFLOW_RELEASE_STORE_FILE", studyFlowTvPersonalSigningStoreFile!!.absolutePath)
+        environment("STUDYFLOW_RELEASE_STORE_PASSWORD", studyFlowTvSigningValue("storePassword"))
+        environment("STUDYFLOW_RELEASE_KEY_ALIAS", studyFlowTvSigningValue("keyAlias"))
+        environment("STUDYFLOW_RELEASE_KEY_PASSWORD", studyFlowTvSigningValue("keyPassword"))
+    }
+}
+
 tasks.configureEach {
-    val releasePackagingTask =
+    val finalSignedReleaseTask =
         name == "assembleRelease" ||
             name == "bundleRelease" ||
-            name.startsWith("packageRelease")
-    if (releasePackagingTask) {
-        doFirst {
-            require(studyFlowTvPersonalSigningConfigured || tvReleaseSigningConfigured) {
-                if (tvReleaseSigningPartiallyConfigured) {
-                    "StudyFlow TV release signing is only accepted when all STUDYFLOW_RELEASE_* variables are configured."
-                } else {
-                    "StudyFlow TV release packaging requires permanent personal signing or all STUDYFLOW_RELEASE_* variables."
-                }
-            }
-        }
+            (name.startsWith("packageRelease") &&
+                name != "packageReleaseResources" &&
+                !name.contains("UnitTest")) ||
+            name.startsWith("signRelease")
+    if (finalSignedReleaseTask) {
+        dependsOn(verifyTvReleaseSigningPreflight)
     }
 }
 

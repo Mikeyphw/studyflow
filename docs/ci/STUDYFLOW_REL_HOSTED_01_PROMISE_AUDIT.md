@@ -32,3 +32,12 @@ release-ready; existing devtool local-Gradle automation remains incompatible wit
 | Private signing, release preflight and final evidence gates unchanged | No signing code, build-type configuration, or release verdict mutator changed | **SOURCE PRESERVED**; actual signed/device acceptance **OPEN** |
 
 **Important:** This R1 patch repairs a task-selection failure. It does not prove `:app-tv:lintRelease`, TV candidate compilation, or TV unsigned-package verification will succeed until GitHub actually runs them. Never substitute successful debug CI for a successful hosted TV candidate.
+
+## REL-HOSTED-01-R2 — TV signing preflight and Gradle configuration-cache repair (2026-10-31)
+
+- **Observed hosted evidence:** [`41219199002`](https://github.com/Mikeyphw/studyflow/actions/runs/41219199002), commit `57cdb57dac0d9b3a492f67cae58bc225af42a63f`. Source audit and phone candidate succeeded; TV candidate failed at `:app-tv:packageReleaseResources` before staging.
+- **First failure:** TV's legacy `tasks.configureEach` injected a `doFirst { require(signing) }` into every `packageRelease*` task. `packageReleaseResources` is also required for unsigned candidate or lint tasks, so the guard was incorrectly applied.
+- **Second failure:** That `doFirst` action captured the Gradle build-script object, producing the configuration-cache serialization failure.
+- **R2 source change:** A dedicated `Exec` preflight runs `scripts/ov01_release_gate.py signing --surface tv` only for final signed Release packaging or signing tasks. It preserves all-four legacy signing-variable requirements or permanently configured personal signing. Shared Release resource and unit-test tasks remain independent, and hosted candidates still use their separate unsigned build type.
+- **Source acceptance:** Hosted candidate and permanent personal-signing regression suites plus Actions source verifier must pass. Real hosted TV APK/AAB creation is **PENDING new-SHA GitHub execution**.
+- **No claims:** Not a signed release, no physical-device qualification, and no local Gradle in Termux. The phone's successfully produced unsigned artifact is not evidence of TV success.

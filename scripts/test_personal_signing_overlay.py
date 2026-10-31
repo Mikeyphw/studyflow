@@ -39,7 +39,11 @@ class PersonalSigningContractTest(unittest.TestCase):
         self.assertIn('name.startsWith("packageRelease")', PHONE)
         self.assertIn('name.startsWith("signRelease")', PHONE)
         self.assertIn('name.startsWith("packageRelease")', TV)
-        self.assertIn('require(studyFlowTvPersonalSigningConfigured || tvReleaseSigningConfigured)', TV)
+        self.assertIn('tasks.register<Exec>("verifyTvReleaseSigningPreflight")', TV)
+        self.assertIn('dependsOn(verifyTvReleaseSigningPreflight)', TV)
+        self.assertIn('name != "packageReleaseResources"', TV)
+        self.assertIn('!name.contains("UnitTest")', TV)
+        self.assertNotIn('doFirst {\n            require(studyFlowTvPersonalSigningConfigured', TV)
         self.assertNotIn('verifyStudyFlowTvReleaseSigningConfiguration', TV)
 
     def test_legacy_release_fallback_is_preserved(self):

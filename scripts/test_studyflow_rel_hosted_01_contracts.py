@@ -85,6 +85,46 @@ def validate_hosted_candidate_test_matrix(flow: str, phone_gradle: str, tv_gradl
         raise ValueError("Candidate JVM task binding must occur exactly once")
 
 
+def validate_tv_signed_release_gate(gradle: str) -> None:
+    """Release signing must protect final output tasks, never shared resource work.
+
+    The prior TV guard used a doFirst closure on *every* packageRelease* task.
+    packageReleaseResources is needed by lintRelease/hostedCandidate and the
+    closure also broke Gradle configuration-cache serialization.
+    """
+    start = gradle.split("// REL-HOSTED-01-R2:", 1)
+    if len(start) != 2:
+        raise ValueError("Missing TV release guard revision")
+    guard = start[1].split("// ATT12", 1)[0]
+    required = (
+        'tasks.register<Exec>("verifyTvReleaseSigningPreflight")',
+        '"scripts/ov01_release_gate.py", "signing", "--surface", "tv"',
+        'if (studyFlowTvPersonalSigningConfigured)',
+        'environment("STUDYFLOW_RELEASE_STORE_FILE", studyFlowTvPersonalSigningStoreFile!!.absolutePath)',
+        'environment("STUDYFLOW_RELEASE_STORE_PASSWORD", studyFlowTvSigningValue("storePassword"))',
+        'environment("STUDYFLOW_RELEASE_KEY_ALIAS", studyFlowTvSigningValue("keyAlias"))',
+        'environment("STUDYFLOW_RELEASE_KEY_PASSWORD", studyFlowTvSigningValue("keyPassword"))',
+        'name == "assembleRelease"', 'name == "bundleRelease"',
+        'name.startsWith("signRelease")',
+        'name != "packageReleaseResources"',
+        '!name.contains("UnitTest")',
+        'dependsOn(verifyTvReleaseSigningPreflight)',
+    )
+    for token in required:
+        if token not in guard:
+            raise ValueError(f"TV signed Release guard lost protection: {token}")
+    if re.search(r"\bdoFirst\s*\{|\bdoLast\s*\{", guard):
+        raise ValueError("TV Release guard must not capture Gradle script in task actions")
+    if not re.search(
+        r'name\.startsWith\("packageRelease"\)\s*&&\s*'
+        r'name != "packageReleaseResources"\s*&&\s*'
+        r'!name\.contains\("UnitTest"\)', guard,
+    ):
+        raise ValueError("Shared TV release resource and test tasks must be excluded")
+    if 'signingConfig = null' not in gradle or 'create("hostedCandidate")' not in gradle:
+        raise ValueError("Unsigned hostedCandidate build type was removed")
+
+
 class HostedCandidateContracts(unittest.TestCase):
     def test_source_workflow_security_and_production_release_gates_remain_separate(self):
         flow = file_text(".github/workflows/studyflow-hosted-release.yml")
@@ -110,8 +150,7 @@ class HostedCandidateContracts(unittest.TestCase):
             self.assertIn('name == "assembleRelease"', gradle)
             self.assertIn('name == "bundleRelease"', gradle)
         self.assertIn('dependsOn(verifyPhoneReleaseSigningPreflight)', file_text("app/build.gradle.kts"))
-        self.assertIn('require(studyFlowTvPersonalSigningConfigured || tvReleaseSigningConfigured)',
-                      file_text("app-tv/build.gradle.kts"))
+        validate_tv_signed_release_gate(file_text("app-tv/build.gradle.kts"))
 
     def test_adversarial_candidate_test_matrix_drift_rejected(self):
         flow = file_text(".github/workflows/studyflow-hosted-release.yml")
@@ -130,6 +169,29 @@ class HostedCandidateContracts(unittest.TestCase):
                 validate_hosted_candidate_test_matrix(bad_flow, phone, tv)
         with self.assertRaises(ValueError):
             validate_hosted_candidate_test_matrix(flow, phone, tv + '\ntestBuildType = "release"\n')
+
+    def test_tv_release_guard_configuration_cache_and_candidate_regressions(self):
+        tv = file_text("app-tv/build.gradle.kts")
+        validate_tv_signed_release_gate(tv)
+        mutations = {
+            "resource_packaging_guard": tv.replace(
+                '                name != "packageReleaseResources" &&\n', ''),
+            "unit_test_guard": tv.replace('                !name.contains("UnitTest")', '                true'),
+            "unsigned_release_possible": tv.replace(
+                'dependsOn(verifyTvReleaseSigningPreflight)', 'println("gate skipped")'),
+            "missing_apk_gate": tv.replace('name == "assembleRelease"', 'name == "assembleDebug"'),
+            "missing_aab_gate": tv.replace('name == "bundleRelease"', 'name == "bundleDebug"'),
+            "missing_sign_gate": tv.replace('name.startsWith("signRelease")', 'name.startsWith("signDebug")'),
+            "configuration_cache_closure": tv.replace(
+                'dependsOn(verifyTvReleaseSigningPreflight)',
+                'doFirst { dependsOn(verifyTvReleaseSigningPreflight) }'),
+            "missing_store_password_bridge": tv.replace(
+                'environment("STUDYFLOW_RELEASE_STORE_PASSWORD", studyFlowTvSigningValue("storePassword"))', ''),
+        }
+        for label, damaged in mutations.items():
+            self.assertNotEqual(damaged, tv, label)
+            with self.subTest(label=label), self.assertRaises(ValueError):
+                validate_tv_signed_release_gate(damaged)
 
     def test_stage_and_private_sign_require_complete_receipt_and_never_claim_release(self):
         source = file_text("scripts/studyflow_hosted_candidate.py")
