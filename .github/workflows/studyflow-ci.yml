@@ -53,6 +53,7 @@ jobs:
           python3 scripts/test_studyflow_ov01_r4r9_contracts.py
           python3 scripts/sflp08_09_formatting_preflight.py
           python3 scripts/test_studyflow_ov01_r4r10_contracts.py
+          python3 scripts/test_studyflow_ov01_r4r11_contracts.py
   web:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.lane == 'all' || inputs.lane == 'web' }}
     needs: source
@@ -216,6 +217,13 @@ jobs:
       - name: Install pinned Python image-test dependency for cross-client contracts
         run: |
           python -m pip install --disable-pip-version-check --no-deps --only-binary=:all: -r web/requirements-test.txt
+      - name: Install pinned pytest for deep Android Web regression
+        if: ${{ matrix.profile == 'android-contracts' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --no-deps --only-binary=:all: -r web/requirements-deep-pytest.txt
+          python3 -m pytest --version
       - uses: android-actions/setup-android@v4
       - name: Install pinned Android SDK / NDK for contract graph
         shell: bash

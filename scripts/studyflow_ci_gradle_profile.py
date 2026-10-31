@@ -80,6 +80,60 @@ def profile_plan(profile: str) -> dict:
             "execution_authority": "GitHub Actions only", "qualified_release": False}
 
 
+
+# The Android deep Gradle plan depends on the shared Web pytest task. A clean
+# GitHub setup-python 3.12 runner does not include pytest: Pillow alone is not
+# sufficient. Keep every pytest runtime dependency pinned and installed before
+# Gradle in only the hosted android-contracts profile.
+DEEP_WEB_PYTEST_PINS = (
+    "pytest==9.0.2",
+    "iniconfig==2.3.0",
+    "packaging==25.0",
+    "pluggy==1.6.0",
+    "Pygments==2.20.0",
+)
+
+
+def validate_deep_web_pytest_hosted_prereqs(ci: str, requirements: str) -> None:
+    """Fail closed on test omissions, unpinned wheels, wrong job or late setup."""
+    actual = tuple(line.strip() for line in requirements.splitlines()
+                   if line.strip() and not line.lstrip().startswith("#"))
+    if actual != DEEP_WEB_PYTEST_PINS:
+        raise ValueError("Deep Web pytest runtime pins differ from reviewed exact dependency set")
+    marker = "      - name: Install pinned pytest for deep Android Web regression\n"
+    if ci.count(marker) != 1 or "  deep-contracts:\n" not in ci:
+        raise ValueError("Missing or duplicated deep Android pytest prerequisite step")
+    deep = ci.split("  deep-contracts:\n", 1)[1]
+    if marker not in deep:
+        raise ValueError("Pytest setup must be under deep-contracts")
+    begin = deep.index(marker)
+    end = deep.find("\n      - ", begin + len(marker))
+    step = deep[begin:] if end < 0 else deep[begin:end]
+    required = (
+        "        if: ${{ matrix.profile == 'android-contracts' }}\n",
+        "        shell: bash\n",
+        "          set -euo pipefail\n",
+        "          python3 -m pip install --disable-pip-version-check --no-deps "
+        "--only-binary=:all: -r web/requirements-deep-pytest.txt\n",
+        "          python3 -m pytest --version",
+    )
+    if any(part not in step for part in required):
+        raise ValueError("Deep Android pytest prerequisites missing pin, safe install or profile scope")
+    if "continue-on-error:" in step or "|| true" in step:
+        raise ValueError("Deep Android pytest dependency install must fail closed")
+    build_marker = "      - name: Run canonical StudyFlow Devtool Gradle target profile\n"
+    if build_marker not in deep or begin >= deep.index(build_marker):
+        raise ValueError("Pytest must be installed before deep native Gradle tasks")
+    setup_marker = "      - uses: actions/setup-python@v5\n"
+    if setup_marker not in deep or begin <= deep.index(setup_marker):
+        raise ValueError("Pytest install must follow pinned setup-python")
+    # All Web tests remain enabled; specifically preserve function-style pytest
+    # regression tests, which unittest discovery would silently omit.
+    gradle = (ROOT / "build.gradle.kts").read_text(encoding="utf-8")
+    if 'commandLine("python3", "-m", "pytest", "tests", "-q")' not in gradle:
+        raise ValueError("Full Web pytest regression task removed from hosted Gradle graph")
+
+
 def source_check() -> None:
     for profile in PROFILES:
         profile_plan(profile)
@@ -98,6 +152,9 @@ def source_check() -> None:
                      "-r requirements-test.txt", "-r web/requirements-test.txt"):
         if fragment not in ci:
             raise ValueError(f"Hosted CI lacks pinned Python test prerequisite: {fragment}")
+    validate_deep_web_pytest_hosted_prereqs(
+        ci, (ROOT / "web/requirements-deep-pytest.txt").read_text(encoding="utf-8")
+    )
     for marker in ("matrix.profile == 'android-contracts' || matrix.profile == 'parity-contracts'",
                    "npm ci", "npm run build"):
         if marker not in ci:

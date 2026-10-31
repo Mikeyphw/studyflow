@@ -1,0 +1,8 @@
+# Exact hosted pytest runtime for the deep Android profile's Web regression graph.
+# This is separate from Pillow (web/requirements-test.txt); do not alter Web CI.
+# All non-conditional pytest runtime requirements are pinned for --no-deps installs.
+pytest==9.0.2
+iniconfig==2.3.0
+packaging==25.0
+pluggy==1.6.0
+Pygments==2.20.0
