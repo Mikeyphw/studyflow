@@ -1,0 +1,109 @@
+# REL-HOSTED-01: secret-free production-like candidates, NOT signed releases.
+# Signing keys must remain on the user's own device; this workflow never publishes.
+name: StudyFlow Hosted Unsigned Candidate
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: 'Reviewed 40-character commit SHA; refuses moving refs'
+        required: true
+        type: string
+        default: ''
+permissions:
+  contents: read
+concurrency:
+  group: studyflow-hosted-candidate-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source:
+    name: Release candidate source and signing-boundary audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Reject moving source refs
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+      - name: Verify early hosted-candidate source contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_studyflow_rel_hosted_01_contracts.py
+          python3 scripts/verify_studyflow_actions.py --source-only
+  stage:
+    needs: source
+    name: Unsigned candidate ${{ matrix.module }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [app, app-tv]
+    env:
+      STUDYFLOW_HOSTED_UNSIGNED_CANDIDATE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate immutable reviewed SHA
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+          test ! -e "$HOME/.config/studyflow/android-signing.properties"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+      - name: Install pinned Android SDK/NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0' 'ndk;29.0.14206865'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile, test, lint and assemble unsigned hosted-candidate APK/AAB
+        shell: bash
+        env:
+          MODULE: ${{ matrix.module }}
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --max-workers=2 \
+            ":${MODULE}:testReleaseUnitTest" \
+            ":${MODULE}:lintRelease" \
+            ":${MODULE}:assembleHostedCandidate" \
+            ":${MODULE}:bundleHostedCandidate"
+      - name: Validate package identity, absence of signing and immutable SHA; stage evidence
+        shell: bash
+        env:
+          MODULE: ${{ matrix.module }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          python3 scripts/studyflow_hosted_candidate.py stage \
+            --module "$MODULE" \
+            --expected-sha "$EXPECTED_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --apksigner "$ANDROID_HOME/build-tools/36.0.0/apksigner" \
+            --apkanalyzer "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" \
+            --out-dir "$RUNNER_TEMP/studyflow-hosted-${MODULE}"
+      - name: Upload only unsigned release candidates and their SHA256 manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: studyflow-hosted-${{ matrix.module }}-unsigned-${{ github.run_id }}
+          path: ${{ runner.temp }}/studyflow-hosted-${{ matrix.module }}/
+          if-no-files-found: error
+          retention-days: 7

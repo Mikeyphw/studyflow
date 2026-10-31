@@ -42,6 +42,25 @@ python3 scripts/run_rel_final_release_campaign.py --mode finalize --channel prod
 
 REL-FINAL closes only when `final-release-verdict.json` has `releaseReady=true` **and** `release-ops-final-seal.json` has `releaseOpsReady=true`. Missing signing credentials, missing/extra adb devices, failed connected tests, absent restart/restore evidence, unchecked device observations, or incomplete operator review keep the campaign pending/blocked.
 
+## GitHub-only candidate bridge (REL-HOSTED-01)
+
+The older `--mode execute` and REL01 `--mode automated` paths still use the **local**
+`studyflow_release` Devtool Gradle target and must **not** be run in the current
+GitHub-only Gradle workflow. Those commands do not become evidence simply because a
+candidate APK has been downloaded. Use `studyflow-hosted-release.yml`, the standalone
+`studyflow_hosted_candidate.py sign` command, and the resulting
+`build/reports/studyflow/hosted-{app,app-tv}-signed-stage.json` records instead.
+
+The GitHub job produces unsigned, non-debuggable APK/AAB candidates from separate
+`hostedCandidate` build types. It never receives keys. The offline signer validates
+source SHA, run ID, package identity, unsigned state and SHA-256 for both artifacts;
+then signs privately with the existing permanent key. This is a staging bridge **only**:
+REL01 connected suites and exact-signed-APK restore/restart, REL03 install/upgrade,
+manual device checks and REL07/REL08 operator evidence remain unfulfilled. Never
+copy the staging receipt into `release-host-gates.json`, `connected-test-gates.json`,
+`full-journey.json` or `final-release-verdict.json`. See
+`docs/release/REL_HOSTED_01_GITHUB_CANDIDATE_AND_OFFLINE_SIGNING.md`.
+
 ## Safety boundary
 
 The repository release tools do not upload, publish, sign with embedded secrets, delete user data, downgrade devices, or perform rollback automatically. Signing credentials stay external. REL06 emits rollback planning evidence and commands only.

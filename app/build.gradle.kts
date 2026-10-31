@@ -89,6 +89,11 @@ plugins {
     id("studyflow.android.application")
 }
 
+// REL-HOSTED-01: a separate GitHub-only UNSIGNED staging variant; never relax Release gates.
+val studyFlowHostedUnsignedCandidate = providers.environmentVariable("GITHUB_ACTIONS").orNull == "true" &&
+    providers.environmentVariable("STUDYFLOW_HOSTED_UNSIGNED_CANDIDATE").orNull == "true" &&
+    !studyFlowPersonalSigningConfigured && !releaseSigningConfigured
+
 android {
     namespace = "com.mikeyphw.studyflow"
 
@@ -133,6 +138,14 @@ android {
                 signingConfig = signingConfigs.getByName("studyFlowPersonal")
             } else if (releaseSigningConfigured) {
                 signingConfig = signingConfigs.getByName("studyFlowRelease")
+            }
+        }
+        if (studyFlowHostedUnsignedCandidate) {
+            create("hostedCandidate") {
+                initWith(getByName("release"))
+                signingConfig = null
+                isDebuggable = false
+                matchingFallbacks += listOf("release")
             }
         }
     }

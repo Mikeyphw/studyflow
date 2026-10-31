@@ -107,6 +107,15 @@ def plan(args: argparse.Namespace) -> int:
     devices = adb_devices()
     missing_signing = [name for name in REQUIRED_SIGNING_ENV if not os.getenv(name)]
     state = report_state(report_dir)
+    hosted_receipts = {}
+    for module in ("app", "app-tv"):
+        candidate = load_json(report_dir / f"hosted-{module}-signed-stage.json")
+        hosted_receipts[module] = {
+            "status": "SIGNED_STAGE_ONLY" if candidate and
+            candidate.get("status") == "SIGNED_STAGE_ONLY" and
+            candidate.get("releaseReady") is False else "MISSING_OR_UNVERIFIED",
+            "path": str(report_dir / f"hosted-{module}-signed-stage.json"),
+        }
     value = {
         "schemaVersion": 1,
         "kind": "studyflow.target_release_validation_plan",
@@ -118,9 +127,18 @@ def plan(args: argparse.Namespace) -> int:
         "reportDir": str(report_dir),
         "missingSigningEnvironment": missing_signing,
         "adbDevices": devices,
+        "hostedSignedCandidateReceipts": hosted_receipts,
+        "hostedSigningNote": (
+            "Legacy STUDYFLOW_RELEASE_* variables apply only to the historical on-host Release gate; "
+            "GitHub unsigned candidates are signed separately with external personal properties. "
+            "Signed staging does not satisfy connected tests, restore/restart or final readiness."
+        ),
         "requiredReports": state["reports"],
         "commands": [
-            "python3 scripts/run_target_release_validation.py --mode automated",
+            "gh workflow run studyflow-hosted-release.yml --ref BRANCH -f expected_sha=REVIEWED_SHA",
+            "gh run download RUN_ID --name studyflow-hosted-app-unsigned-RUN_ID --dir ./hosted-app",
+            "python3 scripts/studyflow_hosted_candidate.py sign --bundle-dir ./hosted-app --out-dir PRIVATE_OUTPUT --expected-sha REVIEWED_SHA --expected-run-id RUN_ID",
+            "python3 scripts/run_target_release_validation.py --mode automated (legacy target-host Gradle; NOT supported by GitHub-only policy)",
             "python3 scripts/run_target_release_validation.py --mode device-template",
             "python3 scripts/record_final_device_acceptance.py --pass-check CHECK --evidence CHECK=OBSERVED",
             "python3 scripts/run_target_release_validation.py --mode verdict",
@@ -143,7 +161,7 @@ def plan(args: argparse.Namespace) -> int:
     print("TARGET_RELEASE_VALIDATION_PLAN: PENDING_TARGET_EXECUTION")
     print(f"Evidence plan: {out}")
     if missing_signing:
-        print("Missing signing environment: " + ", ".join(missing_signing))
+        print("Missing legacy on-host signing environment (not required for unsigned GitHub staging): " + ", ".join(missing_signing))
     if len(devices) != 1:
         print(f"ADB device count is {len(devices)}; final automated validation requires exactly one.")
     return 0
