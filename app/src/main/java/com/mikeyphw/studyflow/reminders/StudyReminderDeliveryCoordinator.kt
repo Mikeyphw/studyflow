@@ -614,10 +614,18 @@ class StudyReminderDeliveryCoordinator(
                     .build(),
             )
         if (transportedRoute?.deliverSilently == true || policyDecision?.deliverSilently == true) builder.setSilent(true)
-        NotificationManagerCompat.from(appContext).notify(
-            stableNotificationId("remote:${notification.notificationId.value}"),
-            builder.build(),
-        )
+        if (!notifyIfAllowed(
+                stableNotificationId("remote:${notification.notificationId.value}"),
+                builder.build(),
+            )
+        ) {
+            // Never acknowledge a platform notification that could not be posted.
+            return remoteNotificationAck(
+                delivery,
+                StudyFlowNotificationDeliveryStatus.REJECTED,
+                "notifications_unavailable",
+            )
+        }
         runtimeStatusStore.markDelivered(occurrence.occurrenceId.value, clock())
         StudyFlowWidgetUpdateCoordinator.refreshAll(appContext)
         return ack
@@ -925,7 +933,6 @@ class StudyReminderDeliveryCoordinator(
             reconciliationSlackMillis = ReconciliationDeliverySlackMillis,
         )
 
-    @SuppressLint("MissingPermission")
     private fun postNotification(
         planId: StudyPlanId,
         candidate: ReminderNotificationCandidate,
@@ -960,8 +967,19 @@ class StudyReminderDeliveryCoordinator(
                 action.pendingIntent(planId, candidate),
             )
         }
-        NotificationManagerCompat.from(appContext).notify(stableNotificationId(candidate.occurrenceId), builder.build())
-        return true
+        return notifyIfAllowed(stableNotificationId(candidate.occurrenceId), builder.build())
+    }
+
+    /** The permission may be revoked between our preflight and the platform call. */
+    @SuppressLint("MissingPermission")
+    private fun notifyIfAllowed(notificationId: Int, notification: android.app.Notification): Boolean {
+        if (!notificationsAllowed()) return false
+        return try {
+            NotificationManagerCompat.from(appContext).notify(notificationId, notification)
+            true
+        } catch (_: SecurityException) {
+            false
+        }
     }
 
     private fun localizedText(candidate: ReminderNotificationCandidate): LocalizedReminderText =

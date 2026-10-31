@@ -88,9 +88,9 @@ checks: list[tuple[str, str, str]] = [
         "verifyOv16AttentionSchedulerDurableWakeups",
     ),
     (
-        "validation-hook",
-        ".devtool-artifact/validation/validate.sh",
-        "verifyOv16AttentionSchedulerDurableWakeups",
+        "validation-runner",
+        "scripts/validate_ov16_attention_scheduler_wakeups.sh",
+        "verify_ov16_attention_scheduler_wakeups.py",
     ),
 ]
 
@@ -104,11 +104,16 @@ for ident, rel, needle in checks:
     if needle not in text:
         errors.append(f"{ident}: {rel} does not contain {needle!r}")
 
-validate = (ROOT / ".devtool-artifact/validation/validate.sh").read_text(errors="replace")
-if "gradle --stop" in validate or "./gradlew --stop" in validate:
-    errors.append("validation hook must not stop Gradle daemons")
-if "bash scripts/validate_ov16" not in validate and "verifyOv16AttentionSchedulerDurableWakeups" not in validate:
-    errors.append("validation hook is not wired to OV16 gate")
+# The Devtool artifact exists only while an overlay transaction is active.
+# Hosted GitHub checkouts validate the permanent source-owned runner instead.
+runner = (ROOT / "scripts/validate_ov16_attention_scheduler_wakeups.sh").read_text(errors="replace")
+if "gradle --stop" in runner or "./gradlew --stop" in runner:
+    errors.append("permanent OV16 runner must not stop Gradle daemons")
+active_hook_path = ROOT / ".devtool-artifact/validation/validate.sh"
+if active_hook_path.is_file():
+    active_hook = active_hook_path.read_text(errors="replace")
+    if "gradle --stop" in active_hook or "./gradlew --stop" in active_hook:
+        errors.append("active Devtool hook must not stop Gradle daemons")
 
 if errors:
     print("OV16 attention scheduler verifier: FAIL", file=sys.stderr)

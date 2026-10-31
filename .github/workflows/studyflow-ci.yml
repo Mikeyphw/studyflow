@@ -49,6 +49,7 @@ jobs:
           python3 scripts/test_studyflow_ov01_r4r5_contracts.py
           python3 scripts/test_studyflow_ov01_r4r6_contracts.py
           python3 scripts/test_studyflow_ov01_r4r7_contracts.py
+          python3 scripts/test_studyflow_ov01_r4r8_contracts.py
   web:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.lane == 'all' || inputs.lane == 'web' }}
     needs: source
@@ -139,6 +140,19 @@ jobs:
           set -euo pipefail
           chmod +x ./gradlew
           ./gradlew --no-daemon --max-workers=2 ":${MODULE}:assembleDebug" "$TEST_TASK" ":${MODULE}:lintDebug"
+      - name: Preserve complete Android lint and JVM test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studyflow-${{ matrix.module }}-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ matrix.module }}/build/reports/lint-results-*.xml
+            ${{ matrix.module }}/build/reports/lint-results-*.html
+            ${{ matrix.module }}/build/reports/lint-results-*.sarif
+            ${{ matrix.module }}/build/reports/tests/**
+            ${{ matrix.module }}/build/test-results/**
+          if-no-files-found: warn
+          retention-days: 14
       - name: Verify packaged debug APK
         id: output
         shell: bash
@@ -236,6 +250,19 @@ jobs:
           set -euo pipefail
           jq -e '.status == "passed" and .exit_code == 0 and .build_executed == true' \
             "$RUNNER_TEMP/studyflow-devtool-profile.json"
+      - name: Preserve complete phone lint diagnostics for deep contracts
+        if: always() && matrix.profile == 'android-contracts'
+        uses: actions/upload-artifact@v4
+        with:
+          name: studyflow-deep-android-lint-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            app/build/reports/lint-results-*.xml
+            app/build/reports/lint-results-*.html
+            app/build/reports/lint-results-*.sarif
+            app/build/reports/tests/**
+            app/build/test-results/**
+          if-no-files-found: warn
+          retention-days: 14
       - name: Preserve reviewed task plan and outcome (even on failure)
         if: always()
         uses: actions/upload-artifact@v4

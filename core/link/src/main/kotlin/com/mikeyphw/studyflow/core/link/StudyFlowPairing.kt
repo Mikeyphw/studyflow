@@ -122,11 +122,17 @@ data class StudyFlowPairingGrant(
 ) {
     init {
         requireValidPairingPublicKey(hostKeyAgreementPublicKeyHex)
-        if (initializationVectorHex.isNotEmpty()) require(initializationVectorHex.length == PairingIvBytes * 2 && pairingHexPattern.matches(initializationVectorHex)) {
-            "Pairing grant IV must be a 12-byte lower-case hex value"
+        if (initializationVectorHex.isNotEmpty()) {
+            require(
+                initializationVectorHex.length == PairingIvBytes * 2 &&
+                    pairingHexPattern.matches(initializationVectorHex),
+            ) { "Pairing grant IV must be a 12-byte lower-case hex value" }
         }
-        if (encryptedTrustSecretHex.isNotEmpty()) require(encryptedTrustSecretHex.length >= (32 + 16) * 2 && pairingHexPattern.matches(encryptedTrustSecretHex)) {
-            "Pairing grant ciphertext is invalid"
+        if (encryptedTrustSecretHex.isNotEmpty()) {
+            require(
+                encryptedTrustSecretHex.length >= (32 + 16) * 2 &&
+                    pairingHexPattern.matches(encryptedTrustSecretHex),
+            ) { "Pairing grant ciphertext is invalid" }
         }
     }
 }
@@ -241,7 +247,10 @@ class StudyFlowPairingAuthority(
     }
 
     /** Atomically validates and consumes a single-use offer before trust is committed. */
-    fun accept(request: StudyFlowPairingRequest, nowEpochMillis: Long): StudyFlowPairingResult = synchronized(activeOffers) {
+    fun accept(
+        request: StudyFlowPairingRequest,
+        nowEpochMillis: Long,
+    ): StudyFlowPairingResult = synchronized(activeOffers) {
         val active = activeOffers[request.pairingId]
             ?: return@synchronized StudyFlowPairingResult.Rejected(StudyFlowPairingRejection.NOT_ACTIVE)
         val offer = active.offer
