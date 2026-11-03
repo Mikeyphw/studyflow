@@ -158,3 +158,12 @@ Last examined: 2026-10-30. Source: StudyFlow `8997be26`; Devtool `8a356a9` in pr
 - **R2 source change:** A dedicated `Exec` preflight runs `scripts/ov01_release_gate.py signing --surface tv` only for final signed Release packaging or signing tasks. It preserves all-four legacy signing-variable requirements or permanently configured personal signing. Shared Release resource and unit-test tasks remain independent, and hosted candidates still use their separate unsigned build type.
 - **Source acceptance:** Hosted candidate and permanent personal-signing regression suites plus Actions source verifier must pass. Real hosted TV APK/AAB creation is **PENDING new-SHA GitHub execution**.
 - **No claims:** Not a signed release, no physical-device qualification, and no local Gradle in Termux. The phone's successfully produced unsigned artifact is not evidence of TV success.
+
+### SFDT-W1-20261103 — Native ownership/source contract first transaction
+
+- **Implementation status:** source-pinned overlay candidate; not yet qualified.
+- Devtool base: `e2fea8a784711496e026030ec5418514aec4bebf` (SFDT-02 ownership semantics and target-local job inputs).
+- StudyFlow base: `ab16db83331cddb63ca4d7093c46c3a116de34b2` (SFDT-01 source-only EXO stage and nine negative contracts).
+- **Preserved:** full existing Gradle task lists, GitHub-only Gradle guard, two source-only wrapper aliases, all four CI workflows, protected signing and historical seals.
+- **Acceptance pending:** local source-only validators, full upstream Python regression, source-bound hosted CI at new commit, affected-target selection matrix, SFDT-03 consumer opt-in after accepted upstream.
+- **Do not infer:** SIGNED_STAGE_ONLY != RELEASE_QUALIFIED; historical Oct 31 CI runs are not approval of new source.

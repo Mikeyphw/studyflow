@@ -941,16 +941,24 @@ command = ["python3", "scripts/studyflow_ci_gradle_profile.py", "--check-source"
 inputs = [".devtool.toml", "scripts/studyflow_ci_gradle_profile.py", ".github/workflows/*.yml"]
 metadata = { read_only = true }
 
+[targets.studyflow_android.jobs.ci-sfdt-source-audit]
+runner = "command"
+command = ["python3", "scripts/sfdt01_source_contract.py", "--check"]
+inputs = [".devtool.toml", ".github/workflows/*.yml", "scripts/sfdt01_source_contract.py"]
+metadata = { read_only = true }
+
 [targets.studyflow_android.workflows]
 ci-preflight = [
   { id = "actions-contract", ref = "job:ci-actions-contract", depends_on = [] },
   { id = "source-contract", ref = "job:ci-source-contract", depends_on = ["actions-contract"] },
-  { id = "github-gradle-policy", ref = "job:ci-github-gradle-policy", depends_on = ["source-contract"] },
+  { id = "sfdt-source-audit", ref = "job:ci-sfdt-source-audit", depends_on = ["source-contract"] },
+  { id = "github-gradle-policy", ref = "job:ci-github-gradle-policy", depends_on = ["sfdt-source-audit"] },
 ]
 ci-source = [
   { id = "actions-contract", ref = "job:ci-actions-contract", depends_on = [] },
   { id = "source-contract", ref = "job:ci-source-contract", depends_on = ["actions-contract"] },
-  { id = "github-gradle-policy", ref = "job:ci-github-gradle-policy", depends_on = ["source-contract"] },
+  { id = "sfdt-source-audit", ref = "job:ci-sfdt-source-audit", depends_on = ["source-contract"] },
+  { id = "github-gradle-policy", ref = "job:ci-github-gradle-policy", depends_on = ["sfdt-source-audit"] },
 ]
 
 [wrapper]

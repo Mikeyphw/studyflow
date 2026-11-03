@@ -55,6 +55,10 @@ jobs:
           python3 scripts/test_studyflow_ov01_r4r10_contracts.py
           python3 scripts/test_studyflow_ov01_r4r11_contracts.py
           python3 scripts/test_studyflow_rel_hosted_01_contracts.py
+          python3 scripts/sfdt01_source_contract.py --check
+          python3 scripts/test_sfdt01_source_contract.py
+          python3 scripts/test_studyflow_github_signing.py
+          python3 scripts/test_studyflow_ci_gradle_profile.py
   web:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.lane == 'all' || inputs.lane == 'web' }}
     needs: source
