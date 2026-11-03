@@ -167,3 +167,10 @@ Last examined: 2026-10-30. Source: StudyFlow `8997be26`; Devtool `8a356a9` in pr
 - **Preserved:** full existing Gradle task lists, GitHub-only Gradle guard, two source-only wrapper aliases, all four CI workflows, protected signing and historical seals.
 - **Acceptance pending:** local source-only validators, full upstream Python regression, source-bound hosted CI at new commit, affected-target selection matrix, SFDT-03 consumer opt-in after accepted upstream.
 - **Do not infer:** SIGNED_STAGE_ONLY != RELEASE_QUALIFIED; historical Oct 31 CI runs are not approval of new source.
+
+### SFDT-03-ADVISORY-20261103 — Precise target ownership (not CI skipping)
+
+- All eight targets opt into input-scoped affected selection; execution roots and task lists unchanged.
+- Shared CI, Gradle, protocol and parity inputs explicitly covered.
+- GitHub source-only CI executes the ownership matrix and negative mutations.
+- **Gated:** native Devtool affected selection, hosted selective CI, dependency propagation, signing, release qualification.

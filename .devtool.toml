@@ -27,6 +27,7 @@ chroot_name = "androidos"
 runner = "android"
 platform = "android"
 root = "."
+affected_ownership = "inputs-only"
 execution_environment = "native-termux"
 chroot_name = "androidos"
 inputs = [
@@ -40,6 +41,10 @@ inputs = [
     "feature/**",
     "protocol/**",
     "tools/**",
+    "gradlew",
+    "gradle.properties",
+    "scripts/**",
+    ".github/workflows/*.yml",
 ]
 outputs = [
     "app/build/**",
@@ -235,6 +240,7 @@ lint = [":app:lintDebug", ":app:lintRelease"]
 runner = "gradle"
 platform = "desktop"
 root = "."
+affected_ownership = "inputs-only"
 execution_environment = "native-termux"
 chroot_name = "androidos"
 inputs = [
@@ -247,6 +253,10 @@ inputs = [
     "core/**",
     "feature/**",
     "protocol/**",
+    "gradlew",
+    "gradle.properties",
+    "scripts/**",
+    ".github/workflows/*.yml",
 ]
 outputs = [
     "desktopApp/build/**",
@@ -364,6 +374,7 @@ lint = []
 runner = "node"
 platform = "web"
 root = "web"
+affected_ownership = "inputs-only"
 execution_environment = "native-termux"
 inputs = [
     "src/**",
@@ -374,6 +385,9 @@ inputs = [
     "requirements-test.txt",
     "tsconfig.json",
     "sw.js",
+    "../.devtool.toml",
+    "../protocol/**",
+    "../.github/workflows/*.yml",
 ]
 outputs = [
     "dist/**",
@@ -399,6 +413,7 @@ lint = ["npm run lint"]
 runner = "android"
 platform = "tv"
 root = "."
+affected_ownership = "inputs-only"
 execution_environment = "native-termux"
 chroot_name = "androidos"
 inputs = [
@@ -411,6 +426,10 @@ inputs = [
     "core/**",
     "feature/**",
     "protocol/**",
+    "gradlew",
+    "gradle.properties",
+    "scripts/**",
+    ".github/workflows/*.yml",
 ]
 outputs = [
     "app-tv/build/**",
@@ -498,6 +517,7 @@ lint = [":app-tv:lintDebug"]
 runner = "android"
 platform = "tv"
 root = "."
+affected_ownership = "inputs-only"
 execution_environment = "native-termux"
 chroot_name = "androidos"
 inputs = [
@@ -511,6 +531,10 @@ inputs = [
     "feature/**",
     "protocol/**",
     "docs/release/**",
+    "gradlew",
+    "gradle.properties",
+    "scripts/**",
+    ".github/workflows/*.yml",
 ]
 outputs = [
     "app-tv/build/**",
@@ -593,6 +617,7 @@ lint = [":app-tv:lintRelease"]
 runner = "android"
 platform = "android"
 root = "."
+affected_ownership = "inputs-only"
 execution_environment = "native-termux"
 chroot_name = "androidos"
 inputs = [
@@ -606,6 +631,10 @@ inputs = [
     "feature/**",
     "protocol/**",
     "docs/release/**",
+    "gradlew",
+    "gradle.properties",
+    "scripts/**",
+    ".github/workflows/*.yml",
 ]
 outputs = [
     "app/build/**",
@@ -693,6 +722,7 @@ lint = [":app:lintRelease"]
 runner = "gradle"
 platform = "shared"
 root = "."
+affected_ownership = "inputs-only"
 execution_environment = "native-termux"
 chroot_name = "androidos"
 inputs = [
@@ -710,6 +740,9 @@ inputs = [
     "docs/quality/**",
     "scripts/**",
     "tools/**",
+    "gradlew",
+    "gradle.properties",
+    ".github/workflows/*.yml",
 ]
 outputs = [
     "build/devtool/**",
@@ -841,6 +874,7 @@ lint = ["verifyFormatting"]
 runner = "gradle"
 platform = "shared"
 root = "."
+affected_ownership = "inputs-only"
 execution_environment = "native-termux"
 chroot_name = "androidos"
 inputs = [
@@ -851,6 +885,16 @@ inputs = [
     "desktopApp/**",
     "web/**",
     "docs/validation/**",
+    "gradlew",
+    "gradle.properties",
+    "scripts/**",
+    ".github/workflows/*.yml",
+    "core/**",
+    "feature/**",
+    "build-logic/**",
+    "gradle/**",
+    "settings.gradle.kts",
+    "build.gradle.kts",
 ]
 outputs = [
     "build/devtool/**",
