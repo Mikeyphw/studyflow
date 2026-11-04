@@ -90,7 +90,6 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: '22'
-          cache: false
       - name: Install pinned Web test dependencies
         if: ${{ matrix.lane == 'web-pytest' }}
         shell: bash

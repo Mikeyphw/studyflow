@@ -136,6 +136,20 @@ def check_workflow(source: str) -> None:
             'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9' in source and
             'gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c' in source,
             'Pinned source/action/fallback policy changed')
+    # SFDT07-R3: actions/setup-node's `cache` input is a package manager
+    # identifier, never a YAML boolean. Review its entire `with` body so
+    # `cache: false`, floating version pins or automatic installs fail closed.
+    node_marker = "      - name: Reviewed Node runtime for Web pytest subprocesses\n"
+    require(source.count(node_marker) == 1, 'Exactly one reviewed Web setup-node step required')
+    node_body = source.split(node_marker, 1)[1].split('      - name: ', 1)[0]
+    expected_node_body = (
+        "        if: ${{ matrix.lane == 'web-pytest' }}\n"
+        "        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\n"
+        "        with:\n"
+        "          node-version: '22'\n"
+    )
+    require(node_body == expected_node_body,
+            'Reviewed setup-node input/condition/version drift; never set cache: false')
     require('  native-shadow:\n' in source and 'name: native-${{ matrix.lane }}' in source,
             'Native GitHub job identity changed')
 
