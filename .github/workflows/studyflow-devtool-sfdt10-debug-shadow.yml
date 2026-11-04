@@ -1,0 +1,168 @@
+# SFDT10-R1 — first-class Android Devtool shadow with legacy-shaped diagnostics.
+# This workflow is manual and deliberately NOT a required check or release gate.
+name: StudyFlow SFDT10 native Android debug parity shadow
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed StudyFlow 40-character commit (same as the workflow ref HEAD)
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: sfdt10-r1-${{ github.run_id }}
+  cancel-in-progress: false
+jobs:
+  source-contract:
+    name: Source and signing isolation contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+    steps:
+      - name: Checkout exact consumer commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Require source identity and shadow-only policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -B scripts/sfdt10_debug_evidence.py --source-check
+          python3 -B scripts/test_sfdt10_debug_evidence.py
+          python3 -B scripts/sfdt07_consolidated_contract.py --check
+          python3 -B scripts/sfdt08_contract.py --check
+
+  native-debug:
+    name: native-${{ matrix.lane }}
+    needs: source-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: phone-debug
+          - lane: tv-debug
+          - lane: phone-release-jvm
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      DEVTOOL_SOURCE_SHA: 0ebd22c17ac3058704012a1e03ee3265328b0659
+      SFDT_LANE: ${{ matrix.lane }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONNOUSERSITE: '1'
+    steps:
+      - name: Checkout exact consumer commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Verify source and manual GitHub Actions boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = X64
+          test -z "$(git status --porcelain --untracked-files=normal)"
+      - name: Pinned Python 3.12 for native Devtool runtime
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+          check-latest: false
+      - name: JDK 21 for reviewed Android Gradle semantic provider
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+          check-latest: false
+      - name: Reviewed Android SDK 36 and NDK 29
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865'
+      - name: Verify hosted SDK toolchain is installed
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$ANDROID_HOME/platforms/android-36"
+          test -d "$ANDROID_HOME/build-tools/36.0.0"
+          test -d "$ANDROID_HOME/ndk/29.0.14206865"
+          test -x "$ANDROID_HOME/build-tools/36.0.0/apksigner"
+      - name: Pinned Gradle setup (without external cache authority)
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          cache-disabled: true
+      - name: Acquire exact published Devtool native executor
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/Mikeyphw/devtool.git "$RUNNER_TEMP/sfdt08-devtool-source"
+          git -C "$RUNNER_TEMP/sfdt08-devtool-source" checkout --detach "$DEVTOOL_SOURCE_SHA"
+          test "$(git -C "$RUNNER_TEMP/sfdt08-devtool-source" rev-parse HEAD)" = "$DEVTOOL_SOURCE_SHA"
+          python3 -m venv "$RUNNER_TEMP/sfdt10-devtool-env"
+          "$RUNNER_TEMP/sfdt10-devtool-env/bin/python" -m pip install \
+            --disable-pip-version-check --only-binary=:all: --no-deps \
+            'pyyaml==6.0.3' 'rich==15.0.0' 'markdown-it-py==4.2.0' \
+            'mdurl==0.1.2' 'pygments==2.20.0'
+      - name: Execute existing first-class Android Devtool DAG node
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sfdt07" "$RUNNER_TEMP/sfdt08"
+          if [ "$SFDT_LANE" = phone-release-jvm ]; then
+            PYTHONPATH="$RUNNER_TEMP/sfdt08-devtool-source" \
+              "$RUNNER_TEMP/sfdt10-devtool-env/bin/python" -B \
+              scripts/sfdt08_native_coverage.py --lane "$SFDT_LANE" --execute \
+              --out "$RUNNER_TEMP/sfdt08/receipt.json"
+          else
+            PYTHONPATH="$RUNNER_TEMP/sfdt08-devtool-source" \
+              "$RUNNER_TEMP/sfdt10-devtool-env/bin/python" -B \
+              scripts/sfdt07_native_lane.py --lane "$SFDT_LANE" --execute \
+              --out "$RUNNER_TEMP/sfdt07/receipt.json"
+          fi
+      - name: Bind debug APK, lint XML and JVM report bytes to native receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt10_debug_evidence.py --lane "$SFDT_LANE" \
+            --out "$RUNNER_TEMP/sfdt10"
+      - name: Preserve failure receipt if native execution was blocked
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$SFDT_LANE" = phone-release-jvm ]; then
+            if [ ! -e "$RUNNER_TEMP/sfdt08/receipt.json" ]; then
+              mkdir -p "$RUNNER_TEMP/sfdt08"
+              python3 -B scripts/sfdt08_native_coverage.py --lane "$SFDT_LANE" --fallback \
+                --out "$RUNNER_TEMP/sfdt08/receipt.json"
+            fi
+          else
+            if [ ! -e "$RUNNER_TEMP/sfdt07/receipt.json" ]; then
+              mkdir -p "$RUNNER_TEMP/sfdt07"
+              python3 -B scripts/sfdt07_native_lane.py --lane "$SFDT_LANE" --fallback \
+                --out "$RUNNER_TEMP/sfdt07/receipt.json"
+            fi
+          fi
+      - name: Upload local native receipts, APK and full diagnostics (unqualified)
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: studyflow-sfdt10-${{ matrix.lane }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/sfdt07/
+            ${{ runner.temp }}/sfdt08/
+            ${{ runner.temp }}/sfdt10/
+            ${{ runner.temp }}/rm06-evidence/
+            ${{ runner.temp }}/rm06-output/
+          if-no-files-found: error
+          include-hidden-files: false
+          retention-days: 14
