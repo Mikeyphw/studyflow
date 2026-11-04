@@ -977,19 +977,19 @@ lint = []
 runner = "command"
 command = ["python3", "scripts/devtool_actions_contract.py"]
 inputs = [".devtool.toml", ".github/workflows/*.yml", "scripts/devtool_actions_contract.py"]
-metadata = { read_only = true }
+metadata = { read_only = true, ci_python_version = "3.12", ci_python_script_sha256 = "3aad877f3b3e7ca0b58b95963a06cd1621ad3a15500516400c8da5b905e91cf0", ci_python_script_args = [] }
 
 [targets.studyflow_android.jobs.ci-github-gradle-policy]
 runner = "command"
 command = ["python3", "scripts/studyflow_ci_gradle_profile.py", "--check-source"]
 inputs = [".devtool.toml", "scripts/studyflow_ci_gradle_profile.py", ".github/workflows/*.yml"]
-metadata = { read_only = true }
+metadata = { read_only = true, ci_python_version = "3.12", ci_python_script_sha256 = "d535655a15949ccb4c96ea819c08708a067ff3696bb94334b8a8f89dc873930b", ci_python_script_args = ["--check-source"] }
 
 [targets.studyflow_android.jobs.ci-sfdt-source-audit]
 runner = "command"
 command = ["python3", "scripts/sfdt01_source_contract.py", "--check"]
 inputs = [".devtool.toml", ".github/workflows/*.yml", "scripts/sfdt01_source_contract.py"]
-metadata = { read_only = true }
+metadata = { read_only = true, ci_python_version = "3.12", ci_python_script_sha256 = "9e795ea87085eae361bda1f2657b0b2501772638c0195ade7832ad05e03edcf5", ci_python_script_args = ["--check"] }
 
 [targets.studyflow_android.workflows]
 ci-preflight = [
@@ -1018,7 +1018,7 @@ target = "studyflow_android"
 runner = "command"
 command = ["python3", "scripts/verify_studyflow_actions.py", "--source-only"]
 inputs = [".devtool.toml", "scripts/verify_studyflow_actions.py", ".github/workflows/*.yml"]
-metadata = { read_only = true }
+metadata = { read_only = true, ci_python_version = "3.12", ci_python_script_sha256 = "20a311eb44448d8ef16b08946ee06ea3c78b11964a30abe8acfec537cabb417e", ci_python_script_args = ["--source-only"] }
 
 [wrapper.commands.ci-source]
 description = "Read-only StudyFlow source and Actions contracts; never runs Gradle"
