@@ -1,0 +1,152 @@
+# SFDT08: opt-in native Devtool coverage; never a required CI/release check.
+name: StudyFlow Devtool native coverage expansion
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact StudyFlow source SHA (40 lowercase hex)
+        required: true
+        type: string
+      devtool_sha:
+        description: Exact published Devtool SHA containing verified JUnit provider
+        required: true
+        type: string
+      scope:
+        description: Select fast, deep, or all shadow coverage
+        required: true
+        type: choice
+        default: fast
+        options: [fast, deep, all]
+permissions:
+  contents: read
+concurrency:
+  group: sfdt08-native-${{ github.run_id }}
+  cancel-in-progress: false
+jobs:
+  native-coverage:
+    name: native-${{ matrix.lane }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.scope == 'fast' && '[{"lane":"phone-release-jvm","scope":"fast","android":true,"java":true,"node":false,"webdeps":false},{"lane":"desktop-fast","scope":"fast","android":false,"java":true,"node":false,"webdeps":false},{"lane":"web-full","scope":"fast","android":false,"java":false,"node":true,"webdeps":true}]' || inputs.scope == 'deep' && '[{"lane":"android-contracts","scope":"deep","android":true,"java":true,"node":true,"webdeps":true},{"lane":"tv-contracts","scope":"deep","android":true,"java":true,"node":false,"webdeps":false},{"lane":"desktop-contracts","scope":"deep","android":false,"java":true,"node":false,"webdeps":false},{"lane":"quality-contracts","scope":"deep","android":true,"java":true,"node":true,"webdeps":true},{"lane":"parity-contracts","scope":"deep","android":true,"java":true,"node":true,"webdeps":true}]' || '[{"lane":"phone-release-jvm","scope":"fast","android":true,"java":true,"node":false,"webdeps":false},{"lane":"desktop-fast","scope":"fast","android":false,"java":true,"node":false,"webdeps":false},{"lane":"web-full","scope":"fast","android":false,"java":false,"node":true,"webdeps":true},{"lane":"android-contracts","scope":"deep","android":true,"java":true,"node":true,"webdeps":true},{"lane":"tv-contracts","scope":"deep","android":true,"java":true,"node":false,"webdeps":false},{"lane":"desktop-contracts","scope":"deep","android":false,"java":true,"node":false,"webdeps":false},{"lane":"quality-contracts","scope":"deep","android":true,"java":true,"node":true,"webdeps":true},{"lane":"parity-contracts","scope":"deep","android":true,"java":true,"node":true,"webdeps":true}]') }}
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      DEVTOOL_SOURCE_SHA: ${{ inputs.devtool_sha }}
+      SFDT_LANE: ${{ matrix.lane }}
+      CI: 'true'
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONNOUSERSITE: '1'
+    steps:
+      - name: Checkout exact StudyFlow source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Refuse mismatched manual source/runtime or unsafe host
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$DEVTOOL_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = X64
+          test -z "$(git status --porcelain --untracked-files=normal)"
+      - name: Pinned Python 3.12 for Devtool native executor
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Pinned JDK 21 for Gradle jobs
+        if: ${{ matrix.java == true }}
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+          check-latest: false
+      - name: Pinned Android SDK36 and NDK29 for Android and deep profiles
+        if: ${{ matrix.android == true }}
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865'
+      - name: Validate Android toolchain before Devtool runs
+        if: ${{ matrix.android == true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${ANDROID_HOME:-}"
+          test -d "$ANDROID_HOME/platform-tools"
+          test -d "$ANDROID_HOME/platforms/android-36"
+          test -d "$ANDROID_HOME/build-tools/36.0.0"
+          test -d "$ANDROID_HOME/ndk/29.0.14206865"
+          java -version 2>&1 | grep -E 'version [^0-9]*21([.]|[^0-9])'
+      - name: Pinned Gradle execution environment (no shared cache)
+        if: ${{ matrix.java == true }}
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          cache-disabled: true
+      - name: Pinned Node 22 for Web and cross-client deep coverage
+        if: ${{ matrix.node == true }}
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22'
+      - name: Install reviewed Web/pytest prerequisites
+        if: ${{ matrix.webdeps == true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --no-deps --only-binary=:all: \
+            -r web/requirements-test.txt -r web/requirements-deep-pytest.txt
+          python3 -m pytest --version
+          npm ci --prefix web --ignore-scripts --no-audit --no-fund
+      - name: Acquire exact independently pinned Devtool source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/Mikeyphw/devtool.git "$RUNNER_TEMP/sfdt08-devtool-source"
+          git -C "$RUNNER_TEMP/sfdt08-devtool-source" checkout --detach "$DEVTOOL_SOURCE_SHA"
+          test "$(git -C "$RUNNER_TEMP/sfdt08-devtool-source" rev-parse HEAD)" = "$DEVTOOL_SOURCE_SHA"
+          test -f "$RUNNER_TEMP/sfdt08-devtool-source/devtool/actions_junit_evidence.py"
+          python3 -m venv "$RUNNER_TEMP/sfdt08-devtool-env"
+          "$RUNNER_TEMP/sfdt08-devtool-env/bin/python" -m pip install \
+            --disable-pip-version-check --no-deps --only-binary=:all: \
+            'pyyaml==6.0.3' 'rich==15.0.0' 'markdown-it-py==4.2.0' \
+            'mdurl==0.1.2' 'pygments==2.20.0'
+      - name: Check migration scope and unchanged authoritative legacy CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt08_contract.py --check
+      - name: Run exact target-owned native Devtool DAG node
+        id: sfdt08-native
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sfdt08"
+          PYTHONPATH="$RUNNER_TEMP/sfdt08-devtool-source" \
+            "$RUNNER_TEMP/sfdt08-devtool-env/bin/python" -B scripts/sfdt08_native_coverage.py \
+            --lane "$SFDT_LANE" --execute --out "$RUNNER_TEMP/sfdt08/receipt.json"
+      - name: Preserve failure/incomplete receipt (never PASS)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sfdt08"
+          if test ! -f "$RUNNER_TEMP/sfdt08/receipt.json"; then
+            python3 -B scripts/sfdt08_native_coverage.py \
+              --lane "$SFDT_LANE" --fallback --out "$RUNNER_TEMP/sfdt08/receipt.json"
+          fi
+      - name: Upload unqualified native test evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: studyflow-sfdt08-${{ matrix.lane }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/sfdt08/
+            ${{ runner.temp }}/rm06-evidence/
+            ${{ runner.temp }}/rm06-output/
+          if-no-files-found: error
+          retention-days: 14
