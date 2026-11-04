@@ -1,0 +1,150 @@
+# SFDT-07: manual native Devtool shadow. Existing studyflow-ci.yml is authoritative.
+# Four independent partial lanes; no release, signing, device, cutover or CI suppression.
+name: StudyFlow Devtool expanded native hosted shadow
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed 40-hex consumer source SHA
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: sfdt07-expanded-${{ github.run_id }}
+  cancel-in-progress: false
+jobs:
+  native-shadow:
+    name: native-${{ matrix.lane }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: phone-debug
+            provider: android-gradle
+          - lane: tv-debug
+            provider: android-gradle
+          - lane: web-pytest
+            provider: python-shell
+          - lane: quality-source
+            provider: python-shell
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      DEVTOOL_SOURCE_SHA: df2d306045619bc096c3bd18a68c3fb85023e4dd
+      SFDT_LANE: ${{ matrix.lane }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONNOUSERSITE: '1'
+    steps:
+      - name: Checkout exact consumer source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Verify GitHub source and read-only permission boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = X64
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+      - name: Pinned hosted Python interpreter
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Reviewed hosted Android JDK
+        if: ${{ matrix.provider == 'android-gradle' }}
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+          check-latest: false
+      - name: Reviewed hosted Android SDK and NDK
+        if: ${{ matrix.provider == 'android-gradle' }}
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865'
+      - name: Verify pinned SDK/NDK installation
+        if: ${{ matrix.provider == 'android-gradle' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${ANDROID_HOME:-}"
+          test -d "$ANDROID_HOME/platform-tools"
+          test -d "$ANDROID_HOME/platforms/android-36"
+          test -d "$ANDROID_HOME/build-tools/36.0.0"
+          test -d "$ANDROID_HOME/ndk/29.0.14206865"
+          java -version 2>&1 | grep -E 'version [^0-9]*21([.]|[^0-9])'
+      - name: Pinned Gradle setup for reviewed Android native job
+        if: ${{ matrix.provider == 'android-gradle' }}
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          cache-disabled: true
+      - name: Reviewed Node runtime for Web pytest subprocesses
+        if: ${{ matrix.lane == 'web-pytest' }}
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22'
+          cache: false
+      - name: Install pinned Web test dependencies
+        if: ${{ matrix.lane == 'web-pytest' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --no-deps --only-binary=:all: \
+            -r web/requirements-test.txt -r web/requirements-deep-pytest.txt
+          python3 -m pytest --version
+          npm ci --prefix web --ignore-scripts --no-audit --no-fund
+      - name: Acquire immutable Devtool native runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/Mikeyphw/devtool.git "$RUNNER_TEMP/sfdt07-devtool-source"
+          git -C "$RUNNER_TEMP/sfdt07-devtool-source" checkout --detach "$DEVTOOL_SOURCE_SHA"
+          test "$(git -C "$RUNNER_TEMP/sfdt07-devtool-source" rev-parse HEAD)" = "$DEVTOOL_SOURCE_SHA"
+          python3 -m venv "$RUNNER_TEMP/sfdt07-devtool-env"
+          "$RUNNER_TEMP/sfdt07-devtool-env/bin/python" -m pip install \
+            --disable-pip-version-check --only-binary=:all: --no-deps \
+            'pyyaml==6.0.3' 'rich==15.0.0' 'markdown-it-py==4.2.0' \
+            'mdurl==0.1.2' 'pygments==2.20.0'
+      - name: Verify consolidated StudyFlow native/legacy source contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt07_consolidated_contract.py --check
+      - name: Run native Devtool DAG lane (not a secondary scheduler)
+        id: native
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sfdt07"
+          PYTHONPATH="$RUNNER_TEMP/sfdt07-devtool-source" \
+            "$RUNNER_TEMP/sfdt07-devtool-env/bin/python" -B scripts/sfdt07_native_lane.py \
+            --lane "$SFDT_LANE" --execute --out "$RUNNER_TEMP/sfdt07/receipt.json"
+      - name: Record failed or missing native attempt (unqualified)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sfdt07"
+          if test ! -f "$RUNNER_TEMP/sfdt07/receipt.json"; then
+            python3 -B scripts/sfdt07_native_lane.py --lane "$SFDT_LANE" \
+              --fallback --out "$RUNNER_TEMP/sfdt07/receipt.json"
+          fi
+      - name: Upload shadow receipts, typed evidence and debug bytes
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: studyflow-sfdt07-${{ matrix.lane }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/sfdt07/
+            ${{ runner.temp }}/rm06-evidence/
+            ${{ runner.temp }}/rm06-output/
+          include-hidden-files: false
+          if-no-files-found: error
+          retention-days: 14

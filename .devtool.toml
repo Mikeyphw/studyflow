@@ -1004,6 +1004,13 @@ ci-source = [
   { id = "sfdt-source-audit", ref = "job:ci-sfdt-source-audit", depends_on = ["source-contract"] },
   { id = "github-gradle-policy", ref = "job:ci-github-gradle-policy", depends_on = ["sfdt-source-audit"] },
 ]
+# SFDT07: reviewed four-lane hosted shadow expansion.
+ci-sfdt07-phone-debug = [
+  { id = "sfdt07-phone", ref = "job:sfdt07-phone-debug", depends_on = [] },
+]
+ci-sfdt07-web-pytest = [
+  { id = "sfdt07-web", ref = "job:sfdt07-web-pytest", depends_on = [] },
+]
 
 [wrapper]
 schema = 2
@@ -1024,3 +1031,41 @@ metadata = { read_only = true, ci_python_version = "3.12", ci_python_script_sha2
 description = "Read-only StudyFlow source and Actions contracts; never runs Gradle"
 workflow = "ci-source"
 target = "studyflow_android"
+
+
+# SFDT07 consolidated hosted-only native shadow jobs, never local Gradle.
+[targets.studyflow_android.jobs.sfdt07-phone-debug]
+runner = "android"
+gradle_tasks = [":app:assembleDebug", ":app:lintDebug"]
+inputs = [".devtool.toml", "gradlew", "gradle/wrapper/gradle-wrapper.properties", "gradle/wrapper/gradle-wrapper.jar", "settings.gradle.kts", "build.gradle.kts", "app/build.gradle.kts"]
+outputs = ["app/build/outputs/apk/debug/app-debug.apk"]
+metadata = { ci_toolchain = "android-gradle", ci_android_java_version = "21", ci_android_host_profile = "studyflow-ubuntu24", ci_android_debug_variant = "debug", ci_android_ndk_version = "29.0.14206865", ci_android_sdk_packages = ["platform-tools", "platforms;android-36", "build-tools;36.0.0", "ndk;29.0.14206865"], ci_android_wrapper_jar_sha256 = "7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d", ci_android_expected_output = "app/build/outputs/apk/debug/app-debug.apk" }
+
+[targets.studyflow_tv.jobs.sfdt07-tv-debug]
+runner = "android"
+gradle_tasks = [":app-tv:assembleDebug", ":app-tv:testDebugUnitTest", ":app-tv:lintDebug"]
+inputs = [".devtool.toml", "gradlew", "gradle/wrapper/gradle-wrapper.properties", "gradle/wrapper/gradle-wrapper.jar", "settings.gradle.kts", "build.gradle.kts", "app-tv/build.gradle.kts"]
+outputs = ["app-tv/build/outputs/apk/debug/app-tv-debug.apk"]
+metadata = { ci_toolchain = "android-gradle", ci_android_java_version = "21", ci_android_host_profile = "studyflow-ubuntu24", ci_android_debug_variant = "debug", ci_android_ndk_version = "29.0.14206865", ci_android_sdk_packages = ["platform-tools", "platforms;android-36", "build-tools;36.0.0", "ndk;29.0.14206865"], ci_android_wrapper_jar_sha256 = "7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d", ci_android_expected_output = "app-tv/build/outputs/apk/debug/app-tv-debug.apk" }
+
+[targets.studyflow_android.jobs.sfdt07-web-pytest]
+runner = "command"
+command = ["python3", "scripts/sfdt07_web_pytest.py"]
+inputs = [".devtool.toml", "scripts/sfdt07_web_pytest.py", "web/tests/**", "web/requirements-test.txt", "web/requirements-deep-pytest.txt"]
+metadata = { read_only = true, ci_toolchain = "python-shell", ci_python_version = "3.12", ci_python_script_sha256 = "311b4fc28c61417c6fa97efd0bffb788c50df8748f32553889a7c66f5de4e474", ci_python_script_args = [] }
+
+[targets.studyflow_quality.jobs.sfdt07-quality-source]
+runner = "command"
+command = ["python3", "scripts/sfdt07_quality_source.py"]
+inputs = [".devtool.toml", "scripts/sfdt07_quality_source.py", "scripts/**", ".github/workflows/*.yml"]
+metadata = { read_only = true, ci_toolchain = "python-shell", ci_python_version = "3.12", ci_python_script_sha256 = "4440ab533640b71670a93b29500993d077e2ca2bf6c66d8e0b23f05318e2435d", ci_python_script_args = [] }
+
+[targets.studyflow_tv.workflows]
+ci-sfdt07-tv-debug = [
+  { id = "sfdt07-tv", ref = "job:sfdt07-tv-debug", depends_on = [] },
+]
+
+[targets.studyflow_quality.workflows]
+ci-sfdt07-quality-source = [
+  { id = "sfdt07-quality", ref = "job:sfdt07-quality-source", depends_on = [] },
+]
