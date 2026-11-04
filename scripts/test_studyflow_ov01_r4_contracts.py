@@ -10,6 +10,25 @@ import tomllib
 from unittest.mock import patch
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
+# SFDT-06-R5: bounded SFDT03 shared-source ownership under a Web-local root.
+# All other parent traversal and every parent-relative output remain forbidden.
+WEB_SHARED_SOURCE_INPUTS = frozenset({
+    "../.devtool.toml", "../protocol/**", "../.github/workflows/*.yml"
+})
+
+
+def web_target_path_safe(path: str, *, field: str) -> bool:
+    if (field not in ("inputs", "outputs") or not isinstance(path, str) or
+            not path or len(path) > 240 or path.startswith(("/", "web/", "./")) or
+            "\\" in path or "//" in path or "/./" in path or
+            path.endswith(("/", "/."))):
+        return False
+    parts = pathlib.PurePosixPath(path).parts
+    if ".." in parts:
+        return field == "inputs" and path in WEB_SHARED_SOURCE_INPUTS
+    return bool(parts) and all(x not in ("", ".", "..") for x in parts)
+
+
 
 def assert_true(condition: bool, reason: str):
     if not condition:
@@ -40,9 +59,11 @@ def main():
     from pathlib import PurePosixPath
     assert_true(str(PurePosixPath(web['root']) / 'package.json') == 'web/package.json',
                 'Devtool target root must resolve package.json exactly once')
+    assert_true(WEB_SHARED_SOURCE_INPUTS.issubset(set(web['inputs'])),
+                'SFDT03 reviewed shared Web inputs were removed')
     for field in ('inputs', 'outputs'):
-        assert_true(all(not p.startswith('web/') and not p.startswith('/') and '..' not in PurePosixPath(p).parts
-                        for p in web[field]), f'Web {field} contains doubly-rooted or unsafe path')
+        assert_true(all(web_target_path_safe(p, field=field) for p in web[field]),
+                    f'Web {field} contains doubly-rooted, traversing, or unreviewed shared path')
     desktop = targets['studyflow_desktop']['tasks']['test']
     desktop_phases = targets['studyflow_desktop']['validation']['phases']['unit-test']
     required_desktop = {'verifyDesktopDov08PersistentWorkspace','verifyDesktopDov09PlanContentLifecycle'}
