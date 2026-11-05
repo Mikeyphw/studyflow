@@ -1,0 +1,48 @@
+# SFDT11 lightweight governance probe. NOT a replacement for required StudyFlow CI.
+# Never performs Gradle, npm, release signing, API writes, or CI cutover.
+name: StudyFlow SFDT11 immutable source and trust policy
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: sfdt11-source-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-only:
+    name: SFDT11 fail-closed source, CI and signing boundaries
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout review source without credential persistence
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Source checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = X64
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+      - name: Pinned Python 3.12 and bounded source contracts
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+          check-latest: false
+      - name: Verify immutable legacy/native/signing source and truthful provider status
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt11_contract.py --source-check
+          python3 -B scripts/test_sfdt11_contract.py
+          python3 -B scripts/test_sfdt11_rollup.py
+          python3 -B scripts/test_sfdt11_wave.py
+          python3 -B scripts/sfdt07_consolidated_contract.py --check
+          python3 -B scripts/sfdt08_contract.py --check
+          python3 -B scripts/sfdt10_debug_evidence.py --source-check
+          python3 -B scripts/sfdt10_r2_compare.py --source-check
+          printf '%s\n' 'SFDT11_FAIL_CLOSED_POLICY_PASS_LEGACY_CI_STILL_AUTHORITATIVE'

@@ -1,0 +1,129 @@
+# SFDT11 consolidated evidence rollup. Manual and read-only; no local Gradle.
+# Eight exact source-bound runs, 4 source nodes, 4 expanded lanes,
+# 3 fast and 5 deep Devtool lanes, legacy deep profiles, and Android R2 parity.
+name: StudyFlow SFDT11 eight-run cutover evidence rollup
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main StudyFlow source commit, 40 lowercase hex
+        required: true
+        type: string
+      legacy_run_id:
+        description: Successful automatic push StudyFlow CI run
+        required: true
+        type: string
+      legacy_deep_run_id:
+        description: Successful StudyFlow CI deep workflow_dispatch run
+        required: true
+        type: string
+      source_run_id:
+        description: Successful SFDT06 source native shadow run
+        required: true
+        type: string
+      expanded_run_id:
+        description: Successful SFDT07 four-lane native run
+        required: true
+        type: string
+      fast_run_id:
+        description: Successful SFDT08 three-lane native fast run
+        required: true
+        type: string
+      deep_run_id:
+        description: Successful SFDT08 five-lane native deep run
+        required: true
+        type: string
+      android_run_id:
+        description: Successful SFDT10 R1 three-lane native Android run
+        required: true
+        type: string
+      compare_run_id:
+        description: Successful SFDT10 R2 same-SHA Android comparison run
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: sfdt11-rollup-${{ github.run_id }}
+  cancel-in-progress: false
+jobs:
+  audit:
+    name: SFDT11 verified member evidence and NO-GO cutover decision
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONNOUSERSITE: '1'
+      LEGACY_RUN: ${{ inputs.legacy_run_id }}
+      LEGACY_DEEP_RUN: ${{ inputs.legacy_deep_run_id }}
+      SOURCE_RUN: ${{ inputs.source_run_id }}
+      EXPANDED_RUN: ${{ inputs.expanded_run_id }}
+      FAST_RUN: ${{ inputs.fast_run_id }}
+      DEEP_RUN: ${{ inputs.deep_run_id }}
+      ANDROID_RUN: ${{ inputs.android_run_id }}
+      COMPARE_RUN: ${{ inputs.compare_run_id }}
+    steps:
+      - name: Exact source checkout without persisted credentials
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Pinned Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+          check-latest: false
+      - name: Refuse mismatched source, run IDs, host and unauthorized identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = X64
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          for id in "$LEGACY_RUN" "$LEGACY_DEEP_RUN" "$SOURCE_RUN" "$EXPANDED_RUN" \
+                    "$FAST_RUN" "$DEEP_RUN" "$ANDROID_RUN" "$COMPARE_RUN"; do
+            [[ "$id" =~ ^[1-9][0-9]*$ ]]
+          done
+          python3 -B scripts/sfdt11_contract.py --source-check
+          python3 -B scripts/test_sfdt11_contract.py
+          python3 -B scripts/test_sfdt11_rollup.py
+          python3 -B scripts/test_sfdt11_wave.py
+      - name: Verify eight Github run identities, typed member receipts, and Android parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh --version
+          python3 -B scripts/sfdt11_rollup.py \
+            --source "$EXPECTED_SHA" \
+            --legacy-run "$LEGACY_RUN" \
+            --legacy-deep-run "$LEGACY_DEEP_RUN" \
+            --source-run "$SOURCE_RUN" \
+            --expanded-run "$EXPANDED_RUN" \
+            --fast-run "$FAST_RUN" \
+            --deep-run "$DEEP_RUN" \
+            --android-run "$ANDROID_RUN" \
+            --compare-run "$COMPARE_RUN" \
+            --output "$RUNNER_TEMP/sfdt11-evidence.json"
+      - name: Preserve fail-closed receipt when verification fails
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f "$RUNNER_TEMP/sfdt11-evidence.json" ]; then
+            printf '%s\n' '{"kind":"studyflow.sfdt11.consolidated-hosted-evidence","status":"FAILED_OR_NOT_RUN","cutover_authorized":false,"legacy_equivalent":false,"release_qualified":false,"device_qualified":false,"decision":"NO_GO_CI_CUTOVER"}' \
+              > "$RUNNER_TEMP/sfdt11-evidence.json"
+          fi
+      - name: Upload bounded unqualified report (not a release gate)
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: studyflow-sfdt11-consolidated-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sfdt11-evidence.json
+          if-no-files-found: error
+          retention-days: 21
