@@ -1,0 +1,95 @@
+# SFDT10-R2: read-only hosted comparison of *existing* same-SHA legacy/native runs.
+# This comparator cannot sign, publish, dispatch other workflows or switch CI.
+name: StudyFlow SFDT10 R2 native Android parity comparison
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact consumer SHA shared by completed legacy and SFDT10 runs
+        type: string
+        required: true
+      legacy_run_id:
+        description: Completed authoritative StudyFlow CI run ID (same source)
+        type: string
+        required: true
+      shadow_run_id:
+        description: Completed SFDT10-R1 native shadow run ID (same source)
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: sfdt10-r2-${{ github.run_id }}
+  cancel-in-progress: false
+jobs:
+  compare-android:
+    name: Compare same-SHA Android APK, lint and JVM evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      LEGACY_RUN: ${{ inputs.legacy_run_id }}
+      SHADOW_RUN: ${{ inputs.shadow_run_id }}
+      PYTHONNOUSERSITE: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Checkout read-only comparator source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Pinned Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+          check-latest: false
+      - name: Android SDK tools for APK identity and signature verification
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+      - name: Reject unreviewed command, source and toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$LEGACY_RUN" =~ ^[1-9][0-9]*$ ]]
+          [[ "$SHADOW_RUN" =~ ^[1-9][0-9]*$ ]]
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$RUNNER_OS" = Linux
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -x "$ANDROID_HOME/build-tools/36.0.0/aapt"
+          test -x "$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          gh --version
+          python3 -B scripts/sfdt10_r2_compare.py --source-check
+          python3 -B scripts/test_sfdt10_r2_compare.py
+      - name: Download original GitHub artifacts and compare member-level parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt10_r2_compare.py \
+            --repo Mikeyphw/studyflow \
+            --source "$EXPECTED_SHA" \
+            --legacy-run "$LEGACY_RUN" \
+            --shadow-run "$SHADOW_RUN" \
+            --aapt "$ANDROID_HOME/build-tools/36.0.0/aapt" \
+            --apksigner "$ANDROID_HOME/build-tools/36.0.0/apksigner" \
+            --output "$RUNNER_TEMP/sfdt10-r2-report.json"
+      - name: Record failed or incomplete comparison as NOT QUALIFIED
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f "$RUNNER_TEMP/sfdt10-r2-report.json" ]; then
+            printf '%s\n' '{"kind":"studyflow.sfdt10.r2.android-same-source-evidence","status":"FAILED_OR_NOT_RUN","cutover_authorized":false,"release_qualified":false,"device_qualified":false}' \
+              > "$RUNNER_TEMP/sfdt10-r2-report.json"
+          fi
+      - name: Preserve only unqualified comparator receipt
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: studyflow-sfdt10-r2-compare-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sfdt10-r2-report.json
+          if-no-files-found: error
+          retention-days: 14
