@@ -18,7 +18,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-DEVTOOL = 'bee6e0b7e49aaaa0c56f755fd5be434a27c52b6c'
+DEVTOOL = 'bf8ed44753f1bdbe066cac3d4ea3f748e4af2a0b'
 MODULE = ':core:model'
 SHA = re.compile(r'[a-f0-9]{40}\Z')
 DIGEST = re.compile(r'[a-f0-9]{64}\Z')
@@ -54,6 +54,14 @@ def source_check() -> dict:
     need('core:model:jar' in wf and 'Gradle :core:model' in wf, 'JVM build selected wrong module')
     need(not any(s in wf for s in ('secrets.', 'id-token: write', 'gh release', 'continue-on-error:', 'git push ', 'gh pr merge')),
          'unreviewed workflow authority')
+    qualification = (ROOT / '.github/workflows/studyflow-sfdt14-rm21-jvm-acceptance.yml').read_text()
+    need('DEVTOOL_SHA: '+DEVTOOL in qualification, 'RM21 JVM Devtool SHA drift')
+    need('independent_consumer_qualified' in qualification and '--gradle-version \'9.7.1\'' in qualification,
+         'RM21 JVM exact source/hosted Gradle lane removed')
+    need('permissions:\n  contents: read' in qualification, 'RM21 JVM workflow gained privileges')
+    need(not any(s in qualification for s in ('secrets.', 'id-token: write', 'contents: write',
+                                             'continue-on-error:', 'gh release', 'git push ', 'gh pr merge')),
+         'RM21 JVM workflow unreviewed authority')
     return {'kind':'studyflow.sfdt13.jvm-source','selected_module':MODULE,
             'gradle_wrapper':'9.7.1','devtool_sha':DEVTOOL,
             'rm21_qualified':False,'release_qualified':False}

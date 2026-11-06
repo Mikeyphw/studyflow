@@ -1,0 +1,172 @@
+# SFDT14: independently qualify one exact GitHub source revision via native RM21.
+# A real, reviewed, tracked Gradle metadata file is required. No signing/release/device privilege.
+name: StudyFlow SFDT14 independent RM21 JVM acceptance
+on:
+  pull_request:
+    paths:
+      - 'gradle/verification-metadata.xml'
+      - '.github/workflows/studyflow-sfdt14-rm21-jvm-acceptance.yml'
+      - 'scripts/sfdt13_jvm_shadow.py'
+      - 'tests/test_sfdt14_rm21_source.py'
+      - 'core/model/**'
+      - 'build-logic/**'
+      - 'settings.gradle.kts'
+      - 'gradle/wrapper/**'
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed 40-character StudyFlow commit SHA
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: sfdt14-jvm-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  independent-jvm:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || inputs.expected_sha }}
+      DEVTOOL_SHA: bf8ed44753f1bdbe066cac3d4ea3f748e4af2a0b
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Exact consumer checkout (never PR merge source)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || inputs.expected_sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Validate immutable consumer identity and trust boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          if test "$GITHUB_EVENT_NAME" = workflow_dispatch; then
+            test "$CANDIDATE_SHA" = "$GITHUB_SHA"
+          fi
+          mkdir -p "$RUNNER_TEMP/sfdt14"
+          printf '%s\n' "$CANDIDATE_SHA" > "$RUNNER_TEMP/sfdt14/consumer-sha.txt"
+      - name: Python 3.13
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+      - name: Java 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install exact Gradle 9.7.1 on GitHub only
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          gradle-version: '9.7.1'
+      - name: Checkout immutable reviewed Devtool RM23 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/Mikeyphw/devtool.git "$RUNNER_TEMP/sfdt14-tool"
+          git -C "$RUNNER_TEMP/sfdt14-tool" checkout --detach "$DEVTOOL_SHA"
+          test "$(git -C "$RUNNER_TEMP/sfdt14-tool" rev-parse HEAD)" = "$DEVTOOL_SHA"
+          printf '%s\n' "$DEVTOOL_SHA" > "$RUNNER_TEMP/sfdt14/devtool-sha.txt"
+      - name: Verify checked-in real SHA-256 dependency metadata and RM12 admission
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f gradle/verification-metadata.xml
+          test ! -L gradle/verification-metadata.xml
+          git ls-files --error-unmatch -- gradle/verification-metadata.xml
+          python -B scripts/sfdt13_jvm_shadow.py --source-check
+          python -B tests/test_sfdt13_jvm_shadow.py
+          python -B tests/test_sfdt14_rm21_source.py
+          python -B scripts/sfdt13_jvm_shadow.py --verify-metadata gradle/verification-metadata.xml \
+            > "$RUNNER_TEMP/sfdt14/metadata-source.json"
+          PYTHONPATH="$RUNNER_TEMP/sfdt14-tool" python - <<'PY'
+          from pathlib import Path
+          from devtool.actions_rm12_jvm import jvm_project
+          project = jvm_project(Path.cwd(), manager='gradle', mixed_module=':core:model')
+          assert project['read_only'] is True
+          assert ':core:model' in project['modules']
+          print('SFDT14_RM12_TRACKED_SOURCE_ADMISSION_PASS', project['source_digest'])
+          PY
+          test -z "$(git status --porcelain --untracked-files=normal)"
+      - name: Hosted source-bound dependency warmup (no release)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Populate the hosted Gradle cache with the real compiler/plugins and
+          # then remove the selected module's output before RM21's native build.
+          bash ./gradlew --no-daemon --max-workers=2 :core:model:jar
+          bash ./gradlew --no-daemon --max-workers=2 :core:model:clean
+          test ! -d core/model/build/libs
+          test -z "$(git status --porcelain --untracked-files=normal)"
+      - name: Genuine independent RM21 native offline Gradle build and RM12 JAR receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$RUNNER_TEMP/sfdt14-tool" \
+            python -m devtool.actions_rm21_hosted_native jvm-jar \
+              --root "$GITHUB_WORKSPACE" \
+              --consumer-sha "$CANDIDATE_SHA" \
+              --devtool-sha "$DEVTOOL_SHA" \
+              --external-repository Mikeyphw/studyflow \
+              --jvm-module ':core:model' \
+              --jdk-version '21' \
+              --gradle-version '9.7.1' \
+              --receipt "$RUNNER_TEMP/sfdt14/jvm-jar.json"
+      - name: Validate independent consumer receipt, byte-for-byte output and nonrelease flags
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os,pathlib,shutil,subprocess
+          root=pathlib.Path.cwd()
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'sfdt14'
+          r=json.loads((out/'jvm-jar.json').read_text())
+          assert r['kind']=='devtool.rm21.hosted-native' and r['result']=='PASS'
+          assert r['lane']=='jvm-jar' and r['provider']=='rm12-jvm'
+          assert r['selected_module']==':core:model' and r['gradle_version']=='9.7.1'
+          assert r['devtool_sha']==os.environ['DEVTOOL_SHA']
+          assert r['consumer_commit']==os.environ['CANDIDATE_SHA']
+          assert r['consumer_tree']==subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip()
+          assert r['external_repository']=='Mikeyphw/studyflow'
+          assert r['external_consumer_verified'] and r['independent_consumer_qualified']
+          assert r['source_pinned'] and r['native_execution_completed']
+          for name in ('release_qualified','signing_qualified','device_qualified'):
+              assert r[name] is False
+          assert len(r['outputs'])==1
+          member=r['outputs'][0]
+          src=root/member['path']
+          assert src.parent==root/'core/model/build/libs'
+          assert src.is_file() and not src.is_symlink()
+          blob=src.read_bytes()
+          assert len(blob)==member['bytes'] and hashlib.sha256(blob).hexdigest()==member['sha256']
+          check=member['rm12_verification']
+          assert check['kind']=='jvm-jar' and check['sha256']==member['sha256']
+          assert check['classes']>0 and check['manifest'] is True
+          assert check['release_qualified'] is False and check['signer_authenticated'] is False
+          copied=out/'core-model.jar'
+          assert not copied.exists()
+          shutil.copyfile(src,copied)
+          assert hashlib.sha256(copied.read_bytes()).hexdigest()==member['sha256']
+          assert subprocess.check_output(['git','status','--porcelain','--untracked-files=normal']).strip()==b''
+          print('SFDT14_INDEPENDENT_RM21_JVM_SOURCE_AND_OUTPUT_BYTES_PASS')
+          PY
+      - name: Seal nonrelease evidence with SHA-256 checksums
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sfdt14"
+          (cd "$RUNNER_TEMP/sfdt14" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+      - name: Publish independent JVM evidence (not a release)
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: studyflow-sfdt14-rm21-jvm-nonrelease
+          path: ${{ runner.temp }}/sfdt14/
+          if-no-files-found: warn
+          retention-days: 14

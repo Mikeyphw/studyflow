@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 65
     env:
       CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || inputs.expected_sha }}
-      DEVTOOL_SHA: bee6e0b7e49aaaa0c56f755fd5be434a27c52b6c
+      DEVTOOL_SHA: bf8ed44753f1bdbe066cac3d4ea3f748e4af2a0b
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - name: Exact-source, read-only StudyFlow checkout
@@ -91,6 +91,13 @@ jobs:
         run: |
           set -euo pipefail
           bash ./gradlew --no-daemon --max-workers=2 :core:model:jar
+      - name: Observe bounded real JAR inventory before immutable RM12 verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B scripts/sfdt14_jar_inventory.py \
+            --jar-dir core/model/build/libs \
+            --out "$RUNNER_TEMP/sfdt13/jar-entry-inventory.json"
       - name: Verify actual JVM class archive and preserved checkout
         shell: bash
         run: |
@@ -106,15 +113,26 @@ jobs:
           set -euo pipefail
           # Generate from actual hosted resolution. Never fabricate metadata or
           # commit it automatically; this candidate requires source review.
-          test ! -e gradle/verification-metadata.xml
-          bash ./gradlew --no-daemon --max-workers=2 \
-            --write-verification-metadata sha256 :core:model:jar
-          python -B scripts/sfdt13_jvm_shadow.py \
-            --verify-metadata gradle/verification-metadata.xml \
-            > "$RUNNER_TEMP/sfdt13/metadata-candidate-review.json"
-          cp gradle/verification-metadata.xml "$RUNNER_TEMP/sfdt13/verification-metadata.CANDIDATE.xml"
+          if test -f gradle/verification-metadata.xml; then
+            # After importing the reviewed hosted candidate, recheck its exact tracked bytes.
+            git ls-files --error-unmatch -- gradle/verification-metadata.xml
+            test ! -L gradle/verification-metadata.xml
+            python -B scripts/sfdt13_jvm_shadow.py \
+              --verify-metadata gradle/verification-metadata.xml \
+              > "$RUNNER_TEMP/sfdt13/metadata-committed-review.json"
+            cp gradle/verification-metadata.xml "$RUNNER_TEMP/sfdt13/verification-metadata.COMMITTED.xml"
+            echo 'SFDT14_JVM_TRACKED_VERIFICATION_METADATA_PRESENT'
+          else
+            # Only a REAL hosted Gradle resolution can produce the initial candidate.
+            bash ./gradlew --no-daemon --max-workers=2 \
+              --write-verification-metadata sha256 :core:model:jar
+            python -B scripts/sfdt13_jvm_shadow.py \
+              --verify-metadata gradle/verification-metadata.xml \
+              > "$RUNNER_TEMP/sfdt13/metadata-candidate-review.json"
+            cp gradle/verification-metadata.xml "$RUNNER_TEMP/sfdt13/verification-metadata.CANDIDATE.xml"
+            echo 'SFDT13_JVM_METADATA_CANDIDATE_GENERATED_ON_HOSTED_GRADLE'
+          fi
           test -z "$(git status --porcelain --untracked-files=no)"
-          echo 'SFDT13_JVM_METADATA_CANDIDATE_ONLY_NO_RM21_CUTOVER'
       - name: Publish source-bound nonrelease JAR/metadata evidence
         if: always()
         shell: bash
