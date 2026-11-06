@@ -1,0 +1,40 @@
+# SFDT18: only source tests; the coordinator is explicitly invoked by maintainer
+# via authenticated local gh CLI after this is merged on main.
+name: StudyFlow SFDT18 same-SHA hosted coordination safety
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/studyflow-sfdt18-evidence-coordinator.yml'
+      - 'scripts/sfdt18_evidence_coordinator.py'
+      - 'tests/test_sfdt18_evidence_coordinator.py'
+      - 'scripts/sfdt16_cutover_probe.py'
+      - 'tests/test_sfdt16_cutover_probe.py'
+      - 'scripts/sfdt17_hosted_equivalence.py'
+      - 'tests/test_sfdt17_hosted_equivalence.py'
+      - 'docs/actions/SFDT16_CUTOVER_PROBE.md'
+      - 'docs/actions/SFDT17_HOSTED_EQUIVALENCE.md'
+      - 'docs/actions/SFDT18_HOSTED_COORDINATOR.md'
+permissions:
+  contents: read
+concurrency:
+  group: studyflow-sfdt18-source-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source-contracts:
+    name: SFDT18 live API parity and coordinator source tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify immutable source and run all three offline suites
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          python3 -B tests/test_sfdt16_cutover_probe.py
+          python3 -B tests/test_sfdt17_hosted_equivalence.py
+          python3 -B tests/test_sfdt18_evidence_coordinator.py
+          python3 -B scripts/sfdt18_evidence_coordinator.py --help >/dev/null

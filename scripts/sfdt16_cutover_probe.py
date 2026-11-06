@@ -136,10 +136,12 @@ def assess(expected_sha: str, run_ids: dict[str, int], inventories: dict[str, di
                 f"{lane}: source repository mismatch")
         require(type(run.get("workflow_id")) is int and run["workflow_id"] == identity["workflow_id"],
                 f"{lane}: workflow ID mismatch")
-        # GitHub's run.path includes owner/repo and exact definition ref.
-        expected_path = f'{repository}/{identity["workflow_path"]}@refs/heads/main'
+        # GitHub REST workflow-run.path is repository-relative. It has NO
+        # owner/repo or @ref suffix. Pin branch, event, repository and SHA above
+        # instead of inventing a ref that the API does not return.
+        expected_path = identity["workflow_path"]
         require(run.get("path") == expected_path,
-                f"{lane}: workflow path/ref mismatch: {run.get('path')!r}")
+                f"{lane}: workflow path mismatch: {run.get('path')!r}")
         require(isinstance(run.get("name"), str) and bool(run["name"].strip()),
                 f"{lane}: missing workflow name")
         require(run.get("status") == "completed" and run.get("conclusion") == "success",

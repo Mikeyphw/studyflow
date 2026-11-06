@@ -17,13 +17,15 @@ from scripts.sfdt17_hosted_equivalence import (
     EvidenceRefused, artifact_contracts, verify_bundle_metadata,
     inspect_zip, assemble_report, safe_member, inspect_junit,
     report_refusal, _trusted_cdn, REPO, MAX_ARCHIVE, CANONICAL_WORKFLOWS,
+    CANONICAL_WORKFLOW_IDS,
 )
 
 SOURCE = 'a'*40
 IDS = {'legacy': 100, 'source_shadow': 101, 'expanded_shadow': 102,
        'native_fast': 103, 'native_deep': 104}
 ATTEMPTS = {lane: 1 for lane in IDS}
-IDENTITIES = {lane: {'attempt': 1, 'workflow_path': CANONICAL_WORKFLOWS[lane][0]} for lane in IDS}
+IDENTITIES = {lane: {'attempt': 1, 'workflow_path': CANONICAL_WORKFLOWS[lane][0],
+                     'workflow_id': CANONICAL_WORKFLOW_IDS[lane]} for lane in IDS}
 JUNIT = b'<testsuite name="valid"><testcase name="one"/><testcase name="two"><skipped/></testcase></testsuite>'
 
 
@@ -77,6 +79,21 @@ class SFDT17Tests(unittest.TestCase):
         contracts=copy.deepcopy(IDENTITIES)
         contracts['native_fast']['workflow_path']='.github/workflows/unrelated.yml'
         with self.assertRaisesRegex(EvidenceRefused,'source-controlled policy'):
+            assemble_report(SOURCE,IDS,contracts,self.inventories,self.root)
+
+    def test_independently_pinned_workflow_id_refuses_self_attested_substitution(self):
+        contracts=copy.deepcopy(IDENTITIES)
+        contracts['native_fast']['workflow_id']=999999999
+        with self.assertRaisesRegex(EvidenceRefused,'workflow ID differs from independently pinned'):
+            assemble_report(SOURCE,IDS,contracts,self.inventories,self.root)
+
+    def test_observed_workflow_id_is_stable(self):
+        contracts=copy.deepcopy(IDENTITIES)
+        self.inventories['native_deep']['run'] = {
+            'name': CANONICAL_WORKFLOWS['native_deep'][1],
+            'workflow_id': 999,
+            'path': CANONICAL_WORKFLOWS['native_deep'][0]}
+        with self.assertRaisesRegex(EvidenceRefused,'observed workflow ID'):
             assemble_report(SOURCE,IDS,contracts,self.inventories,self.root)
 
     def test_hardcoded_workflow_names_reject_impersonation(self):

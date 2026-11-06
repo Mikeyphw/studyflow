@@ -44,6 +44,17 @@ CANONICAL_WORKFLOWS = {
                     "StudyFlow Devtool native coverage expansion"),
 }
 
+# Stable GitHub workflow-definition IDs, independently inspected from actual
+# StudyFlow GitHub Actions workflow-run REST payloads on 2026-11-06.
+# Pin both identity AND source-controlled relative workflow path.
+CANONICAL_WORKFLOW_IDS = {
+    "legacy": 402184638,
+    "source_shadow": 406396373,
+    "expanded_shadow": 406444033,
+    "native_fast": 406507103,
+    "native_deep": 406507103,
+}
+
 
 def verify_workflow_policy(identities: dict, inventories: dict[str, dict]) -> None:
     require(isinstance(identities, dict) and set(identities) == set(LANES),
@@ -52,9 +63,15 @@ def verify_workflow_policy(identities: dict, inventories: dict[str, dict]) -> No
         path, name = CANONICAL_WORKFLOWS[lane]
         require(identities[lane].get("workflow_path") == path,
                 f"{lane}: workflow path differs from source-controlled policy")
+        require(identities[lane].get("workflow_id") == CANONICAL_WORKFLOW_IDS[lane],
+                f"{lane}: workflow ID differs from independently pinned policy")
         run = inventories[lane].get("run")
         if run is not None:
             require(run.get("name") == name, f"{lane}: workflow name differs from source-controlled policy")
+            require(run.get("workflow_id") == CANONICAL_WORKFLOW_IDS[lane],
+                    f"{lane}: observed workflow ID differs from pinned policy")
+            require(run.get("path") == path,
+                    f"{lane}: observed workflow path differs from pinned policy")
 
 
 

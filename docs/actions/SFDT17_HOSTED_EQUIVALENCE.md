@@ -46,3 +46,18 @@ The aggregate JUnit total counts **executions**, including intentional repetitio
 `python3 -B tests/test_sfdt17_hosted_equivalence.py`
 
 The installer is source-pinned and refuses dirty work, unexpected remote refs, file collisions, or unseen changes. It stages only four new files. It does not invoke Gradle locally or run a live artifact download on the device.
+
+## SFDT18 hardening (live API verified)
+
+The SFDT16 workflow-run path checker now uses the exact repository-relative
+`path` returned by GitHub REST, rather than a fictional `@refs/heads/main`
+path. Source branch and commit remain separately pinned. SFDT17 additionally
+requires the canonical numeric GitHub workflow IDs independently observed for
+StudyFlow on 2026-11-06: legacy `402184638`, SFDT06 `406396373`,
+SFDT07 `406444033`, and SFDT08 (both fast and deep) `406507103`.
+
+The non-authoritative SFDT18 coordinator can dispatch all four shadow runs
+with an already successful push-triggered legacy CI run at one new merge SHA;
+it records the run IDs and, when those runs succeed, dispatches this same
+SFDT17 verifier with the independently pinned identities and exact attempts.
+No runtime/API credentials are ever stored in the coordinator's state file.

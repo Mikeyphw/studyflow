@@ -40,10 +40,21 @@ The R2 probe now **requires** a separately reviewed `expected_identities_json` w
 }
 ```
 
-Check each mapping in the GitHub Actions **run JSON** (`workflow_id`, `path`, `run_attempt`) and **workflow definition** (`.github/workflows/…`). SFDT08 fast/deep must share the same workflow definition but have distinct run IDs and their full distinct job matrices. This inventory validates each run's workflow ID, exact main-ref path, repository, main branch, event type, expected attempt and job counts. It requests the **jobs endpoint scoped to the explicit attempt**, not the unqualified latest-jobs endpoint. A wrong attempt, workflow identity, source SHA, incomplete lane, skipped required job or malformed artifact metadata refuses.
+Check each mapping in the GitHub Actions **run JSON** (`workflow_id`, `path`, `run_attempt`) and **workflow definition** (`.github/workflows/…`). SFDT08 fast/deep must share the same workflow definition but have distinct run IDs and their full distinct job matrices. This inventory validates each run's workflow ID, exact repository-relative workflow path (with the main branch and SHA checked separately), repository, main branch, event type, expected attempt and job counts. It requests the **jobs endpoint scoped to the explicit attempt**, not the unqualified latest-jobs endpoint. A wrong attempt, workflow identity, source SHA, incomplete lane, skipped required job or malformed artifact metadata refuses.
 
 Artifact IDs are unique across lanes and all enumerated artifact metadata must have a nonempty name, positive size, nonexpired status, valid `sha256:<64 lowercase hex>` digest, and matching producer run if supplied. **Important:** GitHub's run-level artifacts endpoint may include uploads from other attempts. R2 deliberately marks `artifact_attempt_provenance=NOT_VERIFIED` and `artifact_byte_parity=NOT_VERIFIED`; it does *not* claim that ZIP bytes or attempt-specific producer identity have been verified. Those are SFDT17 tasks. The manifest is an external human-reviewed assertion, not an authenticated independent source of truth.
 
 For main-only manual dispatch, supply `expected_sha`, `expected_identities_json` (compact JSON without newlines), and all five actual run IDs. If a run lacks required artifacts or has failed/incomplete jobs, the expected result is refusal; do not swap in an older SHA to make it green. Local source-only check: `python3 -B tests/test_sfdt16_cutover_probe.py`.
 
 **Cutover policy is unchanged:** authoritative CI stays enabled. No Gradle, signing, release, or hardware qualification is performed by SFDT16. A `SAME_SHA_SHADOW_INVENTORY_PASS` report cannot authorize CI replacement.
+
+## SFDT18 live GitHub API path correction (2026-11-06)
+
+Actual GitHub REST `GET /repos/{owner}/{repo}/actions/runs/{id}` returns `path`
+as `.github/workflows/studyflow-ci.yml` (and equivalent relative paths for
+SFDT06, SFDT07, SFDT08). It does **not** return a
+`owner/repo/.github/workflows/...@refs/heads/main` suffix. SFDT16 now compares
+the *exact relative path* with the reviewed manifest. Repository, event,
+`head_branch == main`, `head_sha`, workflow ID and exact attempt remain
+independent strict requirements. A wrong branch is rejected based on
+`head_branch`, never inferred from a nonexistent suffix.
