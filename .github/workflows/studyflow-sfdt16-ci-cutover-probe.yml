@@ -1,0 +1,106 @@
+# Non-authoritative, source-pinned evidence collection. Never runs Gradle, signs or publishes.
+name: StudyFlow SFDT16 source-bound cutover probe
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/studyflow-sfdt16-ci-cutover-probe.yml'
+      - 'scripts/sfdt16_cutover_probe.py'
+      - 'tests/test_sfdt16_cutover_probe.py'
+      - 'docs/actions/SFDT16_CUTOVER_PROBE.md'
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: 'Exact 40-character StudyFlow main commit SHA'
+        type: string
+        required: true
+      legacy_run:
+        description: 'Legacy StudyFlow CI run at exact SHA'
+        type: string
+        required: true
+      source_shadow_run:
+        description: 'Native source shadow run at exact SHA'
+        type: string
+        required: true
+      expanded_shadow_run:
+        description: 'SFDT07 expanded native shadow run at exact SHA'
+        type: string
+        required: true
+      native_fast_run:
+        description: 'SFDT08 native fast run at exact SHA'
+        type: string
+        required: true
+      native_deep_run:
+        description: 'SFDT08 native deep run at exact SHA'
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: sfdt16-source-cutover-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source-tests:
+    name: SFDT16 source-only negative and identity tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout immutable consumer source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Source-only adversarial regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          python3 -B tests/test_sfdt16_cutover_probe.py
+          python3 -B scripts/sfdt16_cutover_probe.py --help > /dev/null
+  source-consistency:
+    name: SFDT16 five-lane exact-SHA inventory (not cutover approval)
+    if: github.event_name == 'workflow_dispatch'
+    needs: source-tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      LEGACY_ID: ${{ inputs.legacy_run }}
+      SOURCE_SHADOW_ID: ${{ inputs.source_shadow_run }}
+      EXPANDED_SHADOW_ID: ${{ inputs.expanded_shadow_run }}
+      NATIVE_FAST_ID: ${{ inputs.native_fast_run }}
+      NATIVE_DEEP_ID: ${{ inputs.native_deep_run }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout exact source-bound candidate
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check main-only dispatch and exact SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/main
+          [[ "$EXPECTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+      - name: Fetch five immutable run inventories and refuse source/CI drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt16_cutover_probe.py \
+            --repo "$GITHUB_REPOSITORY" --expected-sha "$EXPECTED_SHA" \
+            --legacy "$LEGACY_ID" --source-shadow "$SOURCE_SHADOW_ID" \
+            --expanded-shadow "$EXPANDED_SHADOW_ID" \
+            --native-fast "$NATIVE_FAST_ID" --native-deep "$NATIVE_DEEP_ID" \
+            --output "$RUNNER_TEMP/sfdt16-evidence.json"
+      - name: Upload nonrelease read-only metadata report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studyflow-sfdt16-source-bound-inventory-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sfdt16-evidence.json
+          if-no-files-found: warn
+          retention-days: 14
