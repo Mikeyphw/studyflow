@@ -5,6 +5,9 @@ on:
   pull_request:
     paths:
       - '.github/workflows/studyflow-sfdt18-evidence-coordinator.yml'
+      - '.github/workflows/studyflow-devtool-native-expanded.yml'
+      - 'scripts/sfdt18_phone_debug_guard.py'
+      - 'tests/test_sfdt18_phone_debug_guard.py'
       - 'scripts/sfdt18_evidence_coordinator.py'
       - 'tests/test_sfdt18_evidence_coordinator.py'
       - 'scripts/sfdt16_cutover_probe.py'
@@ -37,4 +40,5 @@ jobs:
           python3 -B tests/test_sfdt16_cutover_probe.py
           python3 -B tests/test_sfdt17_hosted_equivalence.py
           python3 -B tests/test_sfdt18_evidence_coordinator.py
+          python3 -B tests/test_sfdt18_phone_debug_guard.py
           python3 -B scripts/sfdt18_evidence_coordinator.py --help >/dev/null

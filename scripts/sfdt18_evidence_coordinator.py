@@ -9,6 +9,9 @@ Typical workflow after this source is merged into StudyFlow main:
     python3 -B scripts/sfdt18_evidence_coordinator.py dispatch
     python3 -B scripts/sfdt18_evidence_coordinator.py status
     python3 -B scripts/sfdt18_evidence_coordinator.py finalize
+    # On a FAILED/CANCELLED SFDT07 lane for that *same* main SHA only:
+    python3 -B scripts/sfdt18_evidence_coordinator.py recover
+    python3 -B scripts/sfdt18_evidence_coordinator.py adopt
 """
 from __future__ import annotations
 
@@ -289,6 +292,155 @@ def _live_states(state: dict) -> dict[str, dict]:
     return {lane: gh_json("repos/" + REPO + "/actions/runs/" + str(runs[lane])) for lane in LANES}
 
 
+
+def validate_recovery_request(state: dict, live: dict[str, dict], sha: str,
+                              lane: str = "expanded_shadow") -> int:
+    """Only a failed SFDT07 run may be replaced, and only at unchanged SHA."""
+    require(lane == "expanded_shadow", "Only the cancelled SFDT07 lane can be recovered")
+    require(SOURCE_SHA_RE.fullmatch(sha) is not None and state.get("sha") == sha
+            and state.get("schema") == SCHEMA and state.get("repo") == REPO,
+            "Recovery source/state identity differs")
+    require(state.get("phase") == "READY" and not state.get("recovery")
+            and not state.get("evidence_run"),
+            "Recovery requires an untouched READY state; reconcile interrupted dispatch first")
+    run_ids = state.get("runs")
+    require(isinstance(run_ids, dict) and set(run_ids) == set(LANES)
+            and len(set(run_ids.values())) == len(LANES),
+            "Recovery requires five distinct previously recorded runs")
+    require(set(live) == set(LANES), "Recovery requires fresh records for all five runs")
+    for key in LANES:
+        attempt = check_run(live[key], lane=key, sha=sha, run_id=run_ids[key])
+        require(attempt > 0, "Invalid run attempt")
+        if key == lane:
+            require(live[key].get("status") == "completed"
+                    and live[key].get("conclusion") in ("cancelled", "failure", "timed_out"),
+                    "SFDT07 must have failed or been cancelled before recovery")
+        else:
+            require(live[key].get("status") == "completed"
+                    and live[key].get("conclusion") == "success",
+                    "Other four evidence runs must be green at identical SHA")
+    return run_ids[lane]
+
+
+def validate_recovery_candidate(run: dict, *, sha: str, run_id: int,
+                                jobs: list[dict], artifacts: list[dict]) -> None:
+    """Gate adoption on GitHub job and artifact metadata; bytes await SFDT17."""
+    attempt = check_run(run, lane="expanded_shadow", sha=sha, run_id=run_id)
+    require(run.get("status") == "completed" and run.get("conclusion") == "success",
+            "Replacement SFDT07 is not completed successfully")
+    require(isinstance(jobs, list) and len(jobs) == 4,
+            "Replacement SFDT07 must contain exactly four matrix jobs")
+    require({j.get("name") for j in jobs if isinstance(j, dict)} == {
+                "native-phone-debug", "native-tv-debug", "native-web-pytest",
+                "native-quality-source"},
+            "Replacement SFDT07 matrix names are not the four reviewed lanes")
+    require(all(isinstance(j, dict) and j.get("status") == "completed"
+                and j.get("conclusion") == "success"
+                and ("run_id" not in j or j["run_id"] == run_id)
+                and ("head_sha" not in j or j["head_sha"] == sha)
+                for j in jobs), "Replacement SFDT07 has unfinished/failed/skipped job")
+    # Do not treat the 422-byte cancellation fallback as valid evidence.
+    from scripts.sfdt17_hosted_equivalence import (
+        artifact_contracts, verify_bundle_metadata, EvidenceRefused)
+    role_ids = {lane: run_id if lane == "expanded_shadow" else 1 for lane in LANES}
+    role_attempts = {lane: attempt if lane == "expanded_shadow" else 1 for lane in LANES}
+    expected = artifact_contracts(role_ids, role_attempts)["expanded_shadow"]
+    try:
+        verified = verify_bundle_metadata("expanded_shadow", artifacts, expected,
+                                          run_id, sha, set())
+    except EvidenceRefused as exc:
+        raise Refused(f"Replacement SFDT07 artifact metadata refused: {exc}") from None
+    for name, role in expected.items():
+        if role in ("phone_debug_apk", "tv_debug_apk"):
+            require(verified[name]["size_in_bytes"] >= 1024 * 1024,
+                    "SFDT07 debug artifact too small; refusing fallback/non-APK receipt")
+
+
+def _complete_recovery_candidate(state: dict, candidate: dict,
+                                 jobs: list[dict], artifacts: list[dict]) -> dict:
+    """Pure transactional state change, called only after live GitHub recheck."""
+    require(state.get("phase") == "RECOVERY_PENDING", "No pending recovery")
+    recovery = state.get("recovery")
+    require(isinstance(recovery, dict) and recovery.get("lane") == "expanded_shadow"
+            and type(recovery.get("candidate_id")) is int
+            and state["runs"]["expanded_shadow"] == recovery.get("prior_id"),
+            "Recovery state was modified or incomplete")
+    validate_recovery_candidate(candidate, sha=state["sha"],
+                                run_id=recovery["candidate_id"],
+                                jobs=jobs, artifacts=artifacts)
+    new_state = dict(state)
+    new_state["runs"] = dict(state["runs"])
+    new_state["runs"]["expanded_shadow"] = recovery["candidate_id"]
+    new_state["recoveries"] = [*state.get("recoveries", []), {
+        "lane": "expanded_shadow", "prior_id": recovery["prior_id"],
+        "replacement_id": recovery["candidate_id"], "sha": state["sha"]}]
+    new_state["phase"] = "READY"
+    new_state.pop("recovery")
+    return new_state
+
+
+def recover(*, state_dir: Path) -> None:
+    """Dispatch one new SFDT07 run; keep original and other four IDs immutable."""
+    sha = main_sha()
+    path = _state_file(state_dir, sha)
+    state = read_state(path, sha)
+    original = validate_recovery_request(state, _live_states(state), sha)
+    workflow_catalog()
+    require(main_sha() == sha, "main moved before recovery dispatch")
+    wid, filename, _ = POLICY["expanded_shadow"]
+    cursor = _latest_run_id(wid)
+    state["phase"] = "RECOVERY_DISPATCHING"
+    state["recovery"] = {"lane": "expanded_shadow", "prior_id": original,
+                         "cursor": cursor}
+    write_state(path, state)
+    gh("workflow", "run", filename, "-R", REPO, "--ref", "main",
+       "-f", "expected_sha=" + sha)
+    candidate = _wait_new_run(wid, cursor, sha)
+    state["recovery"]["candidate_id"] = candidate
+    state["phase"] = "RECOVERY_PENDING"
+    write_state(path, state)
+    print("Recovery run created at unchanged StudyFlow SHA:")
+    print(f"https://github.com/{REPO}/actions/runs/{candidate}")
+    print("The previous failed run and four successful lanes are preserved.")
+    print("After it succeeds: python3 -B scripts/sfdt18_evidence_coordinator.py adopt")
+
+
+def adopt(*, state_dir: Path) -> None:
+    """Adopt only a successful, provenance-checked SFDT07 rerun."""
+    sha = main_sha()
+    path = _state_file(state_dir, sha)
+    state = read_state(path, sha)
+    require(state.get("phase") == "RECOVERY_PENDING", "No completed recovery to adopt")
+    recover_data = state.get("recovery")
+    require(isinstance(recover_data, dict)
+            and type(recover_data.get("candidate_id")) is int,
+            "Invalid pending recovery identity")
+    original = state["runs"]["expanded_shadow"]
+    require(recover_data.get("prior_id") == original,
+            "Stored original SFDT07 ID was mutated")
+    # Validate all previous runs (including the cancelled original), ensuring
+    # main hasn't changed and the existing successful four are retained.
+    validate_recovery_original = dict(state)
+    validate_recovery_original["phase"] = "READY"
+    validate_recovery_original.pop("recovery", None)
+    validate_recovery_request(validate_recovery_original, _live_states(state), sha)
+    cid = recover_data["candidate_id"]
+    candidate = gh_json("repos/" + REPO + "/actions/runs/" + str(cid))
+    attempt = check_run(candidate, lane="expanded_shadow", sha=sha, run_id=cid)
+    jobs_data = gh_json("repos/" + REPO + f"/actions/runs/{cid}/attempts/{attempt}/jobs?per_page=100")
+    artifacts_data = gh_json("repos/" + REPO + f"/actions/runs/{cid}/artifacts?per_page=100")
+    jobs = jobs_data.get("jobs")
+    artifacts = artifacts_data.get("artifacts")
+    require(isinstance(jobs, list) and jobs_data.get("total_count") == len(jobs),
+            "Candidate job inventory truncated")
+    require(isinstance(artifacts, list) and artifacts_data.get("total_count") == len(artifacts),
+            "Candidate artifact inventory truncated")
+    revised = _complete_recovery_candidate(state, candidate, jobs, artifacts)
+    write_state(path, revised)
+    print("SFDT07 successful replacement adopted; previous and remaining runs preserved.")
+    print("Updated run:", cid)
+    print("Next: python3 -B scripts/sfdt18_evidence_coordinator.py finalize")
+
 def status(*, state_dir: Path) -> None:
     sha = main_sha()
     state_path = _state_file(state_dir, sha)
@@ -303,6 +455,10 @@ def status(*, state_dir: Path) -> None:
         check_run(run, lane=lane, sha=sha, run_id=run_id)
         print(f"{lane:16} {str(run.get('status')):12} {str(run.get('conclusion')):12} "
               f"https://github.com/{REPO}/actions/runs/{run_id}")
+    if state.get("recovery"):
+        candidate = state["recovery"].get("candidate_id")
+        print("SFDT07 recovery candidate:",
+              f"https://github.com/{REPO}/actions/runs/{candidate}" if candidate else "not yet captured")
     if state.get("evidence_run"):
         print("SFDT17 evidence:", f"https://github.com/{REPO}/actions/runs/{state['evidence_run']}")
     print("State:", state_path)
@@ -343,7 +499,7 @@ def finalize(*, state_dir: Path) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("operation", choices=("dispatch", "status", "finalize"))
+    parser.add_argument("operation", choices=("dispatch", "status", "finalize", "recover", "adopt"))
     parser.add_argument("--devtool-sha", default=DEFAULT_DEVTOOL_SHA)
     parser.add_argument("--state-dir", type=Path,
                         default=Path.home() / ".local/state/studyflow/sfdt18")
@@ -353,8 +509,12 @@ def main(argv: list[str] | None = None) -> int:
             dispatch(state_dir=args.state_dir, devtool_sha=args.devtool_sha)
         elif args.operation == "status":
             status(state_dir=args.state_dir)
-        else:
+        elif args.operation == "finalize":
             finalize(state_dir=args.state_dir)
+        elif args.operation == "recover":
+            recover(state_dir=args.state_dir)
+        else:
+            adopt(state_dir=args.state_dir)
         return 0
     except (Refused, OSError, TypeError, ValueError) as exc:
         print("SFDT18_REFUSED:", exc, file=sys.stderr)

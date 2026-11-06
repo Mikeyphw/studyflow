@@ -13,8 +13,10 @@ from scripts.sfdt18_evidence_coordinator import (
     POLICY, REPO, LANES, SCHEMA, Refused, choose_legacy_run,
     checked_inputs, check_run, fresh_dispatch_ids, require_unique_dispatch,
     read_state, reviewed_path, validate_workflow_catalog, write_state,
-    EVIDENCE_WORKFLOW,
+    EVIDENCE_WORKFLOW, validate_recovery_request,
+    validate_recovery_candidate, _complete_recovery_candidate, recover, adopt,
 )
+from unittest.mock import patch
 
 SHA = "a" * 40
 IDS = {lane: index+1000 for index, lane in enumerate(LANES)}
@@ -160,6 +162,160 @@ class CoordinatorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaises(Refused):read_state(Path(d)/'missing.json',SHA)
 
+
+
+def failed_state() -> tuple[dict, dict]:
+    state={"schema":SCHEMA, "repo":REPO, "sha":SHA,
+           "phase":"READY", "runs":dict(IDS)}
+    live=sample_runs()
+    live["expanded_shadow"]["conclusion"]="cancelled"
+    return state, live
+
+
+def recovery_artifacts(run_id: int, attempt: int=1) -> list[dict]:
+    from scripts.sfdt17_hosted_equivalence import artifact_contracts
+    ids={lane:run_id if lane=='expanded_shadow' else 1 for lane in LANES}
+    ats={lane:attempt if lane=='expanded_shadow' else 1 for lane in LANES}
+    patterns=artifact_contracts(ids,ats)['expanded_shadow']
+    return [{"id":20000+i,"name":name,"size_in_bytes": 2000000 if role.endswith('_apk') else 5000,
+             "expired":False,"digest":"sha256:"+'b'*64,
+             "workflow_run":{"id":run_id,"head_sha":SHA}}
+            for i,(name,role) in enumerate(patterns.items())]
+
+
+class SFDT18HF01RecoveryTests(unittest.TestCase):
+    def test_failed_lane_preserves_other_four(self):
+        state,live=failed_state()
+        self.assertEqual(validate_recovery_request(state,live,SHA),IDS['expanded_shadow'])
+        self.assertEqual(len(state['runs']),5)
+
+    def test_successful_lane_cannot_be_recovered(self):
+        state,live=failed_state();live['expanded_shadow']['conclusion']='success'
+        with self.assertRaisesRegex(Refused,'failed or been cancelled'):
+            validate_recovery_request(state,live,SHA)
+
+    def test_other_lane_failure_refuses(self):
+        state,live=failed_state();live['native_deep']['conclusion']='failure'
+        with self.assertRaisesRegex(Refused,'Other four'):
+            validate_recovery_request(state,live,SHA)
+
+    def test_changed_source_refused(self):
+        state,live=failed_state()
+        with self.assertRaisesRegex(Refused,'source/state'):
+            validate_recovery_request(state,live,'b'*40)
+
+    def test_recovery_refuses_pending_evidence_or_state_mutation(self):
+        state,live=failed_state()
+        for phase in ('DISPATCHING','EVIDENCE_DISPATCHED','RECOVERY_PENDING'):
+            x=dict(state);x['phase']=phase
+            with self.subTest(phase=phase),self.assertRaises(Refused):
+                validate_recovery_request(x,live,SHA)
+        x=dict(state);x['evidence_run']=123
+        with self.assertRaises(Refused):validate_recovery_request(x,live,SHA)
+
+    def test_candidate_accepts_real_complete_4_job_matrix_and_zip_names(self):
+        rid=9000; r=run('expanded_shadow');r['id']=rid
+        jobs=[{'name': 'native-'+name, 'status':'completed','conclusion':'success',
+               'run_id':rid,'head_sha':SHA}
+              for name in ('phone-debug','tv-debug','web-pytest','quality-source')]
+        validate_recovery_candidate(r,sha=SHA,run_id=rid,
+                                    jobs=jobs,artifacts=recovery_artifacts(rid))
+
+    def test_candidate_refuses_fallback_422_bytes(self):
+        rid=9000; r=run('expanded_shadow');r['id']=rid
+        jobs=[{'name':'native-'+name,'status':'completed','conclusion':'success'}
+              for name in ('phone-debug','tv-debug','web-pytest','quality-source')]
+        arts=recovery_artifacts(rid);arts[0]['size_in_bytes']=422
+        with self.assertRaisesRegex(Refused,'too small'):
+            validate_recovery_candidate(r,sha=SHA,run_id=rid,jobs=jobs,artifacts=arts)
+
+    def test_candidate_refuses_skipped_job(self):
+        rid=9000; r=run('expanded_shadow');r['id']=rid
+        jobs=[{'name':'native-'+name,'status':'completed','conclusion':'success'}
+              for name in ('phone-debug','tv-debug','web-pytest','quality-source')]
+        jobs[0]['conclusion']='skipped'
+        with self.assertRaisesRegex(Refused,'skipped'):
+            validate_recovery_candidate(r,sha=SHA,run_id=rid,jobs=jobs,
+                                        artifacts=recovery_artifacts(rid))
+
+    def test_candidate_refuses_wrong_sha_or_workflow(self):
+        rid=9000; r=run('expanded_shadow');r['id']=rid;r['head_sha']='b'*40
+        with self.assertRaises(Refused):
+            validate_recovery_candidate(r,sha=SHA,run_id=rid,jobs=[],artifacts=[])
+
+    def test_candidate_refuses_missing_artifact(self):
+        rid=9000; r=run('expanded_shadow');r['id']=rid
+        with self.assertRaises(Refused):
+            validate_recovery_candidate(r,sha=SHA,run_id=rid,
+                 jobs=[{'name':'native-'+name,'status':'completed','conclusion':'success'}
+              for name in ('phone-debug','tv-debug','web-pytest','quality-source')],
+                 artifacts=recovery_artifacts(rid)[:2])
+
+    def test_adoption_pure_transaction_preserves_old_history(self):
+        state,_=failed_state();state['phase']='RECOVERY_PENDING'
+        state['recovery']={'lane':'expanded_shadow','prior_id':IDS['expanded_shadow'],
+                            'cursor':IDS['expanded_shadow'],'candidate_id':9000}
+        r=run('expanded_shadow');r['id']=9000
+        jobs=[{'name':'native-'+name,'status':'completed','conclusion':'success'}
+              for name in ('phone-debug','tv-debug','web-pytest','quality-source')]
+        result=_complete_recovery_candidate(state,r,jobs,recovery_artifacts(9000))
+        self.assertEqual(state['runs']['expanded_shadow'],IDS['expanded_shadow'])
+        self.assertEqual(result['runs']['expanded_shadow'],9000)
+        self.assertEqual(result['runs']['native_fast'],IDS['native_fast'])
+        self.assertEqual(result['recoveries'][0]['prior_id'],IDS['expanded_shadow'])
+        self.assertEqual(result['phase'],'READY')
+        self.assertNotIn('recovery',result)
+
+    def test_failed_candidate_cannot_be_adopted(self):
+        state,_=failed_state();state['phase']='RECOVERY_PENDING'
+        state['recovery']={'lane':'expanded_shadow','prior_id':IDS['expanded_shadow'],
+                           'candidate_id':9000}
+        r=run('expanded_shadow');r['id']=9000;r['conclusion']='cancelled'
+        with self.assertRaises(Refused):
+            _complete_recovery_candidate(state,r,[],[])
+        self.assertEqual(state['runs']['expanded_shadow'],IDS['expanded_shadow'])
+
+    def test_recover_dispatch_preserves_previous_run_ids(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d); state,live=failed_state()
+            write_state(root/(SHA+'.json'),state)
+            with patch('scripts.sfdt18_evidence_coordinator.main_sha',return_value=SHA), \
+                 patch('scripts.sfdt18_evidence_coordinator._live_states',return_value=live), \
+                 patch('scripts.sfdt18_evidence_coordinator.workflow_catalog',return_value=(777,[])), \
+                 patch('scripts.sfdt18_evidence_coordinator._latest_run_id',return_value=8000), \
+                 patch('scripts.sfdt18_evidence_coordinator._wait_new_run',return_value=9000), \
+                 patch('scripts.sfdt18_evidence_coordinator.gh') as mockgh:
+                recover(state_dir=root)
+            state=read_state(root/(SHA+'.json'),SHA)
+            self.assertEqual(state['phase'],'RECOVERY_PENDING')
+            self.assertEqual(state['runs']['expanded_shadow'],IDS['expanded_shadow'])
+            self.assertEqual(state['recovery']['candidate_id'],9000)
+            self.assertIn('expected_sha='+SHA,mockgh.call_args.args)
+
+    def test_adopt_fetches_attempt_scoped_jobs_and_updates_state(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d); state,live=failed_state();state['phase']='RECOVERY_PENDING'
+            state['recovery']={'lane':'expanded_shadow','prior_id':IDS['expanded_shadow'],
+                                'cursor':8000,'candidate_id':9000}
+            write_state(root/(SHA+'.json'),state)
+            candidate=run('expanded_shadow');candidate['id']=9000
+            def fake_api(endpoint):
+                if endpoint.endswith('/runs/9000'):
+                    return candidate
+                if endpoint.endswith('/attempts/1/jobs?per_page=100'):
+                    return {'total_count':4,'jobs':[{'name':'native-'+name,'status':'completed','conclusion':'success'}
+                       for name in ('phone-debug','tv-debug','web-pytest','quality-source')]}
+                if endpoint.endswith('/artifacts?per_page=100'):
+                    return {'total_count':4,'artifacts':recovery_artifacts(9000)}
+                raise AssertionError(endpoint)
+            with patch('scripts.sfdt18_evidence_coordinator.main_sha',return_value=SHA), \
+                 patch('scripts.sfdt18_evidence_coordinator._live_states',return_value=live), \
+                 patch('scripts.sfdt18_evidence_coordinator.gh_json',side_effect=fake_api):
+                adopt(state_dir=root)
+            now=read_state(root/(SHA+'.json'),SHA)
+            self.assertEqual(now['phase'],'READY')
+            self.assertEqual(now['runs']['expanded_shadow'],9000)
+            self.assertEqual(now['runs']['native_deep'],IDS['native_deep'])
 
 if __name__ == '__main__':
     unittest.main()
