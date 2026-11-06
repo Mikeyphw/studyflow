@@ -100,6 +100,40 @@ jobs:
             --node-version 22 \
             --python-version 3.13 \
             --receipt "$RUNNER_TEMP/sfdt12/node-build.json"
+      # A failed RM21 job must expose its exact post-build tracked differences.
+      # This step does not turn failure into success or rewrite source/outputs.
+      - name: Capture exact tracked-output drift on native failure
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sfdt12"
+          git diff --name-status > "$RUNNER_TEMP/sfdt12/tracked-drift-name-status.txt"
+          git status --porcelain --untracked-files=normal > "$RUNNER_TEMP/sfdt12/worktree-after-native.txt"
+          python - <<'PYCODE'
+          import hashlib,json,os,pathlib,shutil,subprocess
+          root=pathlib.Path.cwd()
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'sfdt12'
+          names=subprocess.check_output(['git','diff','--name-only','-z']).split(b'\0')
+          rows=[]
+          for encoded in names:
+              if not encoded:continue
+              name=encoded.decode('utf-8')
+              source=root/name
+              row={'path':name,'tracked_file_changed':True,
+                   'generated_output_scope':name.startswith('web/dist/')}
+              if source.is_file() and not source.is_symlink():
+                  data=source.read_bytes()
+                  row.update(sha256=hashlib.sha256(data).hexdigest(),bytes=len(data))
+                  if name.startswith('web/dist/') and len(data)<=16*1024*1024:
+                      dest=out/'generated-drift'/name
+                      dest.parent.mkdir(parents=True,exist_ok=True)
+                      dest.write_bytes(data)
+              rows.append(row)
+          (out/'tracked-drift.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          print('SFDT12_RM21_TRACKED_DRIFT:',json.dumps(rows,sort_keys=True))
+          if not rows:print('SFDT12_RM21_NO_TRACKED_DRIFT_VISIBLE')
+          PYCODE
       - name: Independently verify emitted file hashes and non-release truth
         shell: bash
         run: |

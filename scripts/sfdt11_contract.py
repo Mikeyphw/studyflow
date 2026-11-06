@@ -6,7 +6,7 @@ Does not build, sign, mutate branch protections, approve cutover, or run Gradle.
 from __future__ import annotations
 
 import argparse
-from hashlib import sha256
+from hashlib import sha1, sha256
 from pathlib import Path
 import re
 import subprocess
@@ -30,7 +30,7 @@ FROZEN_BLOBS = {
     'scripts/sfdt07_compare_runs.py': '023685b0897f2d58d82d90ab3222b02c0ae4cd58',
     'scripts/sfdt08_compare_coverage.py': '0dc9d61e9afc16668f544c9d2fec8b6607deb82b',
     'scripts/sfdt10_r2_compare.py': 'b58218cf0699512301125d216b5fd462129bf7c1',
-    'web/package.json': '6ec3e0f9ff815d3649f48f3eb090d9fb97012718',
+    'web/package.json': 'e05e557473c267a52dd671a074b815b30512349f',
     'web/package-lock.json': '19787979b8fcdba298099211802c60f72e4d16de',
     'settings.gradle.kts': 'ccd4b06305ca376c35772df1be70ff181d88c81a',
     'desktopApp/build.gradle.kts': '2e6d371939f715d3636fb4d9cb5f50e05d0fd8c4',
@@ -60,6 +60,20 @@ def git_blob(path: Path, *, repo: Path = ROOT) -> str:
     need(proc.returncode == 0 and re.fullmatch('[0-9a-f]{40}\\n?', proc.stdout) is not None,
          'Cannot hash source member: ' + str(path))
     return proc.stdout.strip()
+
+
+# SFDT12-R2 explicit exception: one exact, reviewed npm package manager pin.
+# Reconstruct the old Git blob and compare with the original SFDT11 frozen source.
+# This is not an allowlist for any other package/script/release policy drift.
+def verify_web_manager_amendment(amended: bytes) -> None:
+    line = b'  "packageManager": "npm@10.9.4",\n'
+    need(amended.count(line) == 1, 'Missing/duplicate reviewed npm pin')
+    need(b'  "private": true,\n' + line in amended,
+         'Reviewed npm pin moved from approved location')
+    previous = amended.replace(line, b'', 1)
+    blob = sha1(b'blob ' + str(len(previous)).encode('ascii') + b'\x00' + previous).hexdigest()
+    need(blob == '6ec3e0f9ff815d3649f48f3eb090d9fb97012718',
+         'Npm pin amendment includes changes beyond the reviewed insertion')
 
 
 def verify_frozen(observed: dict[str, str], *, expected: dict[str,str] = FROZEN_BLOBS) -> None:
@@ -121,6 +135,7 @@ def source_check(root: Path = ROOT) -> dict:
         need(path.is_file() and not path.is_symlink(), 'Missing/symlinked frozen source: ' + rel)
         observed[rel] = git_blob(path, repo=root)
     verify_frozen(observed)
+    verify_web_manager_amendment((root / 'web/package.json').read_bytes())
     for rel in (*NEW_WORKFLOWS, *NEW_SCRIPTS):
         path = root / rel
         need(path.is_file() and not path.is_symlink(), 'Missing/symlinked SFDT11 source: ' + rel)
