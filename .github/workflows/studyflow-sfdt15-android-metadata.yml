@@ -67,7 +67,27 @@ jobs:
           sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0' 'ndk;29.0.14206865'
       - name: Gradle 9.7.1 hosted setup
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+      - name: Select source-bound Android metadata verification mode
+        id: metadata_mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B - <<'PY' >> "$GITHUB_OUTPUT"
+          from pathlib import Path
+          from scripts.sfdt15_android_metadata import TARGET, metadata
+          entries, _ = metadata(Path('gradle/verification-metadata.xml'))
+          print('mode=' + ('verified' if TARGET in entries else 'candidate'))
+          PY
+      - name: Verify already-tracked Android SHA-256 dependencies on hosted Gradle
+        if: steps.metadata_mode.outputs.mode == 'verified'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash ./gradlew --no-daemon --max-workers=2 \
+            :app:assembleDebug :app:testReleaseUnitTest :app:lintDebug \
+            :app-tv:assembleDebug :app-tv:testDebugUnitTest :app-tv:lintDebug
       - name: Generate REAL additional Gradle SHA-256 metadata through full Android graph
+        if: steps.metadata_mode.outputs.mode == 'candidate'
         shell: bash
         run: |
           set -euo pipefail
@@ -75,18 +95,51 @@ jobs:
             --write-verification-metadata sha256 \
             :app:assembleDebug :app:testReleaseUnitTest :app:lintDebug \
             :app-tv:assembleDebug :app-tv:testDebugUnitTest :app-tv:lintDebug
-      - name: Verify all old checksums remain identical and missing AAPT2 POM was resolved
+      - name: Verify additive metadata candidate or immutable already-verified no-op
         shell: bash
+        env:
+          METADATA_MODE: ${{ steps.metadata_mode.outputs.mode }}
         run: |
           set -euo pipefail
-          python3 -B scripts/sfdt15_android_metadata.py \
-            --base "$RUNNER_TEMP/sfdt15/verification-metadata.ORIGINAL.xml" \
-            --candidate gradle/verification-metadata.xml \
-            --out "$RUNNER_TEMP/sfdt15/metadata-additions.json"
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
-          test "$(git status --porcelain --untracked-files=normal)" = ' M gradle/verification-metadata.xml'
+          if [[ "$METADATA_MODE" == verified ]]; then
+            cmp "$RUNNER_TEMP/sfdt15/verification-metadata.ORIGINAL.xml" gradle/verification-metadata.xml
+            test -z "$(git status --porcelain --untracked-files=normal)"
+            python3 -B - <<'PY'
+          import json
+          import os
+          from hashlib import sha256
+          from pathlib import Path
+          from scripts.sfdt15_android_metadata import TARGET, metadata, need
+          root = Path(os.environ['RUNNER_TEMP'])/'sfdt15'
+          entries, original = metadata(root/'verification-metadata.ORIGINAL.xml')
+          generated, after = metadata(Path('gradle/verification-metadata.xml'))
+          need(TARGET in entries, 'verified mode selected without AAPT2 POM')
+          need(entries == generated and original == after, 'preverified metadata changed')
+          receipt = {
+              'kind':'studyflow.sfdt15.hosted-android-dependency-metadata',
+              'status':'ALREADY_VERIFIED_SHA256_NOOP_NOT_RELEASE',
+              'old_bytes_sha256':sha256(original).hexdigest(),
+              'new_bytes_sha256':sha256(after).hexdigest(),
+              'old_count':len(entries),'new_count':len(generated),
+              'added_count':0,'aapt2_pom_sha256':entries[TARGET],
+              'additions':[],'release_qualified':False,
+          }
+          (root/'metadata-additions.json').write_text(json.dumps(receipt,sort_keys=True,indent=2)+chr(10))
+          PY
+            printf '%s\n' 'SFDT15_ANDROID_METADATA_ALREADY_VERIFIED_NOOP_PASS'
+          elif [[ "$METADATA_MODE" == candidate ]]; then
+            python3 -B scripts/sfdt15_android_metadata.py \
+              --base "$RUNNER_TEMP/sfdt15/verification-metadata.ORIGINAL.xml" \
+              --candidate gradle/verification-metadata.xml \
+              --out "$RUNNER_TEMP/sfdt15/metadata-additions.json"
+            test "$(git status --porcelain --untracked-files=normal)" = ' M gradle/verification-metadata.xml'
+            printf '%s\n' 'SFDT15_ANDROID_HOSTED_METADATA_SHA256_ADDITIVE_PASS'
+          else
+            printf '%s\n' "SFDT15_REFUSED: unknown metadata mode" >&2
+            exit 2
+          fi
           cp gradle/verification-metadata.xml "$RUNNER_TEMP/sfdt15/verification-metadata.CANDIDATE.xml"
-          printf '%s\n' 'SFDT15_ANDROID_HOSTED_METADATA_SHA256_ADDITIVE_PASS'
       - name: Source-bound checksums for candidate evidence
         if: always()
         shell: bash
