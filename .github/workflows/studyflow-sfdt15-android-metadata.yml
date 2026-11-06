@@ -1,0 +1,157 @@
+# A hosted, read-only candidate only: never commit or relax dependency verification.
+name: StudyFlow SFDT15 Android hosted metadata completion
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/studyflow-sfdt15-android-metadata.yml'
+      - 'scripts/sfdt15_android_metadata.py'
+      - 'tests/test_sfdt15_android_metadata.py'
+      - 'web/src/state.ts'
+      - 'web/runtime/state.js'
+      - 'web/dist/runtime/state.js'
+      - 'web/tests/test_sfdt15_cleanup_preview_clock.py'
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact StudyFlow 40-hex commit SHA being evaluated
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: sfdt15-android-metadata-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  generate-android-metadata:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || inputs.expected_sha }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Checkout exact immutable consumer SHA
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || inputs.expected_sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Check exact source identity and zero checkout drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          if test "$GITHUB_EVENT_NAME" = workflow_dispatch; then
+            test "$CANDIDATE_SHA" = "$GITHUB_SHA"
+          fi
+          git ls-files --error-unmatch -- gradle/verification-metadata.xml
+          test ! -L gradle/verification-metadata.xml
+          mkdir -p "$RUNNER_TEMP/sfdt15"
+          git show HEAD:gradle/verification-metadata.xml > "$RUNNER_TEMP/sfdt15/verification-metadata.ORIGINAL.xml"
+          printf '%s\n' "$CANDIDATE_SHA" > "$RUNNER_TEMP/sfdt15/studyflow-sha.txt"
+          git rev-parse HEAD^{tree} > "$RUNNER_TEMP/sfdt15/studyflow-tree.txt"
+          python3 -B tests/test_sfdt15_android_metadata.py
+      - name: Set up JDK 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up hosted Android SDK
+        uses: android-actions/setup-android@v4
+      - name: Install exact Android SDK / NDK used by StudyFlow CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0' 'ndk;29.0.14206865'
+      - name: Gradle 9.7.1 hosted setup
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+      - name: Select source-bound Android metadata verification mode
+        id: metadata_mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B - <<'PY' >> "$GITHUB_OUTPUT"
+          from pathlib import Path
+          from scripts.sfdt15_android_metadata import TARGET, metadata
+          entries, _ = metadata(Path('gradle/verification-metadata.xml'))
+          print('mode=' + ('verified' if TARGET in entries else 'candidate'))
+          PY
+      - name: Verify already-tracked Android SHA-256 dependencies on hosted Gradle
+        if: steps.metadata_mode.outputs.mode == 'verified'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash ./gradlew --no-daemon --max-workers=2 \
+            :app:assembleDebug :app:testReleaseUnitTest :app:lintDebug \
+            :app-tv:assembleDebug :app-tv:testDebugUnitTest :app-tv:lintDebug
+      - name: Generate REAL additional Gradle SHA-256 metadata through full Android graph
+        if: steps.metadata_mode.outputs.mode == 'candidate'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash ./gradlew --no-daemon --max-workers=2 \
+            --write-verification-metadata sha256 \
+            :app:assembleDebug :app:testReleaseUnitTest :app:lintDebug \
+            :app-tv:assembleDebug :app-tv:testDebugUnitTest :app-tv:lintDebug
+      - name: Verify additive metadata candidate or immutable already-verified no-op
+        shell: bash
+        env:
+          METADATA_MODE: ${{ steps.metadata_mode.outputs.mode }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          if [[ "$METADATA_MODE" == verified ]]; then
+            cmp "$RUNNER_TEMP/sfdt15/verification-metadata.ORIGINAL.xml" gradle/verification-metadata.xml
+            test -z "$(git status --porcelain --untracked-files=normal)"
+            python3 -B - <<'PY'
+          import json
+          import os
+          from hashlib import sha256
+          from pathlib import Path
+          from scripts.sfdt15_android_metadata import TARGET, metadata, need
+          root = Path(os.environ['RUNNER_TEMP'])/'sfdt15'
+          entries, original = metadata(root/'verification-metadata.ORIGINAL.xml')
+          generated, after = metadata(Path('gradle/verification-metadata.xml'))
+          need(TARGET in entries, 'verified mode selected without AAPT2 POM')
+          need(entries == generated and original == after, 'preverified metadata changed')
+          receipt = {
+              'kind':'studyflow.sfdt15.hosted-android-dependency-metadata',
+              'status':'ALREADY_VERIFIED_SHA256_NOOP_NOT_RELEASE',
+              'old_bytes_sha256':sha256(original).hexdigest(),
+              'new_bytes_sha256':sha256(after).hexdigest(),
+              'old_count':len(entries),'new_count':len(generated),
+              'added_count':0,'aapt2_pom_sha256':entries[TARGET],
+              'additions':[],'release_qualified':False,
+          }
+          (root/'metadata-additions.json').write_text(json.dumps(receipt,sort_keys=True,indent=2)+chr(10))
+          PY
+            printf '%s\n' 'SFDT15_ANDROID_METADATA_ALREADY_VERIFIED_NOOP_PASS'
+          elif [[ "$METADATA_MODE" == candidate ]]; then
+            python3 -B scripts/sfdt15_android_metadata.py \
+              --base "$RUNNER_TEMP/sfdt15/verification-metadata.ORIGINAL.xml" \
+              --candidate gradle/verification-metadata.xml \
+              --out "$RUNNER_TEMP/sfdt15/metadata-additions.json"
+            test "$(git status --porcelain --untracked-files=normal)" = ' M gradle/verification-metadata.xml'
+            printf '%s\n' 'SFDT15_ANDROID_HOSTED_METADATA_SHA256_ADDITIVE_PASS'
+          else
+            printf '%s\n' "SFDT15_REFUSED: unknown metadata mode" >&2
+            exit 2
+          fi
+          cp gradle/verification-metadata.xml "$RUNNER_TEMP/sfdt15/verification-metadata.CANDIDATE.xml"
+      - name: Source-bound checksums for candidate evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sfdt15"
+          (cd "$RUNNER_TEMP/sfdt15" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+      - name: Upload nonrelease metadata candidate
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: studyflow-sfdt15-android-metadata-candidate
+          path: ${{ runner.temp }}/sfdt15/
+          if-no-files-found: warn
+          retention-days: 14

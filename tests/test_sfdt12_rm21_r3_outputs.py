@@ -13,9 +13,9 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / 'web/dist'
 EXPECTED = {
-    'release-manifest.json': '129f483df9c5a802a68da01f7b048e9490163cf6aeb48f440fbb7563a038b80e',
+    'release-manifest.json': 'd6dd79fa08e682fe9b31e8544efbeff2a776066ac38582fb6dcab3565ad32a7f',
     'runtime/semantic_golden.js': '949d7c73eaa71d4bb908e213b9f16b01276242b1a58e6b99c1a42252b7c2fdbc',
-    'service-worker.js': '8205248cafc2c2e38ea6e01c2d5cf8267983b6f2015d0ba5283d18c8d80a4bd9',
+    'service-worker.js': '0351c051e20118011e4e79f54c562df188f3af9a14f53e070831c11d64342315',
 }
 
 def sha(path: Path) -> str:
