@@ -2,6 +2,7 @@
   "name": "studyflow-local-web",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@10.9.4",
   "description": "Mobile-first, self-contained StudyFlow Local web application.",
   "scripts": {
     "build": "npm run ov30r2:proper-validation-seal && npm run ov30:target-seal && python3 scripts/validate_web.py --all && node scripts/compile_runtime.mjs && node scripts/build_dist.mjs",

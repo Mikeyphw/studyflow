@@ -82,7 +82,9 @@ class SourceTests(unittest.TestCase):
             root=Path(d)
             for p in c.FROZEN_BLOBS:
                 f=root/p;f.parent.mkdir(parents=True,exist_ok=True)
-                if p=='.devtool.toml':
+                if p=='web/package.json':
+                    f.write_bytes((c.ROOT/p).read_bytes())
+                elif p=='.devtool.toml':
                     f.write_text('''[targets.studyflow_android.jobs.sfdt08-web-full]\ncommand=["python3","scripts/sfdt08_hosted_bridge.py","web-full"]\n[targets.studyflow_android.jobs.sfdt08-web-full.metadata]\nci_toolchain="python-shell"\n[targets.studyflow_android.jobs.sfdt08-phone-release-jvm]\ngradle_tasks=[":app:testReleaseUnitTest"]\n[targets.studyflow_android.jobs.sfdt08-phone-release-jvm.metadata]\nci_toolchain="android-gradle"\n[targets.studyflow_desktop.jobs.sfdt08-desktop-fast]\ncommand=["python3","scripts/sfdt08_hosted_bridge.py","desktop-fast"]\n[targets.studyflow_desktop.jobs.sfdt08-desktop-fast.metadata]\nci_toolchain="python-shell"\n''')
                 else: f.write_text(c.DEVTOOL if p=='.github/workflows/studyflow-devtool-sfdt10-debug-shadow.yml' else 'tracked fixture\n')
             for p in (*c.NEW_WORKFLOWS,*c.NEW_SCRIPTS):
