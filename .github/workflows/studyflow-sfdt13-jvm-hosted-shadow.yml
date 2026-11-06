@@ -1,0 +1,135 @@
+# SFDT13: real GitHub-hosted JVM build and source-bound byte evidence.
+# This is NOT RM21 JVM consumer acceptance or release authorization.
+name: StudyFlow SFDT13 JVM hosted source and artifact shadow
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/studyflow-sfdt13-jvm-hosted-shadow.yml'
+      - 'scripts/sfdt13_jvm_shadow.py'
+      - 'tests/test_sfdt13_jvm_shadow.py'
+      - 'docs/actions/SFDT13_JVM_NATIVE_SHADOW.md'
+      - 'core/model/**'
+      - 'build-logic/**'
+      - 'settings.gradle.kts'
+      - 'gradle/**'
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed 40-hex StudyFlow main source SHA
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: sfdt13-jvm-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native-jvm-shadow:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || inputs.expected_sha }}
+      DEVTOOL_SHA: bee6e0b7e49aaaa0c56f755fd5be434a27c52b6c
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Exact-source, read-only StudyFlow checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || inputs.expected_sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify source identity before running any consumer code
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          if test "$GITHUB_EVENT_NAME" = workflow_dispatch; then
+            test "$CANDIDATE_SHA" = "$GITHUB_SHA"
+          fi
+          mkdir -p "$RUNNER_TEMP/sfdt13"
+          printf '%s\n' "$CANDIDATE_SHA" > "$RUNNER_TEMP/sfdt13/studyflow-sha.txt"
+      - name: Python 3.13
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+      - name: Java 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Hosted Gradle 9.7.1 wrapper cache
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+      - name: Source-only JVM policy regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B scripts/sfdt13_jvm_shadow.py --source-check
+          python -B tests/test_sfdt13_jvm_shadow.py
+          python -B scripts/sfdt11_contract.py --source-check
+          python -B tests/test_sfdt12_rm21_r3_outputs.py
+          test "$(java -version 2>&1 | sed -n '1p' | grep -c '21')" -ge 1
+      - name: Obtain independently pinned Devtool RM12/JAR verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/Mikeyphw/devtool.git "$RUNNER_TEMP/sfdt13-devtool"
+          git -C "$RUNNER_TEMP/sfdt13-devtool" checkout --detach "$DEVTOOL_SHA"
+          test "$(git -C "$RUNNER_TEMP/sfdt13-devtool" rev-parse HEAD)" = "$DEVTOOL_SHA"
+          printf '%s\n' "$DEVTOOL_SHA" > "$RUNNER_TEMP/sfdt13/devtool-sha.txt"
+      - name: Observe RM12 reviewed source admission without bypassing metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$RUNNER_TEMP/sfdt13-devtool" \
+            python -B scripts/sfdt13_jvm_shadow.py --admission \
+            --out "$RUNNER_TEMP/sfdt13/rm12-source-admission.json"
+      - name: Real GitHub-hosted Gradle :core:model JAR build
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash ./gradlew --no-daemon --max-workers=2 :core:model:jar
+      - name: Verify actual JVM class archive and preserved checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$RUNNER_TEMP/sfdt13-devtool" \
+            python -B scripts/sfdt13_jvm_shadow.py --candidate \
+            --out "$RUNNER_TEMP/sfdt13/jvm-native-candidate.json" \
+            --jar-copy "$RUNNER_TEMP/sfdt13/core-model.jar"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+      - name: Generate dependency-verification metadata candidate on GitHub only
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Generate from actual hosted resolution. Never fabricate metadata or
+          # commit it automatically; this candidate requires source review.
+          test ! -e gradle/verification-metadata.xml
+          bash ./gradlew --no-daemon --max-workers=2 \
+            --write-verification-metadata sha256 :core:model:jar
+          python -B scripts/sfdt13_jvm_shadow.py \
+            --verify-metadata gradle/verification-metadata.xml \
+            > "$RUNNER_TEMP/sfdt13/metadata-candidate-review.json"
+          cp gradle/verification-metadata.xml "$RUNNER_TEMP/sfdt13/verification-metadata.CANDIDATE.xml"
+          test -z "$(git status --porcelain --untracked-files=no)"
+          echo 'SFDT13_JVM_METADATA_CANDIDATE_ONLY_NO_RM21_CUTOVER'
+      - name: Publish source-bound nonrelease JAR/metadata evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sfdt13"
+          (
+            cd "$RUNNER_TEMP/sfdt13"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+      - name: Upload JVM proof and metadata candidate even if blocked
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: studyflow-sfdt13-jvm-native-nonrelease
+          path: ${{ runner.temp }}/sfdt13/
+          if-no-files-found: warn
+          retention-days: 14
