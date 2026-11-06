@@ -1,0 +1,111 @@
+# SFDT17: optional, non-authoritative artifact-byte inventory. Does not replace CI.
+name: StudyFlow SFDT17 hosted archive and coverage evidence
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/studyflow-sfdt17-hosted-equivalence.yml'
+      - 'scripts/sfdt17_hosted_equivalence.py'
+      - 'tests/test_sfdt17_hosted_equivalence.py'
+      - 'docs/actions/SFDT17_HOSTED_EQUIVALENCE.md'
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: 'Exact 40-hex current main commit SHA'
+        type: string
+        required: true
+      expected_identities_json:
+        description: 'Externally reviewed SFDT16 workflow ID/path/attempt JSON'
+        type: string
+        required: true
+      legacy_run:
+        description: 'Legacy CI run ID at exact SHA'
+        type: string
+        required: true
+      source_shadow_run:
+        description: 'SFDT06 source shadow run ID at exact SHA'
+        type: string
+        required: true
+      expanded_shadow_run:
+        description: 'SFDT07 expanded debug shadow run ID at exact SHA'
+        type: string
+        required: true
+      native_fast_run:
+        description: 'SFDT08 native fast run ID at exact SHA'
+        type: string
+        required: true
+      native_deep_run:
+        description: 'SFDT08 native deep run ID at exact SHA'
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: studyflow-sfdt17-evidence-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source-tests:
+    name: SFDT17 local-only regression on immutable source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify checkout identity and run source-only negative tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+          python3 -B tests/test_sfdt17_hosted_equivalence.py
+          python3 -B scripts/sfdt17_hosted_equivalence.py --help > /dev/null
+  hosted-byte-inventory:
+    name: SFDT17 exact-SHA five-lane ZIP bytes (never cutover approval)
+    if: github.event_name == 'workflow_dispatch'
+    needs: source-tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      EXPECTED_IDENTITIES_JSON: ${{ inputs.expected_identities_json }}
+      LEGACY_ID: ${{ inputs.legacy_run }}
+      SOURCE_SHADOW_ID: ${{ inputs.source_shadow_run }}
+      EXPANDED_SHADOW_ID: ${{ inputs.expanded_shadow_run }}
+      NATIVE_FAST_ID: ${{ inputs.native_fast_run }}
+      NATIVE_DEEP_ID: ${{ inputs.native_deep_run }}
+      GITHUB_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Require exact main source and zero pre-run checkout drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/main
+          [[ "$EXPECTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+      - name: Read five exact attempts and independently verify every GitHub artifact ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt17_hosted_equivalence.py \
+            --repo "$GITHUB_REPOSITORY" --expected-sha "$EXPECTED_SHA" \
+            --identities-json "$EXPECTED_IDENTITIES_JSON" \
+            --legacy "$LEGACY_ID" --source-shadow "$SOURCE_SHADOW_ID" \
+            --expanded-shadow "$EXPANDED_SHADOW_ID" \
+            --native-fast "$NATIVE_FAST_ID" --native-deep "$NATIVE_DEEP_ID" \
+            --output "$RUNNER_TEMP/sfdt17-hosted-evidence.json"
+      - name: Upload nonrelease verification result (including refusal when available)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sfdt17-hosted-byte-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sfdt17-hosted-evidence.json
+          if-no-files-found: warn
+          retention-days: 14
