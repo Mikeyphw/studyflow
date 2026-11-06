@@ -1343,7 +1343,10 @@ function createStudyStore({ repository, initialStateFactory = domain_js_1.create
         applyContentCleanupPreview(preview) {
             if (!preview || preview.baseRevision !== state.revision)
                 throw new TypeError("Cleanup preview is stale; preview again before applying");
-            const canonical = (0, intelligence_js_1.buildContentCleanupPreview)(state);
+            const reviewedAt = new Date(preview.generatedAt);
+            if (!Number.isFinite(reviewedAt.getTime()))
+                throw new TypeError("Cleanup preview timestamp invalid");
+            const canonical = (0, intelligence_js_1.buildContentCleanupPreview)(state, reviewedAt);
             if (JSON.stringify(canonical.summary) !== JSON.stringify(preview.summary))
                 throw new TypeError("Cleanup preview changed; preview again before applying");
             throw new TypeError("Smart Content Cleanup is review-only: inspect each preview action and use the canonical content surface for any confirmed change");
