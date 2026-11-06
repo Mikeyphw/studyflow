@@ -39,7 +39,7 @@ def fixture():
             "run": {"id": IDS[lane], "head_sha": SHA, "status": "completed",
                     "conclusion": "success", "run_attempt": 1, "name": lane,
                     "workflow_id": WIDS[lane],
-                    "path": f'{REPO}/.github/workflows/{PATHS[lane]}@refs/heads/main',
+                    "path": ".github/workflows/" + PATHS[lane],
                     "head_branch": "main", "repository": {"full_name": REPO},
                     "event": "push" if lane == "legacy" else "workflow_dispatch"},
             "jobs": jobs,
@@ -120,14 +120,25 @@ class SFDT16R2Tests(unittest.TestCase):
             check(f)
 
     def test_wrong_workflow_path_refused(self):
-        f = fixture(); f["native_fast"]["run"]["path"] = f"{REPO}/.github/workflows/evil.yml@refs/heads/main"
-        with self.assertRaisesRegex(CutoverRefused, "workflow path/ref mismatch"):
+        f = fixture(); f["native_fast"]["run"]["path"] = ".github/workflows/evil.yml"
+        with self.assertRaisesRegex(CutoverRefused, "workflow path mismatch"):
             check(f)
 
-    def test_wrong_workflow_ref_refused(self):
-        f = fixture(); f["native_deep"]["run"]["path"] = f"{REPO}/.github/workflows/native-sfdt08.yml@refs/heads/develop"
-        with self.assertRaisesRegex(CutoverRefused, "workflow path/ref mismatch"):
+    def test_wrong_branch_ref_refused_separately_from_workflow_path(self):
+        f = fixture(); f["native_deep"]["run"]["head_branch"] = "develop"
+        with self.assertRaisesRegex(CutoverRefused, "run is not on main"):
             check(f)
+
+    def test_legacy_qualified_path_is_not_actual_github_rest_schema(self):
+        f = fixture()
+        f["legacy"]["run"]["path"] = f"{REPO}/.github/workflows/studyflow-ci.yml@refs/heads/main"
+        with self.assertRaisesRegex(CutoverRefused, "workflow path mismatch"):
+            check(f)
+
+    def test_github_rest_workflow_run_path_is_relative(self):
+        f = fixture()
+        self.assertEqual(f["legacy"]["run"]["path"], ".github/workflows/studyflow-ci.yml")
+        self.assertFalse(check(f)["cutover_authorized"])
 
     def test_wrong_attempt_refused(self):
         f = fixture(); f["source_shadow"]["run"]["run_attempt"] = 2
