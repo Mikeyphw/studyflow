@@ -49,7 +49,7 @@ function semanticScheduleRebalance(input) {
         return { changed: 1, status: "PLANNED", scheduledStartEpochMillis: null };
     return { changed: 0, status: null, scheduledStartEpochMillis: null };
 }
-function semanticStudyTime(input) { return { netMinutes: Math.max(0, input.grossDurationSeconds - input.pauseDurationSeconds) / 60 }; }
+function semanticStudyTime(input) { return { netMinutes: Math.max(0, input.grossDurationSeconds) / 60 }; }
 function semanticGoal(input) { return { percent: input.targetValue <= 0 ? 0 : Math.max(0, Math.min(100, Math.trunc(input.currentValue / input.targetValue * 100))) }; }
 function semanticError(input) {
     const conceptual = new Set(["CONTENT_GAP", "FORGOTTEN_CONTENT", "CONCEPT_CONFUSION"]);

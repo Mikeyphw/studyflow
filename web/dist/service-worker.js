@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_VERSION = "studyflow-local-1.0.0-0a0fd00126a94887";
+const CACHE_VERSION = "studyflow-local-1.0.0-843e378a7cdf0560";
 const APP_SHELL = [
   "./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest",
   "./runtime/main.js", "./runtime/domain.js", "./runtime/content_import.js",

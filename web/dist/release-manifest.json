@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "channel": "parity-closure",
   "runtimeDependency": "self-contained",
-  "cacheVersion": "studyflow-local-1.0.0-0a0fd00126a94887",
+  "cacheVersion": "studyflow-local-1.0.0-843e378a7cdf0560",
   "files": [
     {
       "path": "THIRD_PARTY_NOTICES.txt",
@@ -192,8 +192,8 @@
     },
     {
       "path": "runtime/semantic_golden.js",
-      "sha256": "a35ede736798dfaa48c4a73c3b81c3023a08ecc58dec7aa374c274a6889312b0",
-      "bytes": 4736
+      "sha256": "949d7c73eaa71d4bb908e213b9f16b01276242b1a58e6b99c1a42252b7c2fdbc",
+      "bytes": 4707
     },
     {
       "path": "runtime/sflp_link.js",
@@ -282,7 +282,7 @@
     },
     {
       "path": "service-worker.js",
-      "sha256": "3467e389c5c61e253b7ea1d48c6a42c337fcf8b15ed152b415b5c1894fe1aa14",
+      "sha256": "8205248cafc2c2e38ea6e01c2d5cf8267983b6f2015d0ba5283d18c8d80a4bd9",
       "bytes": 9567
     },
     {
