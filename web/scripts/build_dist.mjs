@@ -33,4 +33,11 @@ for(const [name,version] of Object.entries(expected)){const lic=join(sourcePacka
 writeFileSync(join(dist,"THIRD_PARTY_NOTICES.txt"),notices);
 const manifestFiles=files(dist).filter(p=>!p.endsWith("release-manifest.json")).map(p=>({path:relative(dist,p).replaceAll("\\","/"),sha256:sha(p),bytes:statSync(p).size}));
 writeFileSync(join(dist,"release-manifest.json"),JSON.stringify({product:"StudyFlow Local",version:pkg.version,channel:"parity-closure",runtimeDependency:"self-contained",cacheVersion,files:manifestFiles},null,2)+"\n");
+// SFDT12: RM11's separate non-release receipt manifest. Leave the established
+// release-manifest.json and its channel/signing semantics untouched.
+const rm21OwnedFiles=Object.fromEntries([
+  ...manifestFiles.map(entry=>[entry.path,entry.sha256]),
+  ["release-manifest.json",sha(join(dist,"release-manifest.json"))],
+]);
+writeFileSync(join(dist,"manifest.json"),JSON.stringify({files:rm21OwnedFiles},null,2)+"\n");
 console.log(`StudyFlow dist built: ${dist} (${manifestFiles.length+1} files)`);

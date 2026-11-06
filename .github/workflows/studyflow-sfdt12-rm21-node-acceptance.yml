@@ -1,0 +1,136 @@
+# STUDYFLOW_SFDT12_RM21_NODE: qualification-only, never release or authoritative CI.
+name: StudyFlow SFDT12 exact-source RM21 Node consumer acceptance
+on:
+  pull_request:
+    paths:
+      - web/package.json
+      - web/.npmrc
+      - web/scripts/build_dist.mjs
+      - tests/test_sfdt12_rm21_node_source.py
+      - .github/workflows/studyflow-sfdt12-rm21-node-acceptance.yml
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Reviewed, exact 40-character StudyFlow commit SHA
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: studyflow-sfdt12-rm21-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  independent-node:
+    # Only first-party branch PRs or explicit dispatches run source scripts.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || inputs.expected_sha }}
+      DEVTOOL_SHA: bee6e0b7e49aaaa0c56f755fd5be434a27c52b6c
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Checkout exact proposed StudyFlow consumer source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || inputs.expected_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Fail closed on unreviewed consumer SHA or dirty checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          if test "$GITHUB_EVENT_NAME" = workflow_dispatch; then
+            test "$CANDIDATE_SHA" = "$GITHUB_SHA"
+          fi
+          mkdir -p "$RUNNER_TEMP/sfdt12"
+          printf '%s\n' "$CANDIDATE_SHA" > "$RUNNER_TEMP/sfdt12/consumer-sha.txt"
+      - name: Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Pin Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          check-latest: false
+      - name: Pin exact npm 10.9.4, with no lifecycle scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global npm@10.9.4 --ignore-scripts --no-audit --no-fund
+          test "$(npm --version)" = '10.9.4'
+      - name: Install StudyFlow source test requirements and Devtool dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-deps --only-binary=:all: -r web/requirements-test.txt
+          python -m pip install 'setuptools>=75,<82' wheel 'coverage>=7,<9' 'cryptography>=43,<47'
+      - name: Acquire and pin merged upstream Devtool implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/Mikeyphw/devtool.git "$RUNNER_TEMP/devtool-source"
+          git -C "$RUNNER_TEMP/devtool-source" checkout --detach "$DEVTOOL_SHA"
+          test "$(git -C "$RUNNER_TEMP/devtool-source" rev-parse HEAD)" = "$DEVTOOL_SHA"
+          python -m pip install -e "$RUNNER_TEMP/devtool-source[textual]" pytest pexpect
+          printf '%s\n' "$DEVTOOL_SHA" > "$RUNNER_TEMP/sfdt12/devtool-sha.txt"
+      - name: Consumer source-only source-contract regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B tests/test_sfdt12_rm21_node_source.py -v
+          python -B scripts/verify_ov30_studyflow_web_target_seal.py
+          python -B scripts/verify_ov30r2_studyflow_web_proper_validation_seal.py
+          node --check web/scripts/build_dist.mjs
+      - name: Genuine external native npm build and RM11 byte receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$RUNNER_TEMP/devtool-source" \
+            python -m devtool.actions_rm21_hosted_native node-build \
+            --root . \
+            --consumer-sha "$CANDIDATE_SHA" \
+            --devtool-sha "$DEVTOOL_SHA" \
+            --external-repository Mikeyphw/studyflow \
+            --node-project web \
+            --node-version 22 \
+            --python-version 3.13 \
+            --receipt "$RUNNER_TEMP/sfdt12/node-build.json"
+      - name: Independently verify emitted file hashes and non-release truth
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os,pathlib
+          receipt=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'sfdt12/node-build.json').read_text())
+          assert receipt['kind']=='devtool.rm21.hosted-native'
+          assert receipt['result']=='PASS' and receipt['lane']=='node-build'
+          assert receipt['consumer_commit']==os.environ['CANDIDATE_SHA']
+          assert receipt['devtool_sha']==os.environ['DEVTOOL_SHA']
+          assert receipt['external_repository']=='Mikeyphw/studyflow'
+          assert receipt['external_consumer_verified'] and receipt['independent_consumer_qualified']
+          assert receipt['native_execution_completed'] and receipt['source_pinned']
+          for flag in ('release_qualified','signing_qualified','device_qualified'):
+              assert receipt[flag] is False
+          assert receipt['outputs']
+          for item in receipt['outputs']:
+              p=pathlib.Path('web')/item['path']
+              assert p.is_file() and not p.is_symlink()
+              data=p.read_bytes()
+              assert len(data)==item['size']
+              assert hashlib.sha256(data).hexdigest()==item['sha256']
+          print('SFDT12_INDEPENDENT_WEB_OUTPUT_BYTES_PASS')
+          PY
+          (cd "$RUNNER_TEMP/sfdt12" && sha256sum *.json *-sha.txt > SHA256SUMS)
+      - name: Upload non-release source-bound evidence even when failed
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: studyflow-sfdt12-rm21-node-candidate
+          path: ${{ runner.temp }}/sfdt12/
+          if-no-files-found: warn
+          retention-days: 14
