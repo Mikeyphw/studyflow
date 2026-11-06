@@ -13,6 +13,10 @@ on:
         description: 'Exact 40-character StudyFlow main commit SHA'
         type: string
         required: true
+      expected_identities_json:
+        description: 'Reviewed JSON: each lane workflow_id, workflow_path and exact run attempt'
+        type: string
+        required: true
       legacy_run:
         description: 'Legacy StudyFlow CI run at exact SHA'
         type: string
@@ -65,6 +69,7 @@ jobs:
     timeout-minutes: 15
     env:
       EXPECTED_SHA: ${{ inputs.expected_sha }}
+      EXPECTED_IDENTITIES_JSON: ${{ inputs.expected_identities_json }}
       LEGACY_ID: ${{ inputs.legacy_run }}
       SOURCE_SHADOW_ID: ${{ inputs.source_shadow_run }}
       EXPANDED_SHADOW_ID: ${{ inputs.expanded_shadow_run }}
@@ -92,6 +97,7 @@ jobs:
           set -euo pipefail
           python3 -B scripts/sfdt16_cutover_probe.py \
             --repo "$GITHUB_REPOSITORY" --expected-sha "$EXPECTED_SHA" \
+            --identities-json "$EXPECTED_IDENTITIES_JSON" \
             --legacy "$LEGACY_ID" --source-shadow "$SOURCE_SHADOW_ID" \
             --expanded-shadow "$EXPANDED_SHADOW_ID" \
             --native-fast "$NATIVE_FAST_ID" --native-deep "$NATIVE_DEEP_ID" \

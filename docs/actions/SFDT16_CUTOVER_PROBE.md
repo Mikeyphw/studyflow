@@ -25,3 +25,25 @@ It is deliberately *not* a byte-level artifact comparator: a successful SFDT16 r
 - Candidate, source, signing, release, and physical-device acceptance stay separate and explicitly nonpromoted.
 - Release, signing, and device flags are always false for this report.
 - A status `SAME_SHA_SHADOW_INVENTORY_PASS` means **inventory consistency, not coverage parity or cutover readiness**.
+
+## SFDT16-R2 source-identity and artifact-metadata correction
+
+The R2 probe now **requires** a separately reviewed `expected_identities_json` workflow-dispatch input, in addition to the five run IDs. Do not derive the expected identity from the same selected run *inside* the verifier; doing so would allow an unrelated successful workflow to impersonate a lane. Build the JSON after inspecting the canonical workflow definitions and the proposed runs in GitHub. Each of the five keys (`legacy`, `source_shadow`, `expanded_shadow`, `native_fast`, `native_deep`) has exactly three required fields: positive integer `workflow_id`, source-relative `workflow_path` (`.github/workflows/…yml`), and positive integer `attempt`. Example *shape only* (IDs below are fictitious and MUST NOT be dispatched as real expectations):
+
+```json
+{
+  "legacy": {"workflow_id": 101, "workflow_path": ".github/workflows/studyflow-ci.yml", "attempt": 1},
+  "source_shadow": {"workflow_id": 102, "workflow_path": ".github/workflows/source-shadow.yml", "attempt": 1},
+  "expanded_shadow": {"workflow_id": 103, "workflow_path": ".github/workflows/expanded-shadow.yml", "attempt": 1},
+  "native_fast": {"workflow_id": 104, "workflow_path": ".github/workflows/native.yml", "attempt": 1},
+  "native_deep": {"workflow_id": 104, "workflow_path": ".github/workflows/native.yml", "attempt": 1}
+}
+```
+
+Check each mapping in the GitHub Actions **run JSON** (`workflow_id`, `path`, `run_attempt`) and **workflow definition** (`.github/workflows/…`). SFDT08 fast/deep must share the same workflow definition but have distinct run IDs and their full distinct job matrices. This inventory validates each run's workflow ID, exact main-ref path, repository, main branch, event type, expected attempt and job counts. It requests the **jobs endpoint scoped to the explicit attempt**, not the unqualified latest-jobs endpoint. A wrong attempt, workflow identity, source SHA, incomplete lane, skipped required job or malformed artifact metadata refuses.
+
+Artifact IDs are unique across lanes and all enumerated artifact metadata must have a nonempty name, positive size, nonexpired status, valid `sha256:<64 lowercase hex>` digest, and matching producer run if supplied. **Important:** GitHub's run-level artifacts endpoint may include uploads from other attempts. R2 deliberately marks `artifact_attempt_provenance=NOT_VERIFIED` and `artifact_byte_parity=NOT_VERIFIED`; it does *not* claim that ZIP bytes or attempt-specific producer identity have been verified. Those are SFDT17 tasks. The manifest is an external human-reviewed assertion, not an authenticated independent source of truth.
+
+For main-only manual dispatch, supply `expected_sha`, `expected_identities_json` (compact JSON without newlines), and all five actual run IDs. If a run lacks required artifacts or has failed/incomplete jobs, the expected result is refusal; do not swap in an older SHA to make it green. Local source-only check: `python3 -B tests/test_sfdt16_cutover_probe.py`.
+
+**Cutover policy is unchanged:** authoritative CI stays enabled. No Gradle, signing, release, or hardware qualification is performed by SFDT16. A `SAME_SHA_SHADOW_INVENTORY_PASS` report cannot authorize CI replacement.
