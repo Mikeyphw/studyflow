@@ -29,6 +29,13 @@ SCREENS = ('today', 'plan', 'practice', 'progress')
 SHA40 = re.compile(r'[0-9a-f]{40}\Z')
 SHA256 = re.compile(r'[0-9a-f]{64}\Z')
 OUTCOME = 'PASS_HOSTED_REAL_MAINACTIVITY_UI'
+# These constants do not depend on user data, APK paths, raw ADB or stack traces.
+PHASES = (
+    'host_identity', 'emulator_connected', 'emulator_identity', 'fresh_install',
+    'apk_artifact_hashes', 'apk_signer_app', 'apk_signer_test',
+    'install_app', 'install_test', 'locate_installed_app',
+    'hash_installed_app', 'instrumentation', 'screenshots', 'complete',
+)
 
 class Refused(ValueError):
     pass
@@ -131,6 +138,22 @@ def artifact_paths(repo: Path) -> tuple[Path, Path]:
     return (repo / 'app/build/outputs/apk/debug/app-debug.apk',
             repo / 'app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk')
 
+def preflight_apks(source: str, run_id: str, attempt: str, repo: Path) -> dict:
+    """Hosted, read-only pre-AVD check; no APK installation or instrumentation."""
+    assert_host(source, run_id, attempt)
+    app, test = artifact_paths(repo)
+    app_info = file_sha256(app, low=1024)
+    test_info = file_sha256(test, low=1024)
+    app_cert = certificate_sha256(app)
+    test_cert = certificate_sha256(test)
+    need(SHA256.fullmatch(app_cert) is not None and SHA256.fullmatch(test_cert) is not None,
+         'Non-SHA256 APK signer')
+    return {'source_sha': source, 'run_id': run_id, 'attempt': attempt,
+            'app_sha256': app_info['sha256'], 'test_sha256': test_info['sha256'],
+            'app_signer_sha256': app_cert, 'test_signer_sha256': test_cert,
+            'status': 'SFDT21_PRE_AVD_APK_PREFLIGHT_PASS',
+            'emulator_ui_qualified': False, 'release_qualified': False}
+
 def run(output_dir: Path, source: str, run_id: str, attempt: str, repo: Path) -> bool:
     output_dir.mkdir(parents=True, exist_ok=True)
     receipt_path = output_dir / 'SFDT21_EVIDENCE.json'
@@ -146,31 +169,44 @@ def run(output_dir: Path, source: str, run_id: str, attempt: str, repo: Path) ->
     }
     for s in SCREENS:
         (output_dir / f'sfdt21-ui-{s}.png').unlink(missing_ok=True)
+    phase = 'host_identity'
     try:
         assert_host(source, run_id, attempt)
+        phase = 'emulator_connected'
         need(adb('get-state').strip() == b'device', 'Emulator device unavailable')
+        phase = 'emulator_identity'
         need(adb('shell', 'getprop', 'ro.kernel.qemu').strip() == b'1', 'Physical device refused')
         need(adb('shell', 'getprop', 'ro.build.version.sdk').strip() == b'36', 'Not API 36')
+        phase = 'fresh_install'
         need(not adb('shell', 'pm', 'path', PACKAGE).strip(), 'Previously installed app refused')
+        phase = 'apk_artifact_hashes'
         app, test = artifact_paths(repo)
         app_info = file_sha256(app, low=1024)
         test_info = file_sha256(test, low=1024)
+        phase = 'apk_signer_app'
         app_cert = certificate_sha256(app)
+        phase = 'apk_signer_test'
         test_cert = certificate_sha256(test)
+        phase = 'install_app'
         adb('install', '-r', '-t', str(app), timeout=120)
+        phase = 'install_test'
         adb('install', '-r', '-t', str(test), timeout=120)
+        phase = 'locate_installed_app'
         path_bytes = adb('shell', 'pm', 'path', PACKAGE).decode().replace('\r', '').strip()
         need(path_bytes.startswith('package:/data/app/') and path_bytes.endswith('/base.apk'),
              'Installed package path refused')
         installed_path = path_bytes.removeprefix('package:')
+        phase = 'hash_installed_app'
         installed = adb('shell', 'sha256sum', installed_path).decode().strip().split()[0]
         need(installed == app_info['sha256'], 'Installed APK bytes differ from built APK')
+        phase = 'instrumentation'
         p = subprocess.run(['adb', '-s', SERIAL, 'shell', 'am', 'instrument', '-w', '-r',
                             '-e', 'class', CLASS, RUNNER], capture_output=True,
                            timeout=720, check=False)
         summary = summarize(p.stdout.decode('utf-8', 'replace'))
         evidence['instrumentation_summary'] = summary
         need(p.returncode == 0 and valid_summary(summary), 'Real MainActivity UI tests failed')
+        phase = 'screenshots'
         images = []
         seen = set()
         for name in SCREENS:
@@ -190,12 +226,14 @@ def run(output_dir: Path, source: str, run_id: str, attempt: str, repo: Path) ->
                         test_count=len(TESTS), screenshot_count=len(SCREENS))
     except (OSError, KeyError, Refused, subprocess.TimeoutExpired, ValueError) as exc:
         evidence['failure_class'] = type(exc).__name__
+        evidence['failure_phase'] = phase  # Constant, bounded enum; no private output.
         for name in SCREENS:
             (output_dir / ('sfdt21-ui-' + name + '.png')).unlink(missing_ok=True)
     receipt_path.write_text(json.dumps(evidence, indent=2, sort_keys=True) + '\n', encoding='utf-8')
     print('SFDT21_EMULATOR_' + ('PASS' if evidence['overall'] == OUTCOME else 'REFUSED') +
           ': real_main_activity=' + str(evidence['real_main_activity']).lower() +
-          ' tests=' + str(evidence.get('test_count', 0)), flush=True)
+          ' tests=' + str(evidence.get('test_count', 0)) +
+          ' phase=' + (evidence.get('failure_phase') or phase), flush=True)
     return evidence['overall'] == OUTCOME
 
 def verify(output_dir: Path, source: str, run_id: str, attempt: str, repo: Path, *, cert_reader=None) -> dict:
@@ -255,6 +293,7 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     group = p.add_mutually_exclusive_group(required=True)
     group.add_argument('--run', action='store_true')
+    group.add_argument('--preflight-apks', action='store_true')
     group.add_argument('--verify', action='store_true')
     p.add_argument('--output-dir', required=True, type=Path)
     p.add_argument('--source-sha', required=True)
@@ -263,6 +302,11 @@ def main(argv=None) -> int:
     args = p.parse_args(argv)
     repo = Path(__file__).resolve().parents[1]
     try:
+        if args.preflight_apks:
+            # Do not persist signer or raw command output; print only a fixed pass marker.
+            preflight_apks(args.source_sha, args.run_id, args.attempt, repo)
+            print('SFDT21_PRE_AVD_APK_PREFLIGHT_PASS')
+            return 0
         if args.run:
             return 0 if run(args.output_dir, args.source_sha, args.run_id, args.attempt, repo) else 2
         data = verify(args.output_dir, args.source_sha, args.run_id, args.attempt, repo)

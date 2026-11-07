@@ -108,3 +108,26 @@ workflow's Kotlin test source SHA-256 is updated together with the test file;
 this hotfix does not relax checks, downgrade tools, or silently skip any
 UI tests. The emulator and screenshot acceptance remained **unqualified**
 until a fresh hosted run at the new exact PR SHA passes.
+
+
+## HF02: hosted failure-stage diagnostics and early APK admission
+
+In PR #14 HF01's second run (42413136975), all Java/Kotlin debug and
+instrumentation APKs compiled; legacy StudyFlow CI, SFDT11 and all Devtool
+lanes passed. The API36 KVM emulator booted, but before starting instrumentation
+`sfdt21_emulator_verify.py --run` produced `tests=0` and a fail receipt with only
+`failure_class=Refused`. Neither the sanitized receipt nor the hosted logs
+establish which exact pre-instrumentation guard failed. Do **not** attribute
+this to the UI tests, ADB, signing or APK path without new evidence.
+
+HF02 adds a mandatory non-mutating hosted APK/pre-signing preflight before
+starting the emulator, retaining the exact source/run identity; no APK/test
+output is uploaded by this step. In the actual hosted emulator, HF02 writes
+an enumerated `failure_phase` in the fail-closed receipt, covering host, emulator,
+APK, signing, install, installed hash, instrumentation and screenshot phases.
+Raw ADB output, stack traces, environment, private paths and secrets are never
+retained. A non-PASS outcome still fails the emulator job and gate.
+
+A new hosted attempt is necessary to identify the phase, then determine whether
+any real production change is required. HF02 does not claim that the unknown
+pre-instrumentation issue has been repaired or that the UI tests ran.

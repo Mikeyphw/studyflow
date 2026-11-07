@@ -140,6 +140,41 @@ class SFDT21Contracts(unittest.TestCase):
             with self.assertRaises(v.Refused):
                 v.verify(root / 'out', SHA, '101', '1', root, cert_reader=lambda _: 'c' * 64)
 
+    def test_failed_emulator_phase_is_allowlisted_and_no_raw_logs(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            out = root / 'out'
+            # No host/ADB executed. This tests safe failure receipts only.
+            with patch.object(v, 'assert_host', side_effect=v.Refused('hidden machine data')):
+                self.assertFalse(v.run(out, SHA, '101', '1', root))
+            receipt = json.loads((out / 'SFDT21_EVIDENCE.json').read_text())
+            self.assertEqual(receipt['failure_phase'], 'host_identity')
+            self.assertEqual(receipt['failure_class'], 'Refused')
+            self.assertNotIn('hidden machine data', json.dumps(receipt))
+            self.assertNotIn('instrumentation_summary', receipt)
+            self.assertFalse(receipt['publication_allowed'])
+            self.assertTrue(set(v.PHASES) >= {receipt['failure_phase']})
+            # Host identity is accepted but emulator disconnected. Still no raw output.
+            with patch.object(v, 'assert_host'), patch.object(v, 'adb', side_effect=v.Refused('private stdout')):
+                self.assertFalse(v.run(out, SHA, '101', '1', root))
+            receipt = json.loads((out / 'SFDT21_EVIDENCE.json').read_text())
+            self.assertEqual(receipt['failure_phase'], 'emulator_connected')
+            self.assertNotIn('private stdout', json.dumps(receipt))
+
+    def test_preavd_apk_preflight_requires_host_and_real_signing(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture(root)
+            with patch.object(v, 'assert_host'), patch.object(v, 'certificate_sha256', return_value='c'*64):
+                result = v.preflight_apks(SHA, '101', '1', root)
+                self.assertEqual(result['status'], 'SFDT21_PRE_AVD_APK_PREFLIGHT_PASS')
+                self.assertFalse(result['emulator_ui_qualified'])
+            with patch.object(v, 'assert_host'), patch.object(v, 'certificate_sha256', side_effect=v.Refused('unsigned')):
+                with self.assertRaises(v.Refused):
+                    v.preflight_apks(SHA, '101', '1', root)
+
     def test_crash_and_fake_terminal_are_refused(self):
         for error in ('INSTRUMENTATION_RESULT: shortMsg=Process crashed', 'INSTRUMENTATION_FAILED'):
             result = v.summarize(error + '\nOK (4 tests)\nINSTRUMENTATION_CODE: -1')
@@ -175,6 +210,8 @@ class SFDT21Contracts(unittest.TestCase):
                          'if-no-files-found: error', 'STUDYFLOW_SFDT21_HOSTED_EMULATOR:',
                          '--verify --output-dir', 'python3 -B scripts/test_sfdt21_emulator_contract.py'):
             assert required in workflow, required
+        assert '--preflight-apks' in workflow and 'SFDT21_PRE_AVD_APK_PREFLIGHT_PASS' in (ROOT / 'scripts/sfdt21_emulator_verify.py').read_text()
+        assert 'failure_phase' in (ROOT / 'scripts/sfdt21_emulator_verify.py').read_text() and 'phase=' in (ROOT / 'scripts/sfdt21_emulator_verify.py').read_text()
         assert 'ro.kernel.qemu' in bash and 'emulator-5554' in bash
         # The emulator source gate must also execute the legacy source policy.
         assert 'python3 -B scripts/verify_studyflow_actions.py --source-only' in workflow
