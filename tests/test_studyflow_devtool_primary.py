@@ -26,9 +26,12 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(m.NODES['tv'][0][4],
                          (':app-tv:assembleDebug',':app-tv:testDebugUnitTest',':app-tv:lintDebug'))
 
-    def test_web_desktop_bridges_not_misrepresented_as_first_class(self):
-        self.assertEqual(m.NODES['web'][0][3], 'python-shell')
-        self.assertEqual(m.NODES['desktop'][0][3], 'python-shell')
+    def test_desktop_web_native_providers_are_first_class(self):
+        self.assertEqual(m.NODES['web'][0][3], 'node')
+        self.assertEqual(m.NODES['desktop'][0][3], 'jvm')
+        self.assertEqual(m.NODES['web'][0][0], 'studyflow_web')
+        self.assertEqual(m.owned_outputs(m.NODES['web'][0]), ['web/dist/test-results.xml'])
+        self.assertEqual(m.owned_outputs(m.NODES['desktop'][0]), ['dist/jvm-tests.xml'])
         self.assertEqual(m.NODES['tv'][0][3], 'android-gradle')
         self.assertEqual(m.NODES['phone'][0][3], 'android-gradle')
         self.assertEqual(m.NODES['phone'][1][3], 'android-gradle')
@@ -223,8 +226,11 @@ class ContractTests(unittest.TestCase):
     def test_workflow_reuses_existing_native_dags_without_config_edits(self):
         code=(HERE/'scripts/studyflow_devtool_primary.py').read_text()
         for workflow in ('ci-sfdt07-phone-debug','ci-sfdt08-phone-release-jvm',
-                         'ci-sfdt07-tv-debug','ci-sfdt08-desktop-fast','ci-sfdt08-web-full'):
+                         'ci-sfdt07-tv-debug','ci-sfdt19-native-desktop-test','ci-sfdt19-native-web-test'):
             self.assertIn(workflow,code)
+        rollback=(HERE/'.devtool.toml').read_text()
+        self.assertIn('ci-sfdt08-desktop-fast', rollback)
+        self.assertIn('ci-sfdt08-web-full', rollback)
         source=(HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
         self.assertIn('sfdt11_contract.py --source-check',source)
         self.assertIn('sfdt18_phone_debug_guard',code)
@@ -293,14 +299,32 @@ class ContractTests(unittest.TestCase):
                 with self.assertRaises(m.Refused):
                     m.verify_reports('phone',out,root=root)
 
+    def test_native_polyglot_source_contracts_are_not_label_only(self):
+        from pathlib import Path
+        config=(HERE/'.devtool.toml').read_text()
+        self.assertIn('command = ["npm", "run", "test"]',config)
+        self.assertIn('ci_node_script_policy = "reviewed-composite"',config)
+        self.assertIn('command = ["gradle", "--offline", "--no-daemon", "--console=plain", ":desktopApp:test"]',config)
+        for lane, key, value in [('desktop','jvm_selected',':app'),('web','node_kind','build')]:
+            with self.subTest(lane=lane):
+                spec=m.NODES[lane][0]
+                graph=self.graph(spec)
+                graph['jobs'][0][key]=value
+                with self.assertRaises(m.Refused):
+                    m.check_node(graph,spec,{'studyflow_sha':'a'*40,'devtool_sha':m.DEVTOOL_SHA})
+
     @staticmethod
     def graph(node):
         target,workflow,job,provider,tasks,apk,_=node
         return {'consumer_commit':'a'*40,'runtime_sha':m.DEVTOOL_SHA,
                 'graph_sha256':'f'*64,
                 'jobs':[{'id':'node-01','job':job,'provider':provider,'runner':'ubuntu-24.04',
-                         'handoffs':[],'needs':[], 'outputs':[apk] if apk else [],
+                         'handoffs':[],'needs':[], 'outputs':m.owned_outputs(node),
                          'junit_report_dir': node[-1] if job != 'sfdt07-tv-debug' else '',
+                         'jvm_manager':'gradle', 'jvm_selected':':desktopApp',
+                         'jvm_operation':'test', 'jvm_tool_version':'9.7.1',
+                         'node_manager':'npm', 'node_kind':'test',
+                         'node_project_dir':'web', 'node_script_policy':'reviewed-composite',
                          'android_review':{'semantic_request':True,'tasks':list(tasks),
                                            'java_version':'21','ndk_version':'29.0.14206865',
                                            'host_profile':'studyflow-ubuntu24'}}]}

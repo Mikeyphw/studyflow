@@ -117,6 +117,7 @@ jobs:
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
         with:
           cache-disabled: true
+          gradle-version: '9.7.1'
       - name: Node 22 for Web
         if: ${{ matrix.node == true }}
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
@@ -130,6 +131,25 @@ jobs:
           python3 -m pip install --disable-pip-version-check --no-deps --only-binary=:all: \
             -r web/requirements-test.txt -r web/requirements-deep-pytest.txt
           python3 -m pytest --version
+      - name: Provision pinned native Node manager
+        if: ${{ matrix.node == true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global npm@10.9.4 --ignore-scripts --no-audit --no-fund
+          test "$(npm --version)" = '10.9.4'
+      # RM12 executes Gradle offline. This bounded GitHub-only dependency fetch
+      # resolves project configurations but never runs Desktop compile/tests;
+      # native Devtool remains sole owner of test execution and JUnit outputs.
+      - name: Provision reviewed Desktop test dependency closures
+        if: ${{ matrix.lane == 'desktop' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon --max-workers=2 :desktopApp:dependencies --configuration testCompileClasspath
+          ./gradlew --no-daemon --max-workers=2 :desktopApp:dependencies --configuration testRuntimeClasspath
+          test ! -e desktopApp/build/test-results/test
+          test ! -e dist/jvm-tests.xml
       - name: Acquire immutable Devtool runtime
         shell: bash
         run: |
@@ -207,7 +227,11 @@ jobs:
             app-tv/build/reports/lint-results-debug.*
             app-tv/build/test-results/**
             desktopApp/build/test-results/**
+            dist/jvm-tests.xml
             web/build/test-results/**
+            web/dist/test-results.xml
+            web/dist/release-manifest.json
+            web/dist/manifest.json
           if-no-files-found: warn
           retention-days: 14
       - name: Verify debug APK signature and identify produced byte artifact

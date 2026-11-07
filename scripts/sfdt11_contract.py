@@ -19,7 +19,7 @@ DEVTOOL = '0ebd22c17ac3058704012a1e03ee3265328b0659'
 # Git blob object IDs from an independent GitHub tree read of BASE; these paths
 # cannot silently drift under a green SFDT11 policy gate.
 FROZEN_BLOBS = {
-    '.devtool.toml': 'f3d7b6f8b6c05bef977930589415acebb1dc2676',
+    '.devtool.toml': 'e34d480ec04b4fb35aa04385194e73c3c71002fd',
     '.github/workflows/studyflow-ci.yml': 'b1fd1ea990fe9450288b3fd649d4855d025c5541',
     '.github/workflows/studyflow-hosted-sign.yml': '48c62104b0f2e4df26ecd041ffc75993da820f06',
     '.github/workflows/studyflow-devtool-shadow.yml': 'ee86f20237e47d3c1dc47ce28cab56a9a8297dc6',
@@ -30,7 +30,7 @@ FROZEN_BLOBS = {
     'scripts/sfdt07_compare_runs.py': '023685b0897f2d58d82d90ab3222b02c0ae4cd58',
     'scripts/sfdt08_compare_coverage.py': '0dc9d61e9afc16668f544c9d2fec8b6607deb82b',
     'scripts/sfdt10_r2_compare.py': 'b58218cf0699512301125d216b5fd462129bf7c1',
-    'web/package.json': 'e05e557473c267a52dd671a074b815b30512349f',
+    'web/package.json': '7ba6699525a72cc9784cbb3b8133b78d6fe53ff8',
     'web/package-lock.json': '19787979b8fcdba298099211802c60f72e4d16de',
     'settings.gradle.kts': 'ccd4b06305ca376c35772df1be70ff181d88c81a',
     'desktopApp/build.gradle.kts': '2e6d371939f715d3636fb4d9cb5f50e05d0fd8c4',
@@ -70,7 +70,13 @@ def verify_web_manager_amendment(amended: bytes) -> None:
     need(amended.count(line) == 1, 'Missing/duplicate reviewed npm pin')
     need(b'  "private": true,\n' + line in amended,
          'Reviewed npm pin moved from approved location')
-    previous = amended.replace(line, b'', 1)
+    addition = b' && npm run lint && npm run build && npm run release:check && python3 scripts/ci_native_pytest_junit.py'
+    need(amended.count(addition) == 1, 'Missing/duplicate reviewed SFDT19 native Web test suffix')
+    old_package = amended.replace(addition, b'', 1)
+    old_blob = sha1(b'blob ' + str(len(old_package)).encode('ascii') + b'\x00' + old_package).hexdigest()
+    need(old_blob == 'e05e557473c267a52dd671a074b815b30512349f',
+         'SFDT19 change includes unauthorized Web package mutations')
+    previous = old_package.replace(line, b'', 1)
     blob = sha1(b'blob ' + str(len(previous)).encode('ascii') + b'\x00' + previous).hexdigest()
     need(blob == '6ec3e0f9ff815d3649f48f3eb090d9fb97012718',
          'Npm pin amendment includes changes beyond the reviewed insertion')
@@ -158,7 +164,7 @@ def main() -> int:
     try:
         report = source_check()
         print('SFDT11_SOURCE_POLICY_PASS:', report['frozen_members'],
-              'unchanged reviewed files; Web/Desktop first-class NOT QUALIFIED')
+              'unchanged reviewed files; legacy rollback bridges pinned; new native providers require hosted qualification')
     except (PolicyError, OSError, ValueError, TypeError, KeyError,
             subprocess.TimeoutExpired) as exc:
         print('SFDT11_SOURCE_POLICY_REFUSED:', str(exc)[:360], file=sys.stderr)

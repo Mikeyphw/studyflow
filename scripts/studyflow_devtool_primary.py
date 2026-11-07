@@ -2,8 +2,8 @@
 """StudyFlow hosted Devtool CI: existing native DAGs, four ordinary CI lanes.
 
 No local Gradle, signing, release, publishing, device, or CI-policy mutation.
-Phone/TV use first-class Devtool Android jobs; Web/Desktop use existing
-source-reviewed Python-shell bridges *owned by* native Devtool DAG jobs.
+All four CI lanes use first-class Devtool native providers.
+Legacy SFDT08 Python bridges remain configured for manual rollback only.
 """
 from __future__ import annotations
 
@@ -37,12 +37,12 @@ NODES = {
          'app-tv/build/outputs/apk/debug/app-tv-debug.apk', 'app-tv/build/test-results/testDebugUnitTest'),
     ),
     'desktop': (
-        ('studyflow_desktop', 'ci-sfdt08-desktop-fast', 'sfdt08-desktop-fast', 'python-shell',
+        ('studyflow_desktop', 'ci-sfdt19-native-desktop-test', 'sfdt19-native-desktop-test', 'jvm',
          (), None, 'desktopApp/build/test-results/test'),
     ),
     'web': (
-        ('studyflow_android', 'ci-sfdt08-web-full', 'sfdt08-web-full', 'python-shell',
-         (), None, 'web/build/test-results/sfdt08-pytest'),
+        ('studyflow_web', 'ci-sfdt19-native-web-test', 'sfdt19-native-web-test', 'node',
+         (), None, 'web/build/test-results/native-node'),
     ),
 }
 
@@ -124,6 +124,16 @@ def inspect_junit(root: Path, directory: str, pattern: str = 'TEST-*.xml') -> di
     return {'executed': executed, 'failed': failed, 'errors': errors, 'skipped': skipped}
 
 
+def owned_outputs(spec: tuple) -> list[str]:
+    """Exact target-owned outputs; never interpret a native report as an APK."""
+    provider, apk = spec[3], spec[5]
+    if provider == 'jvm':
+        return ['dist/jvm-tests.xml']
+    if provider == 'node':
+        return ['web/dist/test-results.xml']
+    return [apk] if apk else []
+
+
 def check_node(graph: dict, spec: tuple, identity: dict) -> dict:
     target, workflow, job, provider, tasks, apk, junit_dir = spec
     need(graph.get('consumer_commit') == identity['studyflow_sha'] and
@@ -135,7 +145,16 @@ def check_node(graph: dict, spec: tuple, identity: dict) -> dict:
          row.get('runner') == 'ubuntu-24.04' and
          not row.get('handoffs') and not row.get('needs'), 'Unexpected native job/provider/host')
     outputs = row.get('outputs')
-    need(outputs == ([apk] if apk else []), 'Native output ownership differs from reviewed config')
+    need(outputs == owned_outputs(spec), 'Native output ownership differs from reviewed config')
+    if provider == 'jvm':
+        need(row.get('jvm_manager') == 'gradle' and row.get('jvm_selected') == ':desktopApp'
+             and row.get('jvm_operation') == 'test' and row.get('jvm_tool_version') == '9.7.1',
+             'Native Desktop JVM toolchain/module/task drift')
+    if provider == 'node':
+        need(row.get('node_manager') == 'npm' and row.get('node_kind') == 'test'
+             and row.get('node_project_dir') == 'web'
+             and row.get('node_script_policy') == 'reviewed-composite',
+             'Native Web Node project/manager/script drift')
     if provider == 'android-gradle':
         review = row.get('android_review') or {}
         need(review.get('semantic_request') is True and tuple(review.get('tasks') or ()) == tasks,
@@ -166,6 +185,14 @@ def check_result(result: dict, graph: dict, row: dict, identity: dict, junit_dir
     need(isinstance(item['native_receipt_sha256'], str) and
          re.fullmatch(r'[a-f0-9]{64}', item['native_receipt_sha256']) is not None,
          'Native receipt lacks SHA-256')
+    for artifact in row.get('outputs', []):
+        if row.get('provider') not in ('jvm', 'node'):
+            continue
+        p = root / artifact
+        need(p.is_file() and not p.is_symlink() and 0 < p.stat().st_size <= 8*1024*1024,
+             'Native language provider did not produce fresh bounded test output: ' + artifact)
+        item['native_output'] = {'path': artifact, 'size': p.stat().st_size,
+                                 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()}
     if apk:
         file = root / apk
         need(file.is_file() and not file.is_symlink() and
@@ -262,7 +289,7 @@ REPORT_DIRS = {
     'phone': 'app/build/test-results/testReleaseUnitTest',
     'tv': 'app-tv/build/test-results/testDebugUnitTest',
     'desktop': 'desktopApp/build/test-results/test',
-    'web': 'web/build/test-results/sfdt08-pytest',
+    'web': 'web/build/test-results/native-node',
 }
 LINT_DIRS = {
     'phone': 'app/build/reports',
