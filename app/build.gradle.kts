@@ -150,7 +150,16 @@ android {
         }
     }
 
+    // Release remains the literal normal profile for all regular CI and signing policy.
     testBuildType = "release"
+    // SFDT21: disposable, unsigned hosted emulator only. Never opt in locally.
+    if (
+        providers.environmentVariable("GITHUB_ACTIONS").orNull == "true" &&
+        providers.environmentVariable("STUDYFLOW_SFDT21_HOSTED_EMULATOR").orNull == "true" &&
+        !studyFlowPersonalSigningConfigured && !releaseSigningConfigured
+    ) {
+        testBuildType = "debug"
+    }
 
     lint {
         checkDependencies = true
