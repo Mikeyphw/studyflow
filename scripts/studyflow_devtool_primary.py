@@ -41,7 +41,7 @@ NODES = {
          (), None, 'desktopApp/build/test-results/test'),
     ),
     'web': (
-        ('studyflow_web', 'ci-sfdt19-native-web-test', 'sfdt19-native-web-test', 'node',
+        ('studyflow_android', 'ci-sfdt19-native-web-test', 'sfdt19-native-web-test', 'node',
          (), None, 'web/build/test-results/native-node'),
     ),
 }

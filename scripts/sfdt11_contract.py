@@ -19,7 +19,7 @@ DEVTOOL = '0ebd22c17ac3058704012a1e03ee3265328b0659'
 # Git blob object IDs from an independent GitHub tree read of BASE; these paths
 # cannot silently drift under a green SFDT11 policy gate.
 FROZEN_BLOBS = {
-    '.devtool.toml': 'e34d480ec04b4fb35aa04385194e73c3c71002fd',
+    '.devtool.toml': '631f84e994ef6e8676726b558fa6c94718e92597',
     '.github/workflows/studyflow-ci.yml': 'b1fd1ea990fe9450288b3fd649d4855d025c5541',
     '.github/workflows/studyflow-hosted-sign.yml': '48c62104b0f2e4df26ecd041ffc75993da820f06',
     '.github/workflows/studyflow-devtool-shadow.yml': 'ee86f20237e47d3c1dc47ce28cab56a9a8297dc6',

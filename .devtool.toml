@@ -992,6 +992,7 @@ inputs = [".devtool.toml", ".github/workflows/*.yml", "scripts/sfdt01_source_con
 metadata = { read_only = true, ci_python_version = "3.12", ci_python_script_sha256 = "9e795ea87085eae361bda1f2657b0b2501772638c0195ade7832ad05e03edcf5", ci_python_script_args = ["--check"] }
 
 [targets.studyflow_android.workflows]
+ci-sfdt19-native-web-test = [{ id = "sfdt19-native-web-test", ref = "job:sfdt19-native-web-test", depends_on = [] }]
 ci-sfdt08-deep-android = [{ id = "sfdt08-deep-android", ref = "job:sfdt08-deep-android", depends_on = [] }]
 ci-sfdt08-phone-release-jvm = [
   { id = "sfdt08-phone-release-jvm", ref = "job:sfdt08-phone-release-jvm", depends_on = [] },
@@ -1095,7 +1096,7 @@ metadata = { ci_toolchain = "android-gradle", ci_android_java_version = "21", ci
 runner = "command"
 root = "."
 command = ["gradle", "--offline", "--no-daemon", "--console=plain", ":desktopApp:test"]
-inputs = [".devtool.toml", "settings.gradle.kts", "build.gradle.kts", "build-logic/**", "desktopApp/**", "core/**", "gradle/**", "gradle.properties"]
+inputs = [".devtool.toml", "settings.gradle.kts", "build.gradle.kts", "desktopApp/build.gradle.kts", "gradle/verification-metadata.xml", "gradle/libs.versions.toml", "gradle.properties"]
 outputs = ["dist/jvm-tests.xml"]
 metadata = { ci_toolchain = "jvm", ci_jvm_mixed_module = ":desktopApp", ci_jdk_version = "21", ci_jvm_tool_version = "9.7.1", ci_junit_report_dir = "desktopApp/build/test-results/test" }
 
@@ -1105,11 +1106,11 @@ command = ["python3", "scripts/sfdt08_hosted_bridge.py", "desktop-fast"]
 inputs = [".devtool.toml", "scripts/sfdt08_hosted_bridge.py", "scripts/studyflow_ci_gradle_profile.py", "gradlew", "gradle/wrapper/gradle-wrapper.properties", "gradle/wrapper/gradle-wrapper.jar"]
 metadata = { ci_toolchain = "python-shell", ci_python_version = "3.12", ci_python_script_sha256 = "a283afb2e4a899b9e79e8ecc453844ccbace795a196c8b9c757467c9dd25f59d", ci_python_script_args = ["desktop-fast"], ci_junit_report_dir = "desktopApp/build/test-results/test" }
 
-[targets.studyflow_web.jobs.sfdt19-native-web-test]
+[targets.studyflow_android.jobs.sfdt19-native-web-test]
 runner = "command"
 root = "."
 command = ["npm", "run", "test"]
-inputs = [".devtool.toml", "web/package.json", "web/package-lock.json", "web/scripts/**", "web/tests/**", "web/src/**", "scripts/**"]
+inputs = [".devtool.toml", "web/package.json", "web/package-lock.json", "web/scripts/ci_native_pytest_junit.py"]
 outputs = ["web/dist/test-results.xml"]
 metadata = { ci_toolchain = "node", ci_node_version = "22", ci_node_project_dir = "web", ci_node_script_policy = "reviewed-composite", ci_python_version = "3.12", ci_junit_report_dir = "web/build/test-results/native-node" }
 
@@ -1156,6 +1157,3 @@ ci-sfdt08-deep-desktop = [{ id = "sfdt08-deep-desktop", ref = "job:sfdt08-deep-d
 
 [targets.studyflow_parity.workflows]
 ci-sfdt08-deep-parity = [{ id = "sfdt08-deep-parity", ref = "job:sfdt08-deep-parity", depends_on = [] }]
-
-[targets.studyflow_web.workflows]
-ci-sfdt19-native-web-test = [{ id = "sfdt19-native-web-test", ref = "job:sfdt19-native-web-test", depends_on = [] }]

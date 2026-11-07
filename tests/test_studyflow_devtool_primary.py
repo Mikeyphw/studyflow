@@ -29,7 +29,7 @@ class ContractTests(unittest.TestCase):
     def test_desktop_web_native_providers_are_first_class(self):
         self.assertEqual(m.NODES['web'][0][3], 'node')
         self.assertEqual(m.NODES['desktop'][0][3], 'jvm')
-        self.assertEqual(m.NODES['web'][0][0], 'studyflow_web')
+        self.assertEqual(m.NODES['web'][0][0], 'studyflow_android')
         self.assertEqual(m.owned_outputs(m.NODES['web'][0]), ['web/dist/test-results.xml'])
         self.assertEqual(m.owned_outputs(m.NODES['desktop'][0]), ['dist/jvm-tests.xml'])
         self.assertEqual(m.NODES['tv'][0][3], 'android-gradle')
@@ -312,6 +312,21 @@ class ContractTests(unittest.TestCase):
                 graph['jobs'][0][key]=value
                 with self.assertRaises(m.Refused):
                     m.check_node(graph,spec,{'studyflow_sha':'a'*40,'devtool_sha':m.DEVTOOL_SHA})
+
+    def test_native_web_root_target_is_not_nested(self):
+        import tomllib
+        cfg=tomllib.loads((HERE/'.devtool.toml').read_text())
+        native=cfg['targets']['studyflow_android']['jobs']['sfdt19-native-web-test']
+        self.assertEqual(cfg['targets']['studyflow_android']['root'], '.')
+        self.assertEqual(native['root'], '.')
+        self.assertEqual(native['metadata']['ci_toolchain'], 'node')
+        self.assertEqual(native['metadata']['ci_node_project_dir'], 'web')
+        self.assertFalse(any('*' in item for item in native['inputs']))
+        self.assertFalse(any('*' in item for item in
+            cfg['targets']['studyflow_desktop']['jobs']['sfdt19-native-desktop-test']['inputs']))
+        self.assertIn('ci-sfdt19-native-web-test',cfg['targets']['studyflow_android']['workflows'])
+        self.assertNotIn('sfdt19-native-web-test', cfg['targets']['studyflow_web'].get('jobs',{}))
+        self.assertIn('sfdt08-web-full', cfg['targets']['studyflow_android']['jobs'])
 
     @staticmethod
     def graph(node):

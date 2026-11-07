@@ -15,7 +15,7 @@ checks, mocked receipts or a previously green PR do not qualify the new path.
   first-class RM12 `jvm` provider (`gradle --offline --no-daemon
   --console=plain :desktopApp:test`), reviewed `:desktopApp` JVM-only closure,
   JDK 21, Gradle 9.7.1, verified `dist/jvm-tests.xml`, JUnit source directory.
-- **Web:** new `studyflow_web` `sfdt19-native-web-test` target-owned first-class
+- **Web:** new repository-root `studyflow_android`-owned `sfdt19-native-web-test` first-class
   RM11/RM17 `node` provider (`npm run test`, Node 22, npm 10.9.4,
   `reviewed-composite`). The source-reviewed npm test plan retains the original
   unit tests, then executes lint, build and release checks, and finally real
@@ -65,3 +65,22 @@ Revert SFDT19's consolidated commit and preserve the already merged PR #11
 primary cutover. The previous SFDT08 bridges remain in `.devtool.toml`; no
 secrets or publication settings are changed. Restore their NODES references in
 the primary orchestrator only if an explicit rollback PR is required.
+
+## HF01 — Native Node graph root repair
+
+PR #12's first hosted Web lane failed at graph admission:
+`NEXT-03 subdirectory root requires reviewed Android Gradle project_dir`.
+The `studyflow_web` target has root `web`, which the Devtool exporter treats
+as a nested job root and refuses for native Node. HF01 moves only the native
+Node CI job and DAG workflow to the existing repository-root `studyflow_android`
+target (root `.`), while retaining `ci_toolchain=node`, reviewed nested Node
+project directory `web`, and all source/test/JUnit/rollback contracts. This
+is a host-layout correction, **not** a downgrade to Android or Python providers.
+A second observed hosted failure, `RM-06 cannot prove generated-input
+ownership through globs`, rejected the Desktop native job before JVM tests
+ran. The same invariant would have rejected Web after its target-root fix.
+HF01 changes **both** new native jobs to literal input paths. Devtool's
+provider-specific source reviewers still independently source-hash the actual
+tracked JVM and Web dependency/script closure; no generated artifact is
+accepted from an unowned broad glob.
+All prior hosted evidence refers to the earlier PR SHA and cannot qualify HF01.
