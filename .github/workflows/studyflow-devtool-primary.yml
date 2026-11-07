@@ -33,6 +33,7 @@ jobs:
           python3 -B scripts/sfdt07_consolidated_contract.py --check
           python3 -B scripts/sfdt08_contract.py --check
           python3 -B scripts/sfdt11_contract.py --source-check
+          python3 -B scripts/test_sfdt20_provenance.py
   native:
     name: Devtool ${{ matrix.lane }}
     needs: source
@@ -198,6 +199,16 @@ jobs:
           python3 -B scripts/studyflow_devtool_primary.py \
             --lane "$STUDYFLOW_LANE" --verify-reports \
             --out "$RUNNER_TEMP/studyflow-devtool-primary/receipt.json"
+      - name: Verify SFDT20 per-lane source and artifact provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "6d6a31d3708a3f05471356bfc3298774ebcef5eadfea5605942b664ee3d79073  scripts/sfdt20_provenance.py" | sha256sum --check --status
+          python3 -B scripts/sfdt20_provenance.py \
+            --lane "$STUDYFLOW_LANE" \
+            --receipt "$RUNNER_TEMP/studyflow-devtool-primary/receipt.json" \
+            --out "$RUNNER_TEMP/studyflow-devtool-primary/sfdt20-provenance.json"
       - name: Preserve unqualified failure receipt
         if: always()
         shell: bash
