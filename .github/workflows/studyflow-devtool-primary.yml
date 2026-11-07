@@ -117,6 +117,7 @@ jobs:
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
         with:
           cache-disabled: true
+          gradle-version: '9.7.1'
       - name: Node 22 for Web
         if: ${{ matrix.node == true }}
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
@@ -130,6 +131,30 @@ jobs:
           python3 -m pip install --disable-pip-version-check --no-deps --only-binary=:all: \
             -r web/requirements-test.txt -r web/requirements-deep-pytest.txt
           python3 -m pytest --version
+      - name: Provision pinned native Node manager
+        if: ${{ matrix.node == true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global npm@10.9.4 --ignore-scripts --no-audit --no-fund
+          test "$(npm --version)" = '10.9.4'
+      # RM12 executes Gradle OFFLINE. Dependency reports only resolve metadata;
+      # a source-locked init task downloads the actual external classpath JARs.
+      # This hosted preparation never compiles, tests, or emits JUnit; only the
+      # first-class Devtool JVM node executes :desktopApp:test afterwards.
+      - name: Provision reviewed Desktop external artifact bytes
+        if: ${{ matrix.lane == 'desktop' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "1481d16b91e8bd4fca288b04c3107e98308c23a17f9ca1b75598ec4a19af6b64  scripts/sfdt19_desktop_prewarm.init.gradle" | sha256sum --check --status
+          ./gradlew --no-daemon --no-configuration-cache --max-workers=2 \
+            --init-script scripts/sfdt19_desktop_prewarm.init.gradle \
+            :desktopApp:sfdt19MaterializeDesktopExternalArtifacts
+          test ! -e desktopApp/build/test-results/test
+          test ! -e dist/jvm-tests.xml
+          test -z "$(git status --porcelain --untracked-files=normal)"
       - name: Acquire immutable Devtool runtime
         shell: bash
         run: |
@@ -207,7 +232,11 @@ jobs:
             app-tv/build/reports/lint-results-debug.*
             app-tv/build/test-results/**
             desktopApp/build/test-results/**
+            dist/jvm-tests.xml
             web/build/test-results/**
+            web/dist/test-results.xml
+            web/dist/release-manifest.json
+            web/dist/manifest.json
           if-no-files-found: warn
           retention-days: 14
       - name: Verify debug APK signature and identify produced byte artifact

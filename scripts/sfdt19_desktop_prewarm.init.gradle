@@ -1,0 +1,104 @@
+// SFDT19 HF06: project-owned, hosted-only artifact prewarm for the Desktop JVM closure.
+// Resolve bytes exclusively in each module's task; no cross-project resolution.
+// No compilation, tests, packaging, signing or publication occur during prewarm.
+// Devtool RM12 remains the sole owner of the offline :desktopApp:test execution.
+import org.gradle.api.GradleException
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+
+def approvedPaths = [
+    ':desktopApp', ':core:model', ':core:domain',
+    ':core:link', ':core:portability',
+]
+def taskName = 'sfdt19MaterializeDesktopExternalArtifacts'
+
+gradle.beforeProject { project ->
+    if (!approvedPaths.contains(project.path)) {
+        return
+    }
+    // Each project owns the task and the configuration lock used to resolve
+    // its compiler and application JARs. Never resolve sibling configurations
+    // from inside :desktopApp's task (Gradle 9 NEXT-unsafe resolution).
+    def prewarm = project.tasks.register(taskName) {
+        group = 'verification'
+        description = 'Preload this reviewed Desktop JVM module external classpaths for native offline CI'
+        doLast {
+            def module = project
+            def required = [
+                'compileClasspath', 'runtimeClasspath',
+                'testCompileClasspath', 'testRuntimeClasspath',
+            ]
+            if (module.path == ':desktopApp') {
+                required.add('kotlinBuildToolsApiClasspath')
+            }
+            if (module.path == ':core:portability' || module.path == ':core:link') {
+                required.add('kotlinCompilerPluginClasspathMain')
+            }
+            def candidates = [
+                'kotlinBuildToolsApiClasspath', 'kotlinCompilerClasspath',
+                'kotlinCompilerPluginClasspathMain',
+                'kotlinCompilerPluginClasspathTest',
+            ]
+            def configs = new ArrayList(required)
+            candidates.each { candidate ->
+                if (!configs.contains(candidate)) {
+                    def optional = module.configurations.findByName(candidate)
+                    if (optional != null && optional.canBeResolved) {
+                        configs.add(candidate)
+                    }
+                }
+            }
+            configs.each { name ->
+                def configuration = module.configurations.findByName(name)
+                if (configuration == null || !configuration.canBeResolved) {
+                    throw new GradleException('SFDT19_PREWARM_REFUSED: missing/nonresolvable ' + module.path + ':' + name)
+                }
+                // External binary artifact files, not just dependency metadata.
+                // Project-owned outputs are compiled later by native Devtool.
+                def external = configuration.incoming.artifactView {
+                    componentFilter { component ->
+                        component instanceof ModuleComponentIdentifier
+                    }
+                }.files.files
+                if (external.isEmpty() || external.size() > 2048) {
+                    throw new GradleException('SFDT19_PREWARM_REFUSED: empty/unbounded external artifacts ' + module.path + ':' + name)
+                }
+                external.each { artifact ->
+                    if (!artifact.isFile() || !artifact.canRead() || artifact.length() == 0L) {
+                        throw new GradleException('SFDT19_PREWARM_REFUSED: unreadable/empty artifact ' + module.path + ':' + name)
+                    }
+                }
+                if (module.path == ':desktopApp' && name == 'kotlinBuildToolsApiClasspath') {
+                    ['kotlin-build-tools-compat-2.4.10',
+                     'kotlin-build-tools-impl-2.4.10'].each { prefix ->
+                        if (!external.any { file -> file.name.startsWith(prefix) && file.name.endsWith('.jar') }) {
+                            throw new GradleException('SFDT19_PREWARM_REFUSED: missing Kotlin build-tools JAR ' + prefix)
+                        }
+                    }
+                }
+                if ((module.path == ':core:portability' || module.path == ':core:link') &&
+                        name == 'kotlinCompilerPluginClasspathMain') {
+                    if (!external.any { file ->
+                        file.name.startsWith('kotlin-serialization-compiler-plugin-embeddable-2.4.10') &&
+                        file.name.endsWith('.jar')
+                    }) {
+                        throw new GradleException('SFDT19_PREWARM_REFUSED: missing Kotlin serialization compiler plugin JAR in ' + module.path)
+                    }
+                }
+                println "SFDT19_DESKTOP_ARTIFACT_BYTES_PASS: ${module.path}:${name} ${external.size()} files"
+            }
+            if (module.path == ':desktopApp') {
+                println "SFDT19_DESKTOP_JVM_CLOSURE_PASS: ${approvedPaths.size()} reviewed modules"
+            }
+        }
+    }
+    if (project.path == ':desktopApp') {
+        // Dependencies are Gradle tasks, each executed under its own project's
+        // exclusive configuration-resolution lock. The Desktop task is the
+        // aggregate entrypoint and runs after all four module-owned tasks.
+        prewarm.configure {
+            dependsOn approvedPaths.findAll { it != ':desktopApp' }.collect { path ->
+                path + ':' + taskName
+            }
+        }
+    }
+}

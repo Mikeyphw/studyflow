@@ -26,9 +26,12 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(m.NODES['tv'][0][4],
                          (':app-tv:assembleDebug',':app-tv:testDebugUnitTest',':app-tv:lintDebug'))
 
-    def test_web_desktop_bridges_not_misrepresented_as_first_class(self):
-        self.assertEqual(m.NODES['web'][0][3], 'python-shell')
-        self.assertEqual(m.NODES['desktop'][0][3], 'python-shell')
+    def test_desktop_web_native_providers_are_first_class(self):
+        self.assertEqual(m.NODES['web'][0][3], 'node')
+        self.assertEqual(m.NODES['desktop'][0][3], 'jvm')
+        self.assertEqual(m.NODES['web'][0][0], 'studyflow_android')
+        self.assertEqual(m.owned_outputs(m.NODES['web'][0]), ['web/dist/test-results.xml'])
+        self.assertEqual(m.owned_outputs(m.NODES['desktop'][0]), ['dist/jvm-tests.xml'])
         self.assertEqual(m.NODES['tv'][0][3], 'android-gradle')
         self.assertEqual(m.NODES['phone'][0][3], 'android-gradle')
         self.assertEqual(m.NODES['phone'][1][3], 'android-gradle')
@@ -223,8 +226,11 @@ class ContractTests(unittest.TestCase):
     def test_workflow_reuses_existing_native_dags_without_config_edits(self):
         code=(HERE/'scripts/studyflow_devtool_primary.py').read_text()
         for workflow in ('ci-sfdt07-phone-debug','ci-sfdt08-phone-release-jvm',
-                         'ci-sfdt07-tv-debug','ci-sfdt08-desktop-fast','ci-sfdt08-web-full'):
+                         'ci-sfdt07-tv-debug','ci-sfdt19-native-desktop-test','ci-sfdt19-native-web-test'):
             self.assertIn(workflow,code)
+        rollback=(HERE/'.devtool.toml').read_text()
+        self.assertIn('ci-sfdt08-desktop-fast', rollback)
+        self.assertIn('ci-sfdt08-web-full', rollback)
         source=(HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
         self.assertIn('sfdt11_contract.py --source-check',source)
         self.assertIn('sfdt18_phone_debug_guard',code)
@@ -293,14 +299,159 @@ class ContractTests(unittest.TestCase):
                 with self.assertRaises(m.Refused):
                     m.verify_reports('phone',out,root=root)
 
+    def test_native_polyglot_source_contracts_are_not_label_only(self):
+        from pathlib import Path
+        config=(HERE/'.devtool.toml').read_text()
+        self.assertIn('command = ["npm", "run", "test"]',config)
+        self.assertIn('ci_node_script_policy = "reviewed-composite"',config)
+        self.assertIn('command = ["gradle", "--offline", "--no-daemon", "--console=plain", ":desktopApp:test"]',config)
+        for lane, key, value in [('desktop','jvm_selected',':app'),('web','node_kind','build')]:
+            with self.subTest(lane=lane):
+                spec=m.NODES[lane][0]
+                graph=self.graph(spec)
+                graph['jobs'][0][key]=value
+                with self.assertRaises(m.Refused):
+                    m.check_node(graph,spec,{'studyflow_sha':'a'*40,'devtool_sha':m.DEVTOOL_SHA})
+
+    def test_native_web_root_target_is_not_nested(self):
+        import tomllib
+        cfg=tomllib.loads((HERE/'.devtool.toml').read_text())
+        native=cfg['targets']['studyflow_android']['jobs']['sfdt19-native-web-test']
+        self.assertEqual(cfg['targets']['studyflow_android']['root'], '.')
+        self.assertEqual(native['root'], '.')
+        self.assertEqual(native['metadata']['ci_toolchain'], 'node')
+        self.assertEqual(native['metadata']['ci_node_project_dir'], 'web')
+        self.assertFalse(any('*' in item for item in native['inputs']))
+        self.assertFalse(any('*' in item for item in
+            cfg['targets']['studyflow_desktop']['jobs']['sfdt19-native-desktop-test']['inputs']))
+        self.assertIn('ci-sfdt19-native-web-test',cfg['targets']['studyflow_android']['workflows'])
+        self.assertNotIn('sfdt19-native-web-test', cfg['targets']['studyflow_web'].get('jobs',{}))
+        self.assertIn('sfdt08-web-full', cfg['targets']['studyflow_android']['jobs'])
+
+    def test_hf03_desktop_prewarm_downloads_external_artifact_bytes(self):
+        # Source policy: dependency report metadata is not sufficient for RM12
+        # offline compilation, which requires actual Compose/Kotlin class jars.
+        import hashlib
+        workflow = (HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
+        prewarm = HERE/'scripts/sfdt19_desktop_prewarm.init.gradle'
+        source = prewarm.read_text(encoding='utf-8')
+        digest = hashlib.sha256(prewarm.read_bytes()).hexdigest()
+        self.assertEqual(digest, '1481d16b91e8bd4fca288b04c3107e98308c23a17f9ca1b75598ec4a19af6b64')
+        self.assertIn(digest + '  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
+        self.assertIn('--no-configuration-cache --max-workers=2', workflow)
+        self.assertIn(':desktopApp:sfdt19MaterializeDesktopExternalArtifacts', workflow)
+        self.assertIn('component instanceof ModuleComponentIdentifier', source)
+        self.assertIn('configuration.incoming.artifactView', source)
+        for config in ('compileClasspath', 'runtimeClasspath', 'testCompileClasspath', 'testRuntimeClasspath'):
+            self.assertIn("'"+config+"'", source)
+        self.assertNotIn(':desktopApp:dependencies --configuration', workflow)
+        preparation=workflow.split('name: Provision reviewed Desktop external artifact bytes',1)[1].split('name: Acquire immutable Devtool runtime',1)[0]
+        self.assertFalse(any(':desktopApp:test' in line for line in preparation.splitlines()
+                             if line.lstrip().startswith('./gradlew ')))
+        self.assertNotIn('gradle --offline', preparation)
+        self.assertIn('test ! -e desktopApp/build/test-results/test', preparation)
+        self.assertIn('test ! -e dist/jvm-tests.xml', preparation)
+        self.assertIn("('studyflow_desktop', 'ci-sfdt19-native-desktop-test'", (HERE/'scripts/studyflow_devtool_primary.py').read_text())
+        self.assertIn('sfdt08-desktop-fast', (HERE/'.devtool.toml').read_text())
+
+    def test_hf04_kotlin_build_tools_api_artifacts_are_materialized(self):
+        # Hosted run 42393798945 proved the four app classpaths insufficient:
+        # Kotlin's own Build Tools API files must be cached before --offline.
+        import hashlib
+        script = HERE/'scripts/sfdt19_desktop_prewarm.init.gradle'
+        source = script.read_text(encoding='utf-8')
+        workflow = (HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
+        self.assertEqual(hashlib.sha256(script.read_bytes()).hexdigest(),
+                         '1481d16b91e8bd4fca288b04c3107e98308c23a17f9ca1b75598ec4a19af6b64')
+        self.assertIn('1481d16b91e8bd4fca288b04c3107e98308c23a17f9ca1b75598ec4a19af6b64  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
+        self.assertIn("'kotlinBuildToolsApiClasspath'", source)
+        self.assertIn("'kotlin-build-tools-compat-2.4.10'", source)
+        self.assertIn("'kotlin-build-tools-impl-2.4.10'", source)
+        self.assertIn('configuration.incoming.artifactView', source)
+        self.assertIn('component instanceof ModuleComponentIdentifier', source)
+        self.assertIn('SFDT19_PREWARM_REFUSED: missing Kotlin build-tools JAR', source)
+        self.assertIn("file.name.endsWith('.jar')", source)
+        for name in ('kotlinCompilerClasspath','kotlinCompilerPluginClasspathMain',
+                     'kotlinCompilerPluginClasspathTest'):
+            self.assertIn(name, source)
+        self.assertIn('--no-configuration-cache --max-workers=2', workflow)
+        self.assertNotIn('continue-on-error:', workflow)
+        self.assertNotIn('environment: studyflow-signing', workflow)
+        self.assertIn('command = ["gradle", "--offline", "--no-daemon", "--console=plain", ":desktopApp:test"]',
+                      (HERE/'.devtool.toml').read_text())
+        self.assertIn('sfdt08-desktop-fast', (HERE/'.devtool.toml').read_text())
+
+    def test_hf05_full_desktop_jvm_closure_prewarm(self):
+        # Hosted HF04 run 42395335373 failed on :core:portability serialization
+        # compiler plugin despite resolving every :desktopApp compiler classpath.
+        import hashlib
+        script = HERE/'scripts/sfdt19_desktop_prewarm.init.gradle'
+        source = script.read_text(encoding='utf-8')
+        workflow = (HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
+        digest = hashlib.sha256(script.read_bytes()).hexdigest()
+        self.assertEqual(digest, '1481d16b91e8bd4fca288b04c3107e98308c23a17f9ca1b75598ec4a19af6b64')
+        self.assertIn(digest+'  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
+        for module in (':desktopApp',':core:model',':core:domain',
+                       ':core:link',':core:portability'):
+            self.assertIn("'"+module+"'", source)
+        self.assertIn('project.tasks.register(taskName)', source)
+        self.assertIn('module.configurations.findByName(name)', source)
+        self.assertIn("module.path == ':core:portability'", source)
+        self.assertIn('kotlinCompilerPluginClasspathMain', source)
+        self.assertIn('kotlin-serialization-compiler-plugin-embeddable-2.4.10', source)
+        self.assertIn('SFDT19_DESKTOP_JVM_CLOSURE_PASS', source)
+        self.assertIn('configuration.incoming.artifactView', source)
+        self.assertIn('component instanceof ModuleComponentIdentifier', source)
+        self.assertNotIn("project.tasks.register('test'", source)
+        self.assertNotIn('gradle --offline', source)
+        self.assertIn('--no-configuration-cache --max-workers=2', workflow)
+        self.assertIn('test ! -e desktopApp/build/test-results/test', workflow)
+        self.assertIn('test ! -e dist/jvm-tests.xml', workflow)
+        self.assertIn('command = ["gradle", "--offline", "--no-daemon", "--console=plain", ":desktopApp:test"]',
+                      (HERE/'.devtool.toml').read_text())
+        self.assertIn('sfdt08-desktop-fast', (HERE/'.devtool.toml').read_text())
+
+    def test_hf06_project_scoped_preparatory_resolution(self):
+        # Hosted HF05 run 42397522465 refused cross-project configuration
+        # resolution while Desktop tried to resolve :core:model classpaths.
+        import hashlib
+        script = HERE/'scripts/sfdt19_desktop_prewarm.init.gradle'
+        source = script.read_text(encoding='utf-8')
+        workflow = (HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
+        digest = hashlib.sha256(script.read_bytes()).hexdigest()
+        self.assertEqual(digest, '1481d16b91e8bd4fca288b04c3107e98308c23a17f9ca1b75598ec4a19af6b64')
+        self.assertIn(digest + '  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
+        for module in (':desktopApp',':core:model',':core:domain',
+                       ':core:link',':core:portability'):
+            self.assertIn("'" + module + "'", source)
+        self.assertIn('gradle.beforeProject { project ->', source)
+        self.assertIn('if (!approvedPaths.contains(project.path))', source)
+        self.assertIn('project.tasks.register(taskName)', source)
+        self.assertIn('def module = project', source)
+        self.assertIn('prewarm.configure', source)
+        self.assertIn('dependsOn approvedPaths.findAll', source)
+        self.assertNotIn('project.rootProject.findProject(path)', source)
+        self.assertIn('configuration.incoming.artifactView', source)
+        self.assertIn('component instanceof ModuleComponentIdentifier', source)
+        self.assertIn('kotlin-serialization-compiler-plugin-embeddable-2.4.10', source)
+        self.assertIn('SFDT19_DESKTOP_JVM_CLOSURE_PASS', source)
+        self.assertIn('--no-configuration-cache --max-workers=2', workflow)
+        self.assertIn('test ! -e dist/jvm-tests.xml', workflow)
+        self.assertIn('command = ["gradle", "--offline", "--no-daemon", "--console=plain", ":desktopApp:test"]',
+                      (HERE/'.devtool.toml').read_text())
+
     @staticmethod
     def graph(node):
         target,workflow,job,provider,tasks,apk,_=node
         return {'consumer_commit':'a'*40,'runtime_sha':m.DEVTOOL_SHA,
                 'graph_sha256':'f'*64,
                 'jobs':[{'id':'node-01','job':job,'provider':provider,'runner':'ubuntu-24.04',
-                         'handoffs':[],'needs':[], 'outputs':[apk] if apk else [],
+                         'handoffs':[],'needs':[], 'outputs':m.owned_outputs(node),
                          'junit_report_dir': node[-1] if job != 'sfdt07-tv-debug' else '',
+                         'jvm_manager':'gradle', 'jvm_selected':':desktopApp',
+                         'jvm_operation':'test', 'jvm_tool_version':'9.7.1',
+                         'node_manager':'npm', 'node_kind':'test',
+                         'node_project_dir':'web', 'node_script_policy':'reviewed-composite',
                          'android_review':{'semantic_request':True,'tasks':list(tasks),
                                            'java_version':'21','ndk_version':'29.0.14206865',
                                            'host_profile':'studyflow-ubuntu24'}}]}
