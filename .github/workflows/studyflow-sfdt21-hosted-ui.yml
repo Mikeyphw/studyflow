@@ -27,7 +27,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=normal)"
-          echo "9b9ad914a9810411babbd82a801494061f2309d151e09175f0189cd2c4be6807  scripts/sfdt21_emulator_verify.py" | sha256sum --check --status
+          echo "d58a0187c1bb1ce9754eeeb98374b0b778cadeb605c8f96762aab8271d1fc60d  scripts/sfdt21_emulator_verify.py" | sha256sum --check --status
           echo "700ac0a4e17ba56e36e3cc056afea5b232577ef84fb75e5fa62221f3f356af0b  scripts/sfdt21_emulator_ci.sh" | sha256sum --check --status
           echo "a64ce080b4452929fd960ab0d0a03511f6aedc1a0ae3b251c5dffc3a27cc70bb  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt21HostedRealUiTest.kt" | sha256sum --check --status
           python3 -B scripts/test_sfdt21_emulator_contract.py

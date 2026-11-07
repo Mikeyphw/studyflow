@@ -162,6 +162,58 @@ class SFDT21Contracts(unittest.TestCase):
             self.assertEqual(receipt['failure_phase'], 'emulator_connected')
             self.assertNotIn('private stdout', json.dumps(receipt))
 
+    def test_fresh_emulator_absent_packages_are_accepted(self):
+        # On hosted API36, `pm path` may return exit 1 for an absent package.
+        # Our new probe MUST NEVER invoke `pm path` or interpret absence as
+        # failure, while still requiring the ADB command itself to succeed.
+        from unittest.mock import patch
+        observed = []
+        def fake_adb(*args, **kwargs):
+            observed.append(args)
+            if args[:3] == ('shell', 'pm', 'list'):
+                self.assertEqual(args, ('shell', 'pm', 'list', 'packages', v.PACKAGE))
+                return b'\n'
+            raise AssertionError('unexpected or old pm path command')
+        with patch.object(v, 'adb', side_effect=fake_adb):
+            v.assert_fresh_emulator()
+        self.assertEqual(len(observed), 1)
+
+    def test_fresh_emulator_rejects_existing_app_test_package_and_adb_error(self):
+        from unittest.mock import patch
+        for installed in (v.PACKAGE, v.PACKAGE + '.test', v.PACKAGE + '.debug'):
+            with self.subTest(installed=installed):
+                with patch.object(v, 'adb', return_value=('package:' + installed + '\n').encode()):
+                    with self.assertRaises(v.Refused):
+                        v.assert_fresh_emulator()
+        for bad in (b'Error: package manager unavailable', b'package:some.unexpected.package\n'):
+            with self.subTest(raw=bad), patch.object(v, 'adb', return_value=bad):
+                with self.assertRaises(v.Refused):
+                    v.assert_fresh_emulator()
+        with patch.object(v, 'adb', side_effect=v.Refused('ADB failed')):
+            with self.assertRaises(v.Refused):
+                v.assert_fresh_emulator()
+
+    def test_run_reaches_apk_hash_phase_after_successful_freshness(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            out = root / 'out'
+            def fake_adb(*args, **kwargs):
+                if args == ('get-state',): return b'device\n'
+                if args == ('shell', 'getprop', 'ro.kernel.qemu'): return b'1\n'
+                if args == ('shell', 'getprop', 'ro.build.version.sdk'): return b'36\n'
+                if args == ('shell', 'pm', 'list', 'packages', v.PACKAGE): return b''
+                raise AssertionError('unreviewed ADB call')
+            with patch.object(v,'assert_host'), patch.object(v,'adb',side_effect=fake_adb), \
+                 patch.object(v,'file_sha256',side_effect=v.Refused('stop after freshness')):
+                self.assertFalse(v.run(out, SHA, '101', '1', root))
+            receipt=json.loads((out/'SFDT21_EVIDENCE.json').read_text())
+            self.assertEqual(receipt['failure_phase'], 'apk_artifact_hashes')
+            self.assertEqual(receipt['failure_class'], 'Refused')
+            self.assertEqual(receipt['overall'], 'FAILED_OR_NOT_RUN')
+            self.assertNotIn('stop after freshness', json.dumps(receipt))
+            self.assertNotIn('instrumentation_summary', receipt)
+
     def test_preavd_apk_preflight_requires_host_and_real_signing(self):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as d:

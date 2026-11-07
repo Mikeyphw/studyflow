@@ -109,6 +109,18 @@ def command(*args: str, timeout: int = 90) -> bytes:
 def adb(*args: str, timeout: int = 90) -> bytes:
     return command('adb', '-s', SERIAL, *args, timeout=timeout)
 
+def assert_fresh_emulator() -> None:
+    """A missing Android package is success, not a `pm path` subprocess error.
+
+    `pm path <absent>` can return exit 1 on API 36. `pm list packages`
+    returns exit 0 and an empty response when no names match. Any installed
+    StudyFlow-prefix package, unexpected output, or ADB error fails closed.
+    """
+    listing = adb('shell', 'pm', 'list', 'packages', PACKAGE, timeout=30)
+    # A brand-new emulator must not have the app OR its test package. Do not
+    # use `pm path`: its absent-package exit status is device-dependent.
+    need(listing.strip() == b'', 'Previously installed StudyFlow package refused')
+
 def assert_host(source: str, run_id: str, attempt: str) -> None:
     need(SHA40.fullmatch(source) is not None and run_id.isdecimal() and
          attempt.isdecimal() and int(run_id) > 0 and int(attempt) > 0,
@@ -178,7 +190,7 @@ def run(output_dir: Path, source: str, run_id: str, attempt: str, repo: Path) ->
         need(adb('shell', 'getprop', 'ro.kernel.qemu').strip() == b'1', 'Physical device refused')
         need(adb('shell', 'getprop', 'ro.build.version.sdk').strip() == b'36', 'Not API 36')
         phase = 'fresh_install'
-        need(not adb('shell', 'pm', 'path', PACKAGE).strip(), 'Previously installed app refused')
+        assert_fresh_emulator()
         phase = 'apk_artifact_hashes'
         app, test = artifact_paths(repo)
         app_info = file_sha256(app, low=1024)

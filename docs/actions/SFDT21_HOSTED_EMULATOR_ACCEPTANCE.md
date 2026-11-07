@@ -131,3 +131,28 @@ retained. A non-PASS outcome still fails the emulator job and gate.
 A new hosted attempt is necessary to identify the phase, then determine whether
 any real production change is required. HF02 does not claim that the unknown
 pre-instrumentation issue has been repaired or that the UI tests ran.
+
+## HF03: API36 fresh package admission correction
+
+The HF02 hosted attempt at PR #14 SHA `a0124d06ddc542435c1dd455c040f80a7a9ca0ab`
+(`StudyFlow SFDT21 Real Android UI Emulator Acceptance` run `42419924673`)
+passed the independent pre-AVD APK/signature check, compiled both Android
+APKs and booted the Google APIs x86_64 API36 emulator. It then failed
+`SFDT21_EMULATOR_REFUSED: tests=0 phase=fresh_install` before any real UI
+instrumentation. This localizes the problem to the freshness probe, not Kotlin
+compilation, emulator boot, or a Compose test assertion.
+
+Previously the Python subprocess wrapper required a zero exit code from
+`adb shell pm path com.mikeyphw.studyflow`. Android may return a nonzero exit
+for an *absent* package, even though absence is the expected fresh state.
+HF03 uses `adb shell pm list packages com.mikeyphw.studyflow`, which returns a
+zero status and an empty listing for an absent app, and rejects **any** returned
+StudyFlow-prefix package, including the `.test` instrumentation APK. ADB
+failure or unexpected nonempty output remains a hard rejection. The independent
+source and evidence checks, SHA pin, hosted-only gates, and screenshot
+requirements are preserved. No release/signing/device/production UI change.
+
+HF03 tests verify the absent-package success path, rejection of app/test APKs,
+ADB errors, and that the runner progresses beyond `fresh_install` to the next
+stage. A fresh GitHub Actions run must still pass all four UI tests and PNG
+provenance before merging; this hotfix is not a hosted pass claim.
