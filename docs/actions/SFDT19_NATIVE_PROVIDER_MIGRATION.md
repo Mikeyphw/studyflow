@@ -111,3 +111,29 @@ review is enforced by a source-only regression. No `.devtool.toml`, SFDT11
 immutable policies, Web/Phone/TV providers, signing, release, device or
 rollback jobs are modified. Real hosted acceptance remains mandatory;
 a passing source test cannot establish the offline JVM build succeeded.
+
+## HF04 — Prewarm Kotlin Build Tools API artifacts for offline Desktop JVM
+
+The HF03 PR SHA `04811cc9680a532e9e8f6f441b5c4d616f95ac72` ran
+`StudyFlow Devtool CI` as GitHub Actions run `42393798945`. Its hosted
+prewarm succeeded with **31, 44, 35 and 45 external files** across the four
+Desktop compile/runtime/test classpaths, but the native RM12 JVM test still
+failed. The exact missing offline inputs were
+`org.jetbrains.kotlin:kotlin-build-tools-compat:2.4.10` and
+`org.jetbrains.kotlin:kotlin-build-tools-impl:2.4.10` in
+`:desktopApp:kotlinBuildToolsApiClasspath`, a Kotlin compiler-internal
+configuration not covered by HF03. The configuration-cache serialization
+failure was secondary to those missing artifacts.
+
+HF04 extends the checksum-pinned, GitHub-only prewarm task to require the
+actual Kotlin Build Tools API JAR bytes and fail if they are not available.
+It also resolves known Kotlin compiler and compiler-plugin configurations
+if they are present and resolvable. The task still only downloads external
+module artifacts, never executes Desktop compilation or tests, and never
+accepts metadata alone. `ci_toolchain=jvm` and the Devtool-owned literal
+`gradle --offline --no-daemon --console=plain :desktopApp:test` are unchanged.
+The previous Python bridge remains an unused rollback option. The workflow
+and source regression pin the updated prewarm script by exact SHA-256.
+There are no `.devtool.toml`, SFDT11 policy, Android, Web, signing or
+release changes. Real hosted Desktop JUnit and aggregate gate evidence
+remain necessary; source checks cannot substitute for GitHub acceptance.

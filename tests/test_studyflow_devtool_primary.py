@@ -336,7 +336,7 @@ class ContractTests(unittest.TestCase):
         prewarm = HERE/'scripts/sfdt19_desktop_prewarm.init.gradle'
         source = prewarm.read_text(encoding='utf-8')
         digest = hashlib.sha256(prewarm.read_bytes()).hexdigest()
-        self.assertEqual(digest, '261ae3c20741ac4fe4cbdbbbe5ff40b75bfd95d9cb7120f36cd186c0fb643e13')
+        self.assertEqual(digest, '991c0e30a4a858cd257bebb4e486e4f3496abddef5c71802704fdc6dd3134313')
         self.assertIn(digest + '  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
         self.assertIn('--no-configuration-cache --max-workers=2', workflow)
         self.assertIn(':desktopApp:sfdt19MaterializeDesktopExternalArtifacts', workflow)
@@ -352,6 +352,33 @@ class ContractTests(unittest.TestCase):
         self.assertIn('test ! -e desktopApp/build/test-results/test', preparation)
         self.assertIn('test ! -e dist/jvm-tests.xml', preparation)
         self.assertIn("('studyflow_desktop', 'ci-sfdt19-native-desktop-test'", (HERE/'scripts/studyflow_devtool_primary.py').read_text())
+        self.assertIn('sfdt08-desktop-fast', (HERE/'.devtool.toml').read_text())
+
+    def test_hf04_kotlin_build_tools_api_artifacts_are_materialized(self):
+        # Hosted run 42393798945 proved the four app classpaths insufficient:
+        # Kotlin's own Build Tools API files must be cached before --offline.
+        import hashlib
+        script = HERE/'scripts/sfdt19_desktop_prewarm.init.gradle'
+        source = script.read_text(encoding='utf-8')
+        workflow = (HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
+        self.assertEqual(hashlib.sha256(script.read_bytes()).hexdigest(),
+                         '991c0e30a4a858cd257bebb4e486e4f3496abddef5c71802704fdc6dd3134313')
+        self.assertIn('991c0e30a4a858cd257bebb4e486e4f3496abddef5c71802704fdc6dd3134313  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
+        self.assertIn("'kotlinBuildToolsApiClasspath'", source)
+        self.assertIn("'kotlin-build-tools-compat-2.4.10'", source)
+        self.assertIn("'kotlin-build-tools-impl-2.4.10'", source)
+        self.assertIn('configuration.incoming.artifactView', source)
+        self.assertIn('component instanceof ModuleComponentIdentifier', source)
+        self.assertIn('SFDT19_PREWARM_REFUSED: missing Kotlin build-tools JAR', source)
+        self.assertIn("file.name.endsWith('.jar')", source)
+        for name in ('kotlinCompilerClasspath','kotlinCompilerPluginClasspathMain',
+                     'kotlinCompilerPluginClasspathTest'):
+            self.assertIn(name, source)
+        self.assertIn('--no-configuration-cache --max-workers=2', workflow)
+        self.assertNotIn('continue-on-error:', workflow)
+        self.assertNotIn('environment: studyflow-signing', workflow)
+        self.assertIn('command = ["gradle", "--offline", "--no-daemon", "--console=plain", ":desktopApp:test"]',
+                      (HERE/'.devtool.toml').read_text())
         self.assertIn('sfdt08-desktop-fast', (HERE/'.devtool.toml').read_text())
 
     @staticmethod

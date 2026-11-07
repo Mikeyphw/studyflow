@@ -148,7 +148,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          echo "261ae3c20741ac4fe4cbdbbbe5ff40b75bfd95d9cb7120f36cd186c0fb643e13  scripts/sfdt19_desktop_prewarm.init.gradle" | sha256sum --check --status
+          echo "991c0e30a4a858cd257bebb4e486e4f3496abddef5c71802704fdc6dd3134313  scripts/sfdt19_desktop_prewarm.init.gradle" | sha256sum --check --status
           ./gradlew --no-daemon --no-configuration-cache --max-workers=2 \
             --init-script scripts/sfdt19_desktop_prewarm.init.gradle \
             :desktopApp:sfdt19MaterializeDesktopExternalArtifacts
