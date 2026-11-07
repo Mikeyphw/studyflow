@@ -20,7 +20,7 @@ DEVTOOL = '0ebd22c17ac3058704012a1e03ee3265328b0659'
 # cannot silently drift under a green SFDT11 policy gate.
 FROZEN_BLOBS = {
     '.devtool.toml': 'f3d7b6f8b6c05bef977930589415acebb1dc2676',
-    '.github/workflows/studyflow-ci.yml': '325b07d2d37f1efcd1cfc36cd39f1fcdab39fdf8',
+    '.github/workflows/studyflow-ci.yml': 'b1fd1ea990fe9450288b3fd649d4855d025c5541',
     '.github/workflows/studyflow-hosted-sign.yml': '48c62104b0f2e4df26ecd041ffc75993da820f06',
     '.github/workflows/studyflow-devtool-shadow.yml': 'ee86f20237e47d3c1dc47ce28cab56a9a8297dc6',
     '.github/workflows/studyflow-devtool-native-expanded.yml': '99c19a7fd5b45d3bcaff00ccc040af9054a3cfca',
