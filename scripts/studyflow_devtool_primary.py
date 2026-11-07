@@ -217,8 +217,14 @@ def execute(lane: str, out: Path, *, root: Path = ROOT, env: dict | None = None,
             # so the phone's second native job starts with an empty stage.
             stage_inputs = temp / 'rm06-inputs'
             stage_outputs = temp / 'rm06-output'
-            need(not stage_inputs.exists() and not stage_inputs.is_symlink() and
-                 not stage_outputs.exists() and not stage_outputs.is_symlink(),
+            stage_evidence = temp / 'rm06-evidence'
+            # Every one-node graph uses node-01. Devtool writes its typed
+            # evidence to RUNNER_TEMP/rm06-evidence/node-01 and deliberately
+            # refuses to overwrite an existing receipt. The phone lane has
+            # two sequential graphs, so isolate *all three* native staging
+            # directories between them (not just inputs and outputs).
+            need(all(not path.exists() and not path.is_symlink()
+                     for path in (stage_inputs, stage_outputs, stage_evidence)),
                  'Native Devtool staging contains stale bytes')
             result = runner(root, target=target, workflow=workflow, devtool_sha=DEVTOOL_SHA,
                             graph_sha=graph['graph_sha256'], job_id=row['id'],
@@ -231,6 +237,11 @@ def execute(lane: str, out: Path, *, root: Path = ROOT, env: dict | None = None,
             if stage_inputs.exists():
                 isolated.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(stage_inputs), str(isolated/'inputs'))
+            need(not stage_evidence.is_symlink(), 'Symlinked native Devtool evidence directory')
+            if stage_evidence.exists():
+                need(stage_evidence.is_dir(), 'Invalid native Devtool evidence directory')
+                isolated.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(stage_evidence), str(isolated/'evidence'))
             report['nodes'].append(item)
         report['status'] = 'NATIVE_CI_LANE_PASSED'
         report['ci_lane_passed'] = True

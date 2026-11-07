@@ -106,6 +106,12 @@ class ContractTests(unittest.TestCase):
                 return self.graph(mapping[workflow])
             def runner(root,*,target,workflow,devtool_sha,graph_sha,job_id,inputs,outputs):
                 self.assertEqual(outputs, temp/'rm06-output')
+                # Reproduce Devtool's real FileExistsError in GitHub run
+                # 42334086888 if the first node's typed receipt still exists.
+                evidence = temp/'rm06-evidence'/'node-01'/'node-evidence.json'
+                evidence.parent.mkdir(parents=True, exist_ok=True)
+                with evidence.open('x', encoding='utf-8') as handle:
+                    handle.write(workflow)
                 outputs.mkdir()
                 (outputs/'native-evidence.txt').write_text(workflow)
                 result=self.good_result(self.graph(mapping[workflow]))
@@ -122,8 +128,44 @@ class ContractTests(unittest.TestCase):
             self.assertEqual(calls,['ci-sfdt07-phone-debug','ci-sfdt08-phone-release-jvm'])
             self.assertEqual(result['nodes'][1]['junit']['executed'],4)
             self.assertFalse((temp/'rm06-output').exists())
+            self.assertFalse((temp/'rm06-evidence').exists())
             for index,workflow in enumerate(calls):
                 self.assertEqual((temp/'studyflow-primary-execution'/'phone'/str(index)/'outputs'/'native-evidence.txt').read_text(),workflow)
+                self.assertEqual((temp/'studyflow-primary-execution'/'phone'/str(index)/'evidence'/'node-01'/'node-evidence.json').read_text(),workflow)
+
+    def test_preexisting_native_evidence_fails_before_execution(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)/'repo';root.mkdir()
+            temp=Path(d)/'temp';temp.mkdir()
+            (temp/'rm06-evidence').mkdir()
+            node=m.NODES['web'][0]
+            ident={'studyflow_sha':'a'*40,'devtool_sha':m.DEVTOOL_SHA,
+                   'run_id':123,'run_attempt':1}
+            def runner(*args, **kwargs):
+                self.fail('Native Devtool should not execute over existing evidence')
+            with patch.object(m,'hosted_identity',return_value=ident):
+                with self.assertRaisesRegex(m.Refused, 'staging contains stale bytes'):
+                    m.execute('web',temp/'receipt.json',root=root,
+                              env={'RUNNER_TEMP':str(temp)},
+                              compiler=lambda *args,**kw:self.graph(node),runner=runner)
+            receipt=json.loads((temp/'receipt.json').read_text())
+            self.assertFalse(receipt['ci_lane_passed'])
+            self.assertEqual(receipt['status'],'FAILED_INCOMPLETE')
+
+    def test_native_evidence_staging_symlink_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)/'repo';root.mkdir()
+            temp=Path(d)/'temp';temp.mkdir()
+            (temp/'outside').mkdir()
+            (temp/'rm06-evidence').symlink_to(temp/'outside',target_is_directory=True)
+            ident={'studyflow_sha':'a'*40,'devtool_sha':m.DEVTOOL_SHA,
+                   'run_id':123,'run_attempt':1}
+            with patch.object(m,'hosted_identity',return_value=ident):
+                with self.assertRaisesRegex(m.Refused, 'staging contains stale bytes'):
+                    m.execute('web',temp/'receipt.json',root=root,
+                              env={'RUNNER_TEMP':str(temp)},
+                              compiler=lambda *a,**k:self.graph(m.NODES['web'][0]),
+                              runner=lambda *a,**k:self.fail('Must refuse symlink'))
 
     def test_junit_typed_gate_must_pass_for_release(self):
         with tempfile.TemporaryDirectory() as d:
