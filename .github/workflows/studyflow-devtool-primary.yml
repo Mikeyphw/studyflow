@@ -1,0 +1,253 @@
+# Replacement candidate for ordinary StudyFlow CI. During acceptance the
+# original studyflow-ci.yml remains authoritative and unchanged.
+name: StudyFlow Devtool CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: studyflow-devtool-ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source:
+    name: Devtool source and safety
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Verify exact source and migration contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          python3 -B tests/test_studyflow_devtool_primary.py
+          python3 -B scripts/sfdt07_consolidated_contract.py --check
+          python3 -B scripts/sfdt08_contract.py --check
+          python3 -B scripts/sfdt11_contract.py --source-check
+  native:
+    name: Devtool ${{ matrix.lane }}
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: phone
+            java: true
+            android: true
+            node: false
+            webdeps: false
+          - lane: tv
+            java: true
+            android: true
+            node: false
+            webdeps: false
+          - lane: desktop
+            java: true
+            android: false
+            node: false
+            webdeps: false
+          - lane: web
+            java: false
+            android: false
+            node: true
+            webdeps: true
+    env:
+      CI: 'true'
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONNOUSERSITE: '1'
+      DEVTOOL_SOURCE_SHA: bee6e0b7e49aaaa0c56f755fd5be434a27c52b6c
+      STUDYFLOW_LANE: ${{ matrix.lane }}
+    steps:
+      - name: Checkout exact StudyFlow commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Verify source identity and signing boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = X64
+          test "$GITHUB_REPOSITORY" = Mikeyphw/studyflow
+          [[ "$DEVTOOL_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test -z "${STUDYFLOW_RELEASE_STORE_PASSWORD:-}"
+          test -z "${STUDYFLOW_RELEASE_KEY_PASSWORD:-}"
+          test -z "${STUDYFLOW_RELEASE_STORE_FILE:-}"
+      - name: Python 3.12 Devtool executor
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: JDK 21 for Android and Desktop
+        if: ${{ matrix.java == true }}
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+          check-latest: false
+      - name: Android SDK36 and NDK29
+        if: ${{ matrix.android == true }}
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865'
+      - name: Require Android toolchain
+        if: ${{ matrix.android == true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$ANDROID_HOME/platforms/android-36"
+          test -d "$ANDROID_HOME/build-tools/36.0.0"
+          test -d "$ANDROID_HOME/ndk/29.0.14206865"
+          java -version 2>&1 | grep -E 'version [^0-9]*21([.]|[^0-9])'
+      - name: Hosted Gradle setup
+        if: ${{ matrix.java == true }}
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          cache-disabled: true
+      - name: Node 22 for Web
+        if: ${{ matrix.node == true }}
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22'
+      - name: Install pinned Web pytest requirements
+        if: ${{ matrix.webdeps == true }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check --no-deps --only-binary=:all: \
+            -r web/requirements-test.txt -r web/requirements-deep-pytest.txt
+          python3 -m pytest --version
+      - name: Acquire immutable Devtool runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/Mikeyphw/devtool.git "$RUNNER_TEMP/studyflow-primary-devtool-source"
+          git -C "$RUNNER_TEMP/studyflow-primary-devtool-source" checkout --detach "$DEVTOOL_SOURCE_SHA"
+          test "$(git -C "$RUNNER_TEMP/studyflow-primary-devtool-source" rev-parse HEAD)" = "$DEVTOOL_SOURCE_SHA"
+          test -f "$RUNNER_TEMP/studyflow-primary-devtool-source/devtool/actions_graph_export.py"
+          python3 -m venv "$RUNNER_TEMP/studyflow-primary-devtool-env"
+          "$RUNNER_TEMP/studyflow-primary-devtool-env/bin/python" -m pip install \
+            --disable-pip-version-check --only-binary=:all: --no-deps \
+            'pyyaml==6.0.3' 'rich==15.0.0' 'markdown-it-py==4.2.0' \
+            'mdurl==0.1.2' 'pygments==2.20.0'
+      - name: Execute Devtool-owned CI DAG
+        id: execute
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          mkdir -p "$RUNNER_TEMP/studyflow-devtool-primary"
+          if [[ "$STUDYFLOW_LANE" == phone ]]; then
+            mode=--guarded
+          else
+            mode=--execute
+          fi
+          PYTHONPATH="$RUNNER_TEMP/studyflow-primary-devtool-source" \
+            PYTHONUNBUFFERED=1 \
+            "$RUNNER_TEMP/studyflow-primary-devtool-env/bin/python" -u -B \
+            scripts/studyflow_devtool_primary.py --lane "$STUDYFLOW_LANE" "$mode" \
+            --out "$RUNNER_TEMP/studyflow-devtool-primary/receipt.json"
+          python3 - "$RUNNER_TEMP/studyflow-devtool-primary/receipt.json" "$STUDYFLOW_LANE" <<'PY'
+          import json,sys
+          receipt=json.load(open(sys.argv[1],encoding='utf-8'))
+          assert receipt['lane']==sys.argv[2] and receipt['status']=='NATIVE_CI_LANE_PASSED'
+          assert receipt['ci_lane_passed'] is True and receipt['cutover_authorized'] is False
+          PY
+      - name: Require fresh hosted test and Android lint report bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/studyflow_devtool_primary.py \
+            --lane "$STUDYFLOW_LANE" --verify-reports \
+            --out "$RUNNER_TEMP/studyflow-devtool-primary/receipt.json"
+      - name: Preserve unqualified failure receipt
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/studyflow-devtool-primary"
+          if test ! -f "$RUNNER_TEMP/studyflow-devtool-primary/receipt.json"; then
+            python3 -B scripts/studyflow_devtool_primary.py \
+              --lane "$STUDYFLOW_LANE" --fallback \
+              --out "$RUNNER_TEMP/studyflow-devtool-primary/receipt.json"
+          fi
+      - name: Upload Devtool CI receipts and JVM diagnostics
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: studyflow-primary-${{ matrix.lane }}-receipt-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/studyflow-devtool-primary/
+            ${{ runner.temp }}/studyflow-primary-execution/
+            ${{ runner.temp }}/rm06-evidence/
+            ${{ runner.temp }}/rm06-output/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve test XML and lint diagnostics
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: studyflow-primary-${{ matrix.lane }}-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            app/build/reports/lint-results-debug.*
+            app/build/test-results/**
+            app-tv/build/reports/lint-results-debug.*
+            app-tv/build/test-results/**
+            desktopApp/build/test-results/**
+            web/build/test-results/**
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Verify debug APK signature and identify produced byte artifact
+        if: ${{ matrix.android == true }}
+        id: apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$STUDYFLOW_LANE" == phone ]]; then
+            package=app/build/outputs/apk/debug/app-debug.apk
+          else
+            package=app-tv/build/outputs/apk/debug/app-tv-debug.apk
+          fi
+          test -f "$package" && test ! -L "$package"
+          test "$(stat -c '%s' "$package")" -ge 1024
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$package"
+          sha256sum "$package"
+          echo "package=$package" >> "$GITHUB_OUTPUT"
+      - name: Upload actual debug APK
+        if: ${{ matrix.android == true }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: studyflow-primary-${{ matrix.lane }}-debug-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.apk.outputs.package }}
+          if-no-files-found: error
+          retention-days: 7
+  gate:
+    name: Devtool CI gate
+    if: always()
+    needs: [source, native]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: All primary Devtool source and hosted lanes must pass
+        shell: bash
+        env:
+          SOURCE_RESULT: ${{ needs.source.result }}
+          NATIVE_RESULT: ${{ needs.native.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_RESULT" = success
+          test "$NATIVE_RESULT" = success
+          echo 'STUDYFLOW_DEVTOOL_CI_GATE_PASS: hosted source, Android, TV, Desktop and Web'
