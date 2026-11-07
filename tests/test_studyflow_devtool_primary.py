@@ -336,7 +336,7 @@ class ContractTests(unittest.TestCase):
         prewarm = HERE/'scripts/sfdt19_desktop_prewarm.init.gradle'
         source = prewarm.read_text(encoding='utf-8')
         digest = hashlib.sha256(prewarm.read_bytes()).hexdigest()
-        self.assertEqual(digest, 'd0b2a0609cbfcebd12b0347741311f9c29107af001e8932429761cc34e6b4420')
+        self.assertEqual(digest, '1481d16b91e8bd4fca288b04c3107e98308c23a17f9ca1b75598ec4a19af6b64')
         self.assertIn(digest + '  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
         self.assertIn('--no-configuration-cache --max-workers=2', workflow)
         self.assertIn(':desktopApp:sfdt19MaterializeDesktopExternalArtifacts', workflow)
@@ -362,8 +362,8 @@ class ContractTests(unittest.TestCase):
         source = script.read_text(encoding='utf-8')
         workflow = (HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
         self.assertEqual(hashlib.sha256(script.read_bytes()).hexdigest(),
-                         'd0b2a0609cbfcebd12b0347741311f9c29107af001e8932429761cc34e6b4420')
-        self.assertIn('d0b2a0609cbfcebd12b0347741311f9c29107af001e8932429761cc34e6b4420  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
+                         '1481d16b91e8bd4fca288b04c3107e98308c23a17f9ca1b75598ec4a19af6b64')
+        self.assertIn('1481d16b91e8bd4fca288b04c3107e98308c23a17f9ca1b75598ec4a19af6b64  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
         self.assertIn("'kotlinBuildToolsApiClasspath'", source)
         self.assertIn("'kotlin-build-tools-compat-2.4.10'", source)
         self.assertIn("'kotlin-build-tools-impl-2.4.10'", source)
@@ -389,12 +389,12 @@ class ContractTests(unittest.TestCase):
         source = script.read_text(encoding='utf-8')
         workflow = (HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
         digest = hashlib.sha256(script.read_bytes()).hexdigest()
-        self.assertEqual(digest, 'd0b2a0609cbfcebd12b0347741311f9c29107af001e8932429761cc34e6b4420')
+        self.assertEqual(digest, '1481d16b91e8bd4fca288b04c3107e98308c23a17f9ca1b75598ec4a19af6b64')
         self.assertIn(digest+'  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
         for module in (':desktopApp',':core:model',':core:domain',
                        ':core:link',':core:portability'):
             self.assertIn("'"+module+"'", source)
-        self.assertIn('def modules = approvedPaths.collect', source)
+        self.assertIn('project.tasks.register(taskName)', source)
         self.assertIn('module.configurations.findByName(name)', source)
         self.assertIn("module.path == ':core:portability'", source)
         self.assertIn('kotlinCompilerPluginClasspathMain', source)
@@ -410,6 +410,35 @@ class ContractTests(unittest.TestCase):
         self.assertIn('command = ["gradle", "--offline", "--no-daemon", "--console=plain", ":desktopApp:test"]',
                       (HERE/'.devtool.toml').read_text())
         self.assertIn('sfdt08-desktop-fast', (HERE/'.devtool.toml').read_text())
+
+    def test_hf06_project_scoped_preparatory_resolution(self):
+        # Hosted HF05 run 42397522465 refused cross-project configuration
+        # resolution while Desktop tried to resolve :core:model classpaths.
+        import hashlib
+        script = HERE/'scripts/sfdt19_desktop_prewarm.init.gradle'
+        source = script.read_text(encoding='utf-8')
+        workflow = (HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
+        digest = hashlib.sha256(script.read_bytes()).hexdigest()
+        self.assertEqual(digest, '1481d16b91e8bd4fca288b04c3107e98308c23a17f9ca1b75598ec4a19af6b64')
+        self.assertIn(digest + '  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
+        for module in (':desktopApp',':core:model',':core:domain',
+                       ':core:link',':core:portability'):
+            self.assertIn("'" + module + "'", source)
+        self.assertIn('gradle.beforeProject { project ->', source)
+        self.assertIn('if (!approvedPaths.contains(project.path))', source)
+        self.assertIn('project.tasks.register(taskName)', source)
+        self.assertIn('def module = project', source)
+        self.assertIn('prewarm.configure', source)
+        self.assertIn('dependsOn approvedPaths.findAll', source)
+        self.assertNotIn('project.rootProject.findProject(path)', source)
+        self.assertIn('configuration.incoming.artifactView', source)
+        self.assertIn('component instanceof ModuleComponentIdentifier', source)
+        self.assertIn('kotlin-serialization-compiler-plugin-embeddable-2.4.10', source)
+        self.assertIn('SFDT19_DESKTOP_JVM_CLOSURE_PASS', source)
+        self.assertIn('--no-configuration-cache --max-workers=2', workflow)
+        self.assertIn('test ! -e dist/jvm-tests.xml', workflow)
+        self.assertIn('command = ["gradle", "--offline", "--no-daemon", "--console=plain", ":desktopApp:test"]',
+                      (HERE/'.devtool.toml').read_text())
 
     @staticmethod
     def graph(node):

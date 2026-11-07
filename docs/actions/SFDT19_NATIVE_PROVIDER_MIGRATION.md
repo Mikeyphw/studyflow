@@ -161,3 +161,28 @@ unchanged `gradle --offline --no-daemon --console=plain :desktopApp:test`.
 No `.devtool.toml`, SFDT11, native Web, Phone/TV, signing, release, credentials,
 local Gradle or Python rollback changes. Source-only checks and bundle tests
 cannot qualify the build; a new hosted PR SHA must pass the aggregate gate.
+
+## HF06 — Gradle 9 project-scoped cache preparation
+
+HF05 reached the source-bound hosted prewarm task on PR #12 at
+`d4c5870a9aa469853bd6b046fca4abee01ffa7a6`, but run `42397522465`
+failed before the JVM test with Gradle's `Resolution of the configuration
+':core:model:compileClasspath' was attempted without an exclusive lock`.
+HF05's aggregate task attempted to resolve sibling-project configurations
+from a `:desktopApp` task, which Gradle 9 refuses as unsafe.
+
+HF06 registers an identically named, read-only external-artifact prewarm task
+**inside each of the five exact reviewed JVM modules**, then makes the
+`:desktopApp` entry task depend on the four `:core` tasks. Every module now
+resolves its *own* configurations while Gradle holds that project's task
+lock. The Kotlin 2.4.10 Build Tools and serialization compiler plugin JAR
+checks are retained, as is byte-based artifact resolution. Project-owned
+outputs are not compiled or tested during preparation. `:desktopApp:test`
+remains exclusively owned by Devtool's unchanged offline JVM provider.
+
+The prewarm SHA-256 is re-pinned in the workflow and all existing source
+regressions, and HF06 adds an explicit no-cross-project test. No change to
+`.devtool.toml`, SFDT11, Devtool SHA, native Web/Android, signing, publishing,
+secrets, local Gradle or the Python rollback bridge. Hosted CI remains the
+only acceptance gate; this package's offline tests do not prove the Gradle
+build succeeds on GitHub.
