@@ -70,3 +70,75 @@ python3 -B tests/test_sfdt16_cutover_probe.py
 python3 -B tests/test_sfdt17_hosted_equivalence.py
 python3 -B tests/test_sfdt18_evidence_coordinator.py
 ```
+
+## SFDT18-HF01 — guarded SFDT07 phone and same-SHA recovery
+
+The original SFDT07 run `42270845902` at StudyFlow SHA
+`7d4319533f631cad6f83810348d80fd28919c5d8` finished **cancelled**.
+The `native-phone-debug` log reached `:app:lintDebug` at 18:36:46 UTC,
+then emitted Devtool heartbeat text without substantive Gradle output for
+~56 minutes until the 65-minute GitHub job timeout. Its 422-byte artifact
+was a failure-only receipt, **not** an APK. The specific underlying Gradle
+hang/daemon failure is not established.
+
+HF01 adds a GitHub-hosted watchdog around the *existing native Devtool node*.
+It does not implement a second Gradle executor or change its task list,
+JDK/SDK/NDK, signing, releases, device or CI authority. The phone guard
+records process/JVM thread diagnostics to an unqualified SFDT07 artifact,
+then fails with code 124 on 10 minutes of non-heartbeat silence or 42 minutes
+of total runtime. A failed guard is never a PASS and cannot be adopted.
+`native-tv-debug`, `native-web-pytest`, and `native-quality-source` remain
+unchanged. The hosted watchdog's presence does **not** prove the original
+Gradle stall is fixed; it makes the failure bounded and diagnosable.
+
+### Source SHA invariant — crucial
+
+Merging HF01 creates a *new* StudyFlow `main` SHA. The four green runs from
+`7d431953...` **cannot** be combined with a fresh HF01 SFDT07 run on the new
+commit; SFDT16 and SFDT17 correctly reject such an attempt. After merging,
+sync the existing StudyFlow checkout, ensure new `main` push CI succeeds,
+then run `dispatch` to gather a new exact-SHA five-lane cohort. No local Gradle.
+
+### Recover one cancelled/failed SFDT07 lane, without restarting the other four
+
+Only for an existing `READY` state on **the exact current main SHA**, with
+legacy, SFDT06, SFDT08 fast and SFDT08 deep already green and SFDT07 failed:
+
+```zsh
+cd ~/Code/studyflow
+python3 -B scripts/sfdt18_evidence_coordinator.py recover
+python3 -B scripts/sfdt18_evidence_coordinator.py status
+```
+
+`recover` checks GitHub's original failed run, four successful runs, canonical
+workflow identity, exact source SHA and state; writes `RECOVERY_DISPATCHING`
+*before* dispatch so an interrupted run cannot be duplicated; and records
+`RECOVERY_PENDING` with a new candidate run ID without overwriting the failed
+run. It does not silently re-run on a changed source SHA.
+
+When the candidate completes successfully:
+
+```zsh
+python3 -B scripts/sfdt18_evidence_coordinator.py adopt
+python3 -B scripts/sfdt18_evidence_coordinator.py finalize
+```
+
+`adopt` verifies the exact current SHA and the previous five runs, a completed
+successful SFDT07 rerun, the exact four named matrix jobs and GitHub's
+attempt-scoped successful job inventory, plus complete producer-bound artifact
+metadata. Phone/TV debug artifact archives below 1 MiB are refused, including
+the observed 422-byte failure receipt. The old run ID is preserved in recovery
+history, all other run IDs remain unchanged, and only the SFDT07 ID is replaced.
+Only then may SFDT17's byte verifier run. Actual artifact ZIP contents,
+Devtool runtime consistency and semantic parity remain separately unverified.
+
+A failed or interrupted candidate stays `RECOVERY_PENDING` /
+`RECOVERY_DISPATCHING`, respectively. Do not delete state and replay blindly;
+inspect the exact GitHub run before a source-pinned recovery revision.
+
+Run the source-only checks on Termux:
+
+```zsh
+python3 -B tests/test_sfdt18_evidence_coordinator.py
+python3 -B tests/test_sfdt18_phone_debug_guard.py
+```

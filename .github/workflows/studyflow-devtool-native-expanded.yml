@@ -122,9 +122,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/sfdt07"
-          PYTHONPATH="$RUNNER_TEMP/sfdt07-devtool-source" \
-            "$RUNNER_TEMP/sfdt07-devtool-env/bin/python" -B scripts/sfdt07_native_lane.py \
-            --lane "$SFDT_LANE" --execute --out "$RUNNER_TEMP/sfdt07/receipt.json"
+          # Keep Devtool as the only Gradle graph executor. On phone-debug,
+          # HF01 observes actual child output and stops a stalled Gradle lane
+          # before GitHub's hard 65-minute timeout, retaining JVM diagnostics.
+          if [[ "$SFDT_LANE" == phone-debug ]]; then
+            PYTHONPATH="$RUNNER_TEMP/sfdt07-devtool-source" \
+              PYTHONUNBUFFERED=1 \
+              "$RUNNER_TEMP/sfdt07-devtool-env/bin/python" -u -B \
+              scripts/sfdt18_phone_debug_guard.py \
+              --out "$RUNNER_TEMP/sfdt07/receipt.json"
+          else
+            PYTHONPATH="$RUNNER_TEMP/sfdt07-devtool-source" \
+              "$RUNNER_TEMP/sfdt07-devtool-env/bin/python" -B scripts/sfdt07_native_lane.py \
+              --lane "$SFDT_LANE" --execute --out "$RUNNER_TEMP/sfdt07/receipt.json"
+          fi
       - name: Record failed or missing native attempt (unqualified)
         if: always()
         shell: bash

@@ -23,7 +23,7 @@ FROZEN_BLOBS = {
     '.github/workflows/studyflow-ci.yml': '325b07d2d37f1efcd1cfc36cd39f1fcdab39fdf8',
     '.github/workflows/studyflow-hosted-sign.yml': '48c62104b0f2e4df26ecd041ffc75993da820f06',
     '.github/workflows/studyflow-devtool-shadow.yml': 'ee86f20237e47d3c1dc47ce28cab56a9a8297dc6',
-    '.github/workflows/studyflow-devtool-native-expanded.yml': '44e56ac19de1465e70d25fe47ac062da983b0ca3',
+    '.github/workflows/studyflow-devtool-native-expanded.yml': '99c19a7fd5b45d3bcaff00ccc040af9054a3cfca',
     '.github/workflows/studyflow-devtool-native-coverage.yml': '61ddb65581356761570d5d68c08cdb1771334a32',
     '.github/workflows/studyflow-devtool-sfdt10-debug-shadow.yml': 'ed3975b3fe0a748f3a65448b88a6457a4d51097a',
     '.github/workflows/studyflow-devtool-sfdt10-r2-compare.yml': '6792c9db4dbf2de33c911b5d020d30738d6aae99',
