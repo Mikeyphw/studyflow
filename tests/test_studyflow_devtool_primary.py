@@ -328,6 +328,32 @@ class ContractTests(unittest.TestCase):
         self.assertNotIn('sfdt19-native-web-test', cfg['targets']['studyflow_web'].get('jobs',{}))
         self.assertIn('sfdt08-web-full', cfg['targets']['studyflow_android']['jobs'])
 
+    def test_hf03_desktop_prewarm_downloads_external_artifact_bytes(self):
+        # Source policy: dependency report metadata is not sufficient for RM12
+        # offline compilation, which requires actual Compose/Kotlin class jars.
+        import hashlib
+        workflow = (HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
+        prewarm = HERE/'scripts/sfdt19_desktop_prewarm.init.gradle'
+        source = prewarm.read_text(encoding='utf-8')
+        digest = hashlib.sha256(prewarm.read_bytes()).hexdigest()
+        self.assertEqual(digest, '261ae3c20741ac4fe4cbdbbbe5ff40b75bfd95d9cb7120f36cd186c0fb643e13')
+        self.assertIn(digest + '  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
+        self.assertIn('--no-configuration-cache --max-workers=2', workflow)
+        self.assertIn(':desktopApp:sfdt19MaterializeDesktopExternalArtifacts', workflow)
+        self.assertIn('component instanceof ModuleComponentIdentifier', source)
+        self.assertIn('configuration.incoming.artifactView', source)
+        for config in ('compileClasspath', 'runtimeClasspath', 'testCompileClasspath', 'testRuntimeClasspath'):
+            self.assertIn("'"+config+"'", source)
+        self.assertNotIn(':desktopApp:dependencies --configuration', workflow)
+        preparation=workflow.split('name: Provision reviewed Desktop external artifact bytes',1)[1].split('name: Acquire immutable Devtool runtime',1)[0]
+        self.assertFalse(any(':desktopApp:test' in line for line in preparation.splitlines()
+                             if line.lstrip().startswith('./gradlew ')))
+        self.assertNotIn('gradle --offline', preparation)
+        self.assertIn('test ! -e desktopApp/build/test-results/test', preparation)
+        self.assertIn('test ! -e dist/jvm-tests.xml', preparation)
+        self.assertIn("('studyflow_desktop', 'ci-sfdt19-native-desktop-test'", (HERE/'scripts/studyflow_devtool_primary.py').read_text())
+        self.assertIn('sfdt08-desktop-fast', (HERE/'.devtool.toml').read_text())
+
     @staticmethod
     def graph(node):
         target,workflow,job,provider,tasks,apk,_=node

@@ -84,3 +84,30 @@ provider-specific source reviewers still independently source-hash the actual
 tracked JVM and Web dependency/script closure; no generated artifact is
 accepted from an unowned broad glob.
 All prior hosted evidence refers to the earlier PR SHA and cannot qualify HF01.
+
+## HF03 — Materialize offline Desktop classpath artifacts
+
+The HF02 hosted run `42390639526` passed source, Phone, TV, native Web,
+SFDT11 and the independent Node consumer, but native Desktop RM12 failed
+when `:desktopApp:test` attempted to compile against uncached Compose Desktop,
+Kotlin and AndroidX JARs in `--offline` mode. Gradle's previous
+`:desktopApp:dependencies` reports resolved component metadata, not all
+artifact bytes. The configuration-cache serialization error was a symptom
+of those unresolved offline artifacts, not a reason to disable Devtool tests.
+
+HF03 replaces that metadata-only step with a checksum-pinned, reviewed Groovy
+init script that registers a **temporary hosted dependency materialization
+task** on `:desktopApp`. It force-resolves actual external module artifacts
+for compile/runtime and test compile/runtime configurations using Gradle
+`artifactView`/`ModuleComponentIdentifier`, checks nonempty readable files,
+and refuses missing or unbounded results. It excludes project-owned artifacts,
+so it never builds the Desktop app or produces tests during preparation.
+The prewarm invocation opts out of the configuration cache solely for this
+ad hoc task, leaving the native RM12 `gradle --offline ... :desktopApp:test`
+command and its separate provider, source, test and JUnit evidence unchanged.
+
+The prewarm script is SHA-256 pinned inside the primary workflow, and its
+review is enforced by a source-only regression. No `.devtool.toml`, SFDT11
+immutable policies, Web/Phone/TV providers, signing, release, device or
+rollback jobs are modified. Real hosted acceptance remains mandatory;
+a passing source test cannot establish the offline JVM build succeeded.

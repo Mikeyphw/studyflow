@@ -138,18 +138,23 @@ jobs:
           set -euo pipefail
           npm install --global npm@10.9.4 --ignore-scripts --no-audit --no-fund
           test "$(npm --version)" = '10.9.4'
-      # RM12 executes Gradle offline. This bounded GitHub-only dependency fetch
-      # resolves project configurations but never runs Desktop compile/tests;
-      # native Devtool remains sole owner of test execution and JUnit outputs.
-      - name: Provision reviewed Desktop test dependency closures
+      # RM12 executes Gradle OFFLINE. Dependency reports only resolve metadata;
+      # a source-locked init task downloads the actual external classpath JARs.
+      # This hosted preparation never compiles, tests, or emits JUnit; only the
+      # first-class Devtool JVM node executes :desktopApp:test afterwards.
+      - name: Provision reviewed Desktop external artifact bytes
         if: ${{ matrix.lane == 'desktop' }}
         shell: bash
         run: |
           set -euo pipefail
-          ./gradlew --no-daemon --max-workers=2 :desktopApp:dependencies --configuration testCompileClasspath
-          ./gradlew --no-daemon --max-workers=2 :desktopApp:dependencies --configuration testRuntimeClasspath
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "261ae3c20741ac4fe4cbdbbbe5ff40b75bfd95d9cb7120f36cd186c0fb643e13  scripts/sfdt19_desktop_prewarm.init.gradle" | sha256sum --check --status
+          ./gradlew --no-daemon --no-configuration-cache --max-workers=2 \
+            --init-script scripts/sfdt19_desktop_prewarm.init.gradle \
+            :desktopApp:sfdt19MaterializeDesktopExternalArtifacts
           test ! -e desktopApp/build/test-results/test
           test ! -e dist/jvm-tests.xml
+          test -z "$(git status --porcelain --untracked-files=normal)"
       - name: Acquire immutable Devtool runtime
         shell: bash
         run: |

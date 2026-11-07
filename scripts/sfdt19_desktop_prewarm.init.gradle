@@ -1,0 +1,45 @@
+// SFDT19 HF03: hosted-only, source-bound download of Desktop external JAR bytes.
+// This does not compile, test, package, publish, or configure release signing.
+// The native Devtool RM12 JVM job remains the sole Desktop test executor.
+import org.gradle.api.GradleException
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+
+gradle.beforeProject { project ->
+    if (project.path != ':desktopApp') {
+        return
+    }
+    project.tasks.register('sfdt19MaterializeDesktopExternalArtifacts') {
+        group = 'verification'
+        description = 'Resolve the exact external Desktop compile/test artifacts for offline native RM12 CI'
+        doLast {
+            def configurations = [
+                'compileClasspath', 'runtimeClasspath',
+                'testCompileClasspath', 'testRuntimeClasspath',
+            ]
+            configurations.each { name ->
+                def configuration = project.configurations.findByName(name)
+                if (configuration == null || !configuration.canBeResolved) {
+                    throw new GradleException('SFDT19_PREWARM_REFUSED: unresolved configuration ' + name)
+                }
+                // A dependency report may resolve only module metadata. An
+                // artifact view forces external JAR bytes into the Gradle cache.
+                // Project components are excluded: they are compiled only by
+                // the subsequent native Devtool JVM test job.
+                def external = configuration.incoming.artifactView {
+                    componentFilter { component ->
+                        component instanceof ModuleComponentIdentifier
+                    }
+                }.files.files
+                if (external.isEmpty() || external.size() > 2048) {
+                    throw new GradleException('SFDT19_PREWARM_REFUSED: missing/unbounded external artifacts ' + name)
+                }
+                external.each { artifact ->
+                    if (!artifact.isFile() || !artifact.canRead() || artifact.length() == 0L) {
+                        throw new GradleException('SFDT19_PREWARM_REFUSED: missing/empty artifact in ' + name)
+                    }
+                }
+                println "SFDT19_DESKTOP_ARTIFACT_BYTES_PASS: ${name} ${external.size()} files"
+            }
+        }
+    }
+}
