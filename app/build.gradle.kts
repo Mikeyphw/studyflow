@@ -150,7 +150,12 @@ android {
         }
     }
 
-    testBuildType = "release"
+    // SFDT21: disposable hosted emulator ONLY; never alters normal release tests.
+    testBuildType = if (
+        providers.environmentVariable("GITHUB_ACTIONS").orNull == "true" &&
+        providers.environmentVariable("STUDYFLOW_SFDT21_HOSTED_EMULATOR").orNull == "true" &&
+        !studyFlowPersonalSigningConfigured && !releaseSigningConfigured
+    ) "debug" else "release"
 
     lint {
         checkDependencies = true

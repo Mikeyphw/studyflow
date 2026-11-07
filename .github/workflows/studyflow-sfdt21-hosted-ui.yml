@@ -1,0 +1,136 @@
+name: StudyFlow SFDT21 Real Android UI Emulator Acceptance
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sfdt21-emulator-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source:
+    name: SFDT21 instrumentation source and safety
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Exact checkout and fail-closed source contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          echo "096dcb85e079cb40452159a84f93fa8f8835cd059ecbbd94ffb7f3c97aa38f7b  scripts/sfdt21_emulator_verify.py" | sha256sum --check --status
+          echo "700ac0a4e17ba56e36e3cc056afea5b232577ef84fb75e5fa62221f3f356af0b  scripts/sfdt21_emulator_ci.sh" | sha256sum --check --status
+          echo "b7b14768941ec9965d6429d16da1a6295edbd8dec478a4d389f5c96ef5c0b63b  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt21HostedRealUiTest.kt" | sha256sum --check --status
+          python3 -B scripts/test_sfdt21_emulator_contract.py
+          python3 -B scripts/sfdt11_contract.py --source-check
+  emulator:
+    name: SFDT21 API36 real MainActivity UI instrumentation
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      CI: 'true'
+      PYTHONDONTWRITEBYTECODE: '1'
+      STUDYFLOW_SFDT21_HOSTED_EMULATOR: 'true'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Assert exact ephemeral hosted checkout, initialize NOT_RUN evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = X64
+          test "$GITHUB_REPOSITORY" = Mikeyphw/studyflow
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          test -z "${STUDYFLOW_RELEASE_STORE_PASSWORD:-}${STUDYFLOW_RELEASE_KEY_PASSWORD:-}${STUDYFLOW_RELEASE_STORE_FILE:-}"
+          mkdir -p "$RUNNER_TEMP/sfdt21-emulator"
+          printf '%s\n' '{"overall":"NOT_RUN","hosted_emulator_only":true,"physical_device_qualified":false,"release_qualified":false,"publication_allowed":false}' > "$RUNNER_TEMP/sfdt21-emulator/SFDT21_EVIDENCE.json"
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865'
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          cache-disabled: true
+          gradle-version: '9.7.1'
+      - name: Hosted-only debug app and real instrumentation APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
+          test -f app/build/outputs/apk/debug/app-debug.apk
+          test -f app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          test ! -e app/build/outputs/apk/release/app-release.apk
+      - name: Require disposable Linux KVM and install Android 16 emulator image
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -c /dev/kvm
+          if [[ ! -r /dev/kvm || ! -w /dev/kvm ]]; then sudo chmod a+rw /dev/kvm; fi
+          test -r /dev/kvm && test -w /dev/kvm
+          for i in 1 2 3; do
+            if sdkmanager --install 'system-images;android-36;google_apis;x86_64'; then break; fi
+            if [[ "$i" == 3 ]]; then echo SFDT21_IMAGE_UNAVAILABLE >&2; exit 1; fi
+            sleep 10
+          done
+          available="$(df -Pk "$HOME" | awk 'END{print $4}')"
+          [[ "$available" =~ ^[0-9]+$ ]] && (( available >= 4*1024*1024 )) || { echo SFDT21_AVD_DISK_REFUSED >&2; exit 1; }
+      - name: Real MainActivity UI interactions on disposable API36 emulator
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          cores: 2
+          ram-size: 2048M
+          disk-size: 3072M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: bash scripts/sfdt21_emulator_ci.sh
+      - name: Independently verify instrumentation outcomes, APK identity and four real UI captures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt21_emulator_verify.py --verify --output-dir "$RUNNER_TEMP/sfdt21-emulator" --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+      - name: Upload minimized hosted emulator evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sfdt21-hosted-ui-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sfdt21-emulator/
+          if-no-files-found: error
+          retention-days: 14
+  gate:
+    name: SFDT21 hosted emulator UI gate
+    if: always()
+    needs: [source, emulator]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Require source and actual emulator instrumentation success
+        env:
+          SOURCE_RESULT: ${{ needs.source.result }}
+          EMULATOR_RESULT: ${{ needs.emulator.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_RESULT" = success
+          test "$EMULATOR_RESULT" = success
+          echo SFDT21_HOSTED_REAL_UI_ACCEPTANCE_PASS
