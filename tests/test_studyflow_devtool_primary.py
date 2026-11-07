@@ -336,7 +336,7 @@ class ContractTests(unittest.TestCase):
         prewarm = HERE/'scripts/sfdt19_desktop_prewarm.init.gradle'
         source = prewarm.read_text(encoding='utf-8')
         digest = hashlib.sha256(prewarm.read_bytes()).hexdigest()
-        self.assertEqual(digest, '991c0e30a4a858cd257bebb4e486e4f3496abddef5c71802704fdc6dd3134313')
+        self.assertEqual(digest, 'd0b2a0609cbfcebd12b0347741311f9c29107af001e8932429761cc34e6b4420')
         self.assertIn(digest + '  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
         self.assertIn('--no-configuration-cache --max-workers=2', workflow)
         self.assertIn(':desktopApp:sfdt19MaterializeDesktopExternalArtifacts', workflow)
@@ -362,8 +362,8 @@ class ContractTests(unittest.TestCase):
         source = script.read_text(encoding='utf-8')
         workflow = (HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
         self.assertEqual(hashlib.sha256(script.read_bytes()).hexdigest(),
-                         '991c0e30a4a858cd257bebb4e486e4f3496abddef5c71802704fdc6dd3134313')
-        self.assertIn('991c0e30a4a858cd257bebb4e486e4f3496abddef5c71802704fdc6dd3134313  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
+                         'd0b2a0609cbfcebd12b0347741311f9c29107af001e8932429761cc34e6b4420')
+        self.assertIn('d0b2a0609cbfcebd12b0347741311f9c29107af001e8932429761cc34e6b4420  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
         self.assertIn("'kotlinBuildToolsApiClasspath'", source)
         self.assertIn("'kotlin-build-tools-compat-2.4.10'", source)
         self.assertIn("'kotlin-build-tools-impl-2.4.10'", source)
@@ -377,6 +377,36 @@ class ContractTests(unittest.TestCase):
         self.assertIn('--no-configuration-cache --max-workers=2', workflow)
         self.assertNotIn('continue-on-error:', workflow)
         self.assertNotIn('environment: studyflow-signing', workflow)
+        self.assertIn('command = ["gradle", "--offline", "--no-daemon", "--console=plain", ":desktopApp:test"]',
+                      (HERE/'.devtool.toml').read_text())
+        self.assertIn('sfdt08-desktop-fast', (HERE/'.devtool.toml').read_text())
+
+    def test_hf05_full_desktop_jvm_closure_prewarm(self):
+        # Hosted HF04 run 42395335373 failed on :core:portability serialization
+        # compiler plugin despite resolving every :desktopApp compiler classpath.
+        import hashlib
+        script = HERE/'scripts/sfdt19_desktop_prewarm.init.gradle'
+        source = script.read_text(encoding='utf-8')
+        workflow = (HERE/'.github/workflows/studyflow-devtool-primary.yml').read_text()
+        digest = hashlib.sha256(script.read_bytes()).hexdigest()
+        self.assertEqual(digest, 'd0b2a0609cbfcebd12b0347741311f9c29107af001e8932429761cc34e6b4420')
+        self.assertIn(digest+'  scripts/sfdt19_desktop_prewarm.init.gradle', workflow)
+        for module in (':desktopApp',':core:model',':core:domain',
+                       ':core:link',':core:portability'):
+            self.assertIn("'"+module+"'", source)
+        self.assertIn('def modules = approvedPaths.collect', source)
+        self.assertIn('module.configurations.findByName(name)', source)
+        self.assertIn("module.path == ':core:portability'", source)
+        self.assertIn('kotlinCompilerPluginClasspathMain', source)
+        self.assertIn('kotlin-serialization-compiler-plugin-embeddable-2.4.10', source)
+        self.assertIn('SFDT19_DESKTOP_JVM_CLOSURE_PASS', source)
+        self.assertIn('configuration.incoming.artifactView', source)
+        self.assertIn('component instanceof ModuleComponentIdentifier', source)
+        self.assertNotIn("project.tasks.register('test'", source)
+        self.assertNotIn('gradle --offline', source)
+        self.assertIn('--no-configuration-cache --max-workers=2', workflow)
+        self.assertIn('test ! -e desktopApp/build/test-results/test', workflow)
+        self.assertIn('test ! -e dist/jvm-tests.xml', workflow)
         self.assertIn('command = ["gradle", "--offline", "--no-daemon", "--console=plain", ":desktopApp:test"]',
                       (HERE/'.devtool.toml').read_text())
         self.assertIn('sfdt08-desktop-fast', (HERE/'.devtool.toml').read_text())

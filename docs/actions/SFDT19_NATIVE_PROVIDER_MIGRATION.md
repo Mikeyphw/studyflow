@@ -137,3 +137,27 @@ and source regression pin the updated prewarm script by exact SHA-256.
 There are no `.devtool.toml`, SFDT11 policy, Android, Web, signing or
 release changes. Real hosted Desktop JUnit and aggregate gate evidence
 remain necessary; source checks cannot substitute for GitHub acceptance.
+
+## HF05 — Materialize the complete reviewed Desktop JVM closure
+
+HF04 reached the real `:desktopApp:test` offline JVM task on commit
+`444cbf7576e6b5199e3700e5278724a95d3de969`, but hosted run
+`42395335373` failed because the Kotlin serialization plugin artifact
+`org.jetbrains.kotlin:kotlin-serialization-compiler-plugin-embeddable:2.4.10`
+was not cached for `:core:portability:kotlinCompilerPluginClasspathMain`.
+The configuration-cache serialization diagnostic was secondary to that
+missing module-owned compiler-plugin classpath artifact.
+
+HF05 expands the checksum-pinned GitHub-hosted prewarm task to the exact
+reviewed JVM closure: `:desktopApp`, `:core:model`, `:core:domain`,
+`:core:link`, and `:core:portability`. For each of those modules it requires
+external bytes for compile/test runtime classpaths and any declared Kotlin
+compiler/build-tools/plugin classpaths; on both serialization modules it also
+requires the specific Kotlin serialization compiler plugin JAR. All other
+projects are excluded and project-owned components are never compiled by
+prewarm. Kotlin tests and fresh JUnit remain solely owned by Devtool RM12's
+unchanged `gradle --offline --no-daemon --console=plain :desktopApp:test`.
+
+No `.devtool.toml`, SFDT11, native Web, Phone/TV, signing, release, credentials,
+local Gradle or Python rollback changes. Source-only checks and bundle tests
+cannot qualify the build; a new hosted PR SHA must pass the aggregate gate.
