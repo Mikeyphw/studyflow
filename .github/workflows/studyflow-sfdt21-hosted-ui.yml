@@ -29,8 +29,10 @@ jobs:
           test -z "$(git status --porcelain --untracked-files=normal)"
           echo "096dcb85e079cb40452159a84f93fa8f8835cd059ecbbd94ffb7f3c97aa38f7b  scripts/sfdt21_emulator_verify.py" | sha256sum --check --status
           echo "700ac0a4e17ba56e36e3cc056afea5b232577ef84fb75e5fa62221f3f356af0b  scripts/sfdt21_emulator_ci.sh" | sha256sum --check --status
-          echo "b7b14768941ec9965d6429d16da1a6295edbd8dec478a4d389f5c96ef5c0b63b  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt21HostedRealUiTest.kt" | sha256sum --check --status
+          echo "a64ce080b4452929fd960ab0d0a03511f6aedc1a0ae3b251c5dffc3a27cc70bb  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt21HostedRealUiTest.kt" | sha256sum --check --status
           python3 -B scripts/test_sfdt21_emulator_contract.py
+          python3 -B scripts/verify_studyflow_actions.py --source-only
+          python3 -B scripts/studyflow_ci_gradle_profile.py --check-source
           python3 -B scripts/sfdt11_contract.py --source-check
   emulator:
     name: SFDT21 API36 real MainActivity UI instrumentation

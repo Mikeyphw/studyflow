@@ -150,14 +150,23 @@ class SFDT21Contracts(unittest.TestCase):
         gradle = (ROOT / 'app/build.gradle.kts').read_text()
         kotlin = (ROOT / 'app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt21HostedRealUiTest.kt').read_text()
         bash = (ROOT / 'scripts/sfdt21_emulator_ci.sh').read_text()
-        assert 'testBuildType = if (' in gradle
-        assert 'STUDYFLOW_SFDT21_HOSTED_EMULATOR' in gradle and ') "debug" else "release"' in gradle
+        # Preserve the literal release default for SFDT01/legacy source contracts.
+        assert 'testBuildType = "release"' in gradle
+        assert 'STUDYFLOW_SFDT21_HOSTED_EMULATOR' in gradle
+        assert 'testBuildType = "debug"' in gradle
+        assert '!studyFlowPersonalSigningConfigured && !releaseSigningConfigured' in gradle
+        assert 'providers.environmentVariable("GITHUB_ACTIONS").orNull == "true"' in gradle
         for marker in ('MainActivity', 'performClick()', 'scenario.recreate()', 'captureToImage()',
                        'assertIsSelected()', 'createAndroidComposeRule', 'Role.Tab', 'hasText(',
                        'realActivityOpensGlobalSearchAndReturnsToToday',
                        'onNodeWithContentDescription', 'hasSetTextAction()', 'Espresso.pressBack()'):
             assert marker in kotlin, marker
         assert 'rule.setContent(' not in kotlin and 'mock' not in kotlin.lower().split('class sfdt21hostedrealuitest', 1)[1]
+        # Hosted run 42411453613 exposed two invalid imports and missing Bitmap.
+        assert 'import android.graphics.Bitmap\n' in kotlin
+        assert 'import androidx.compose.ui.test.onAllNodes\n' not in kotlin
+        assert 'import androidx.compose.ui.test.onNode\n' not in kotlin
+        assert 'rule.onNode(' in kotlin and 'rule.onAllNodes(' in kotlin
         for task in (':app:assembleDebug', ':app:assembleDebugAndroidTest'):
             assert task in workflow
         for required in ('api-level: 36', 'arch: x86_64', 'profile: pixel_6',
@@ -167,6 +176,9 @@ class SFDT21Contracts(unittest.TestCase):
                          '--verify --output-dir', 'python3 -B scripts/test_sfdt21_emulator_contract.py'):
             assert required in workflow, required
         assert 'ro.kernel.qemu' in bash and 'emulator-5554' in bash
+        # The emulator source gate must also execute the legacy source policy.
+        assert 'python3 -B scripts/verify_studyflow_actions.py --source-only' in workflow
+        assert 'python3 -B scripts/studyflow_ci_gradle_profile.py --check-source' in workflow
         assert 'continue-on-error:' not in workflow and 'secrets.' not in workflow
         assert 'id-token: write' not in workflow and 'contents: write' not in workflow
         for path in ('scripts/sfdt21_emulator_verify.py','scripts/sfdt21_emulator_ci.sh'):

@@ -74,3 +74,37 @@ publishing acceptance. Additional device-specific flows remain future work.
 Revert this consolidated SFDT21 change. This restores the prior release
 instrumentation configuration and removes the isolated emulator workflow;
 SFDT19 native providers and SFDT20 provenance remain untouched.
+
+## HF01 — Hosted CI first-run fixes (2026-11-07)
+
+PR #14's initial hosted run at SHA `e140483cb97703e0d65b345cfd41c5a87b112851`
+identified two independent failures, both before emulator execution:
+
+1. Legacy `StudyFlow CI` run `42411453587` rejected the source-only
+   `testBuildType` contract because the conditional assignment obscured the
+   literal `testBuildType = "release"` default. HF01 restores that exact
+   release-default assignment first, then overrides to `debug` **only** when
+   `GITHUB_ACTIONS=true`, `STUDYFLOW_SFDT21_HOSTED_EMULATOR=true`, and both
+   personal and release signing inputs are absent. Neither the regular JVM
+   release test profile nor release signing or the SFDT19/20 pipeline changes.
+2. `SFDT21` emulator run `42411453613` failed at
+   `:app:compileDebugAndroidTestKotlin`: `androidx.compose.ui.test.onNode`
+   and `onAllNodes` are rule members, not valid standalone imports, and the
+   test needs `android.graphics.Bitmap` for PNG compression. HF01 corrects
+   those imports while preserving the production `MainActivity` UI journey.
+
+The native Devtool CI run `42411453588` also failed its Phone Release JVM
+provider on `SFDT08 phone Release JVM testBuildType is not reviewed`. Review of
+the exact pinned Devtool runtime (`devtool/actions_android_provider.py` at
+`bee6e0b7e49aaaa0c56f755fd5be434a27c52b6c`) confirms that this provider
+also matches the same literal `testBuildType = "release"` declaration. Thus the
+one fail-closed Gradle source fix addresses the existing native Phone provider
+**and** the legacy StudyFlow source gate, while leaving `:app:testReleaseUnitTest`
+and debug APK semantics as they were.
+
+The standalone SFDT21 source job now runs **both** established legacy
+source contracts and the SFDT21 negative tests before any emulator build. The
+workflow's Kotlin test source SHA-256 is updated together with the test file;
+this hotfix does not relax checks, downgrade tools, or silently skip any
+UI tests. The emulator and screenshot acceptance remained **unqualified**
+until a fresh hosted run at the new exact PR SHA passes.
