@@ -191,6 +191,7 @@ internal fun TopicEditorDialog(
         incidenceValid && minutesValue != null && progressValue != null && masteryValue != null
 
     AlertDialog(
+        modifier = Modifier.testTag("studyflow.topic_editor.dialog"),
         onDismissRequest = onDismiss,
         title = { Text(stringResource(if (topic == null) R.string.add_topic else R.string.edit_topic)) },
         text = {

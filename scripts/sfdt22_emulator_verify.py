@@ -47,6 +47,8 @@ STAGES = frozenset({
     'subject_confirm', 'subject_capture', 'topic_open_dialog',
     'topic_fill_name', 'topic_save', 'topic_expand',
     'topic_confirm', 'topic_capture',
+    'session_open_overview', 'practice_open_questions', 'practice_open_reviews',
+    'restart_open_content', 'restart_open_overview', 'restart_open_questions', 'restart_open_reviews',
 })
 REASON_CODES = frozenset({
     'subject_card_missing',
@@ -55,11 +57,14 @@ REASON_CODES = frozenset({
     'topic_editor_tag_missing',
     'topic_row_missing',
     'topic_editor_still_open',
+    'inner_tab_missing', 'inner_tab_touch_failed',
+    'inner_tab_not_selected', 'inner_pane_not_ready',
     'plan_content_tab_missing',
     'plan_content_tab_tap_failed',
     'plan_content_tab_not_selected',
     'plan_content_pane_not_ready',
     'topic_add_button_missing',
+    'topic_fallback_touch_failed', 'topic_snackbar_obstruction',
     'topic_dialog_missing',
     'topic_dialog_ambiguous',
     'topic_editable_missing',
@@ -98,6 +103,14 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'topic_row_missing'
     elif 'SFDT22_TOPIC_EDITOR_STILL_OPEN' in raw:
         reason = 'topic_editor_still_open'
+    elif 'SFDT22_INNER_TAB_MISSING' in raw:
+        reason = 'inner_tab_missing'
+    elif 'SFDT22_INNER_TAB_TOUCH_FAILED' in raw:
+        reason = 'inner_tab_touch_failed'
+    elif 'SFDT22_INNER_TAB_NOT_SELECTED' in raw:
+        reason = 'inner_tab_not_selected'
+    elif 'SFDT22_INNER_PANE_NOT_READY' in raw:
+        reason = 'inner_pane_not_ready'
     elif 'SFDT22_PLAN_CONTENT_TAB_MISSING' in raw:
         reason = 'plan_content_tab_missing'
     elif 'SFDT22_PLAN_CONTENT_TAB_TAP_FAILED' in raw:
@@ -106,6 +119,10 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'plan_content_tab_not_selected'
     elif 'SFDT22_PLAN_CONTENT_PANE_NOT_READY' in raw:
         reason = 'plan_content_pane_not_ready'
+    elif 'SFDT22_TOPIC_FALLBACK_TOUCH_FAILED' in raw:
+        reason = 'topic_fallback_touch_failed'
+    elif 'SFDT22_TOPIC_SNACKBAR_OBSTRUCTION' in raw:
+        reason = 'topic_snackbar_obstruction'
     elif 'SFDT22_TOPIC_ADD_BUTTON_MISSING' in raw:
         reason = 'topic_add_button_missing'
     elif 'SFDT22_TOPIC_DIALOG_MISSING' in raw:
@@ -300,11 +317,13 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path) -> boo
             evidence['failure_test'] = exc.test
             evidence['failure_step'] = exc.stage
             evidence['failure_reason_code'] = exc.reason
+        evidence['completed_before_failure'] = len(results) if 'results' in locals() else 0
         for name in SCREENS:
             (output / ('sfdt22-ui-' + name + '.png')).unlink(missing_ok=True)
     receipt.write_text(json.dumps(evidence, sort_keys=True, indent=2) + '\n')
     print('SFDT22_REAL_JOURNEY_' + ('PASS' if evidence['overall'] == EXPECTED else 'REFUSED') +
-          ' phase=' + phase + ' verified_tests=' + str(evidence.get('test_count', 0)), flush=True)
+          ' phase=' + phase + ' verified_tests=' +
+          str(evidence.get('test_count', evidence.get('completed_before_failure', 0))), flush=True)
     return evidence['overall'] == EXPECTED
 
 

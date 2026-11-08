@@ -135,6 +135,54 @@ class Sfdt22HostedStudyJourneyTest {
         tab(name).assertIsDisplayed().assertIsSelected()
     }
 
+    /** Await a genuine workspace tab, its selection, and actionable pane content. */
+    private fun openInnerTabReady(resId: Int, expectedActionResId: Int, alternativeActionResId: Int? = null) {
+        val match = hasText(text(resId)) and
+            SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)
+        val tabs = rule.onAllNodes(match)
+        try {
+            rule.waitUntil(45_000L) { tabs.fetchSemanticsNodes().isNotEmpty() }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_INNER_TAB_MISSING", failure)
+        }
+        try {
+            val selected = tabs.onFirst()
+            runCatching { selected.performScrollTo() }
+            selected.assertIsDisplayed().performTouchInput { click() }
+            rule.waitForIdle()
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_INNER_TAB_TOUCH_FAILED", failure)
+        }
+        try {
+            rule.waitUntil(25_000L) {
+                runCatching { tabs.onFirst().assertIsSelected() }.isSuccess
+            }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_INNER_TAB_NOT_SELECTED", failure)
+        }
+        val contentAction = if (alternativeActionResId == null) {
+            hasText(text(expectedActionResId)) and hasClickAction()
+        } else {
+            (hasText(text(expectedActionResId)) or hasText(text(alternativeActionResId))) and hasClickAction()
+        }
+        try {
+            // The expected control can be a LazyColumn item not yet composed.
+            seek(contentAction)
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_INNER_PANE_NOT_READY", failure)
+        }
+    }
+
+    /** The real review pane varies its action label with due-review count. */
+    private fun clickReviewCenterEntry() {
+        val emptyQueueAction = hasText(text(WorkspaceR.string.open_review_center)) and hasClickAction()
+        if (rule.onAllNodes(emptyQueueAction).fetchSemanticsNodes().isNotEmpty()) {
+            click(WorkspaceR.string.open_review_center)
+        } else {
+            click(WorkspaceR.string.review_now)
+        }
+    }
+
     private fun seek(matcher: SemanticsMatcher) {
         // LazyColumn items outside the viewport are not composed. Move the
         // actual production scroll container instead of accepting missing UI.
@@ -248,15 +296,47 @@ class Sfdt22HostedStudyJourneyTest {
         val nameTag = hasTestTag("studyflow.topic_editor.name")
         val taggedMerged = rule.onAllNodes(nameTag)
         val taggedUnmerged = rule.onAllNodes(nameTag, useUnmergedTree = true)
+        val dialogTag = hasTestTag("studyflow.topic_editor.dialog")
+        val modalMerged = rule.onAllNodes(dialogTag)
+        val modalUnmerged = rule.onAllNodes(dialogTag, useUnmergedTree = true)
         var afterFields = beforeFields
-        try {
-            rule.waitUntil(25_000L) {
-                afterFields = rule.onAllNodes(hasSetTextAction(), useUnmergedTree = true)
-                    .fetchSemanticsNodes().size
+        fun editorVisible(): Boolean {
+            afterFields = rule.onAllNodes(hasSetTextAction(), useUnmergedTree = true)
+                .fetchSemanticsNodes().size
+            return modalMerged.fetchSemanticsNodes().isNotEmpty() ||
+                modalUnmerged.fetchSemanticsNodes().isNotEmpty() ||
                 taggedMerged.fetchSemanticsNodes().isNotEmpty() ||
-                    taggedUnmerged.fetchSemanticsNodes().isNotEmpty() ||
-                    afterFields >= beforeFields + 3
+                taggedUnmerged.fetchSemanticsNodes().isNotEmpty() ||
+                afterFields >= beforeFields + 3
+        }
+        // A semantics click is attempted once. If it never opens the editor,
+        // recover with one real pointer tap, after the save Snackbar has cleared.
+        // Add Topic only opens a form: unlike Save, this retry cannot insert data.
+        if (runCatching { rule.waitUntil(4_000L) { editorVisible() } }.isFailure &&
+            !editorVisible()) {
+            val saveSnackbar = rule.onAllNodes(hasText(text(SubjectsR.string.subject_saved)))
+            try {
+                rule.waitUntil(12_000L) { saveSnackbar.fetchSemanticsNodes().isEmpty() }
+            } catch (failure: Throwable) {
+                throw AssertionError("SFDT22_TOPIC_SNACKBAR_OBSTRUCTION", failure)
             }
+            if (!editorVisible()) {
+                if (addActions.fetchSemanticsNodes().size != 1) {
+                    throw AssertionError("SFDT22_TOPIC_ADD_BUTTON_AMBIGUOUS")
+                }
+                try {
+                    val retry = addActions.onFirst()
+                    runCatching { retry.performScrollTo() }
+                    retry.assertIsDisplayed()
+                    retry.performTouchInput { click() }
+                    rule.waitForIdle()
+                } catch (failure: Throwable) {
+                    throw AssertionError("SFDT22_TOPIC_FALLBACK_TOUCH_FAILED", failure)
+                }
+            }
+        }
+        try {
+            rule.waitUntil(25_000L) { editorVisible() }
         } catch (failure: Throwable) {
             throw AssertionError("SFDT22_TOPIC_DIALOG_MISSING", failure)
         }
@@ -422,7 +502,9 @@ class Sfdt22HostedStudyJourneyTest {
 
     @Test fun realUserStartsPausesResumesAndCompletesASession() {
         openRoot("plan")
-        innerTab(WorkspaceR.string.plan_overview).performClick()
+        stage("session_open_overview") {
+            openInnerTabReady(WorkspaceR.string.plan_overview, WorkspaceR.string.study_sessions)
+        }
         click(WorkspaceR.string.study_sessions)
         click(SessionsR.string.quick_session)
         fill(SessionsR.string.session_title, sessionName)
@@ -442,7 +524,9 @@ class Sfdt22HostedStudyJourneyTest {
 
     @Test fun realUserAnswersQuestionAndOpensReviewQueue() {
         openRoot("practice")
-        innerTab(WorkspaceR.string.practice_questions).performClick()
+        stage("practice_open_questions") {
+            openInnerTabReady(WorkspaceR.string.practice_questions, WorkspaceR.string.open_question_bank)
+        }
         click(WorkspaceR.string.open_question_bank)
         rule.onNodeWithContentDescription(text(PracticeR.string.add_question)).performClick()
         clickLabel("true false") // Production QuestionType.TRUE_FALSE option.
@@ -458,8 +542,14 @@ class Sfdt22HostedStudyJourneyTest {
         visible(text(PracticeR.string.attempt_finished))
         screenshot("question")
         rule.onNodeWithContentDescription(text(PracticeR.string.go_back)).performClick()
-        innerTab(WorkspaceR.string.practice_reviews).performClick()
-        click(WorkspaceR.string.open_review_center)
+        stage("practice_open_reviews") {
+            openInnerTabReady(
+                WorkspaceR.string.practice_reviews,
+                WorkspaceR.string.open_review_center,
+                WorkspaceR.string.review_now,
+            )
+        }
+        clickReviewCenterEntry()
         fill(ReviewsR.string.flashcard_front, flashcardFront)
         fill(ReviewsR.string.flashcard_back, flashcardBack)
         click(ReviewsR.string.create_flashcard)
@@ -472,21 +562,31 @@ class Sfdt22HostedStudyJourneyTest {
         shell()
         visible(planName)
         openRoot("plan")
-        openPlanContentTab()
+        stage("restart_open_content") { openPlanContentTab() }
         click(WorkspaceR.string.manage_content)
         awaitSubjectSaved()
         click(SubjectsR.string.expand)
         awaitTopicSaved()
         rule.onNodeWithContentDescription(text(SubjectsR.string.go_back)).performClick()
-        innerTab(WorkspaceR.string.plan_overview).performClick()
+        stage("restart_open_overview") {
+            openInnerTabReady(WorkspaceR.string.plan_overview, WorkspaceR.string.study_sessions)
+        }
         click(WorkspaceR.string.study_sessions)
         visible(sessionName)
         rule.onNodeWithContentDescription(text(SessionsR.string.go_back)).performClick()
         openRoot("practice")
-        innerTab(WorkspaceR.string.practice_questions).performClick()
+        stage("restart_open_questions") {
+            openInnerTabReady(WorkspaceR.string.practice_questions, WorkspaceR.string.open_question_bank)
+        }
         visible(questionStatement)
-        innerTab(WorkspaceR.string.practice_reviews).performClick()
-        click(WorkspaceR.string.open_review_center)
+        stage("restart_open_reviews") {
+            openInnerTabReady(
+                WorkspaceR.string.practice_reviews,
+                WorkspaceR.string.open_review_center,
+                WorkspaceR.string.review_now,
+            )
+        }
+        clickReviewCenterEntry()
         visible(flashcardFront)
         screenshot("restart")
     }
