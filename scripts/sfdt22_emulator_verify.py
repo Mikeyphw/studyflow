@@ -49,6 +49,10 @@ STAGES = frozenset({
     'topic_confirm', 'topic_capture',
 })
 REASON_CODES = frozenset({
+    'plan_content_tab_missing',
+    'plan_content_tab_tap_failed',
+    'plan_content_tab_not_selected',
+    'plan_content_pane_not_ready',
     'topic_add_button_missing',
     'topic_dialog_missing',
     'topic_dialog_ambiguous',
@@ -76,7 +80,15 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
     """Map volatile Android stdout to stable enums; persist none of raw."""
     marker = re.search(r'SFDT22_STEP_([a-z][a-z0-9_]{1,39})', raw)
     stage = marker.group(1) if marker and marker.group(1) in STAGES else 'unavailable'
-    if 'SFDT22_TOPIC_ADD_BUTTON_MISSING' in raw:
+    if 'SFDT22_PLAN_CONTENT_TAB_MISSING' in raw:
+        reason = 'plan_content_tab_missing'
+    elif 'SFDT22_PLAN_CONTENT_TAB_TAP_FAILED' in raw:
+        reason = 'plan_content_tab_tap_failed'
+    elif 'SFDT22_PLAN_CONTENT_TAB_NOT_SELECTED' in raw:
+        reason = 'plan_content_tab_not_selected'
+    elif 'SFDT22_PLAN_CONTENT_PANE_NOT_READY' in raw:
+        reason = 'plan_content_pane_not_ready'
+    elif 'SFDT22_TOPIC_ADD_BUTTON_MISSING' in raw:
         reason = 'topic_add_button_missing'
     elif 'SFDT22_TOPIC_DIALOG_MISSING' in raw:
         reason = 'topic_dialog_missing'

@@ -78,6 +78,47 @@ class Sfdt22HostedStudyJourneyTest {
         hasText(text(resId)) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab),
     ).onFirst()
 
+    /** Wait for a real Plan workspace tab after the bottom navigation switches. */
+    private fun openPlanContentTab() {
+        val tabMatcher = hasText(text(WorkspaceR.string.plan_content)) and
+            SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)
+        val tabs = rule.onAllNodes(tabMatcher)
+        // Bottom navigation may become selected while the workspace still says Loading.
+        try {
+            rule.waitUntil(45_000L) { tabs.fetchSemanticsNodes().isNotEmpty() }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_PLAN_CONTENT_TAB_MISSING", failure)
+        }
+        val tab = tabs.onFirst()
+        // The workspace tab strip scrolls horizontally; Content may start clipped.
+        val scroll = runCatching { tab.performScrollTo() }
+        if (scroll.isFailure && runCatching { tab.assertIsDisplayed() }.isFailure) {
+            throw AssertionError("SFDT22_PLAN_CONTENT_TAB_TAP_FAILED", scroll.exceptionOrNull())
+        }
+        try {
+            tab.assertIsDisplayed()
+            tab.performTouchInput { click() }
+            rule.waitForIdle()
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_PLAN_CONTENT_TAB_TAP_FAILED", failure)
+        }
+        try {
+            rule.waitUntil(25_000L) {
+                runCatching { tabs.onFirst().assertIsSelected() }.isSuccess
+            }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_PLAN_CONTENT_TAB_NOT_SELECTED", failure)
+        }
+        val manageContent = hasText(text(WorkspaceR.string.manage_content)) and hasClickAction()
+        try {
+            rule.waitUntil(25_000L) {
+                rule.onAllNodes(manageContent).fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_PLAN_CONTENT_PANE_NOT_READY", failure)
+        }
+    }
+
     private fun shell() {
         rule.waitUntil(30_000L) {
             listOf("today", "plan", "practice", "progress").all { name ->
@@ -274,7 +315,7 @@ class Sfdt22HostedStudyJourneyTest {
         // Dialog name fields have distinct semantics tags to prevent multiple
         // "Name" nodes from being accidentally selected by label substring.
         stage("subject_open_root") { openRoot("plan") }
-        stage("subject_open_content") { innerTab(WorkspaceR.string.plan_content).performClick() }
+        stage("subject_open_content") { openPlanContentTab() }
         stage("subject_open_manager") { click(WorkspaceR.string.manage_content) }
         stage("subject_open_dialog") {
             rule.onNodeWithContentDescription(text(SubjectsR.string.add_subject)).performClick()

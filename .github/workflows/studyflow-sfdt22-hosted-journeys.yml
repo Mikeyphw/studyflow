@@ -27,9 +27,9 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=normal)"
-          echo "0fb0488b2381333877dd09bb62e0f36a4328b9c7dfac8643e2626c5853a09e69  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
+          echo "0a8dcfd3f3dcb6d1cee8a2ad394ecd61f30db4df1dbd6745d7a19ae244083df3  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
           echo "506ac2a2e71afe7d32fc7a8200cf13ba90caba3232a2b55e517c38bb2062109e  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
-          echo "a1108f91b82429e34d920cc077cafaf0a5bcd467d06f41c5ffcf892ce1f460a7  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "6047b01d8575a004e636a645f68ba556b93fdd3f6f13a8abca04a63dd60fd05d  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
           echo "813531c0379018441c1bf783ae6959bc4fe77e6135405180449249e2430e4410  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentDialogs.kt" | sha256sum --check --status
           echo "82a314c22c2b5bf86e942b0186d0a3603c9ee4d0d99e52f1bb73d54c4545dcd1  feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceUtilityScreens.kt" | sha256sum --check --status
           echo "b22486e751156118b7a8c09824fd609a1c28eb89c515be4b081ea4c31cdb189c  feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanListScreen.kt" | sha256sum --check --status
@@ -49,6 +49,8 @@ jobs:
           python3 -B scripts/test_sfdt22_hf08_contract.py
           echo "9c59a4b43281ab9b6cb469eca78b698623c4b79a22143ab0efcdb30a3a794ddc  scripts/test_sfdt22_hf09_contract.py" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf09_contract.py
+          echo "054bc96146db45321705049482a8b4fca2e7d1a9d2ea6987da0a9e89d1692cff  scripts/test_sfdt22_hf10_contract.py" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf10_contract.py
           python3 -B scripts/test_sfdt22_hf01_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
           python3 -B scripts/test_sfdt21_emulator_contract.py
