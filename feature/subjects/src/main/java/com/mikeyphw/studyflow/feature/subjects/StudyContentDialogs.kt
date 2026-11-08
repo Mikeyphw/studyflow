@@ -605,7 +605,7 @@ private fun TextFieldLine(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = if (testTag == null) Modifier.fillMaxWidth() else Modifier.fillMaxWidth().testTag(testTag)
+        modifier = if (testTag == null) Modifier.fillMaxWidth() else Modifier.fillMaxWidth().testTag(testTag),
         label = { Text(stringResource(label)) },
         minLines = minLines,
         singleLine = minLines == 1,
