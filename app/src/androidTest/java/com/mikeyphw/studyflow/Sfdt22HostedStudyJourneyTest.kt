@@ -72,9 +72,9 @@ class Sfdt22HostedStudyJourneyTest {
         })) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab),
     )
 
-    private fun innerTab(resId: Int) = rule.onNode(
+    private fun innerTab(resId: Int) = rule.onAllNodes(
         hasText(text(resId)) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab),
-    )
+    ).onFirst()
 
     private fun shell() {
         rule.waitUntil(30_000L) {
@@ -217,21 +217,31 @@ class Sfdt22HostedStudyJourneyTest {
     }
 
     @Test fun realUserAddsSubjectAndTopic() {
-        openRoot("plan")
-        innerTab(WorkspaceR.string.plan_content).performClick()
-        click(WorkspaceR.string.manage_content)
-        rule.onNodeWithContentDescription(text(SubjectsR.string.add_subject)).performClick()
-        fill(SubjectsR.string.name, subjectName)
-        click(SubjectsR.string.save)
-        visible(subjectName)
-        screenshot("subject")
-        click(SubjectsR.string.add_topic)
-        fill(SubjectsR.string.name, topicName)
-        click(SubjectsR.string.save)
-        // The syllabus subject starts collapsed; expand through the real UI.
-        click(SubjectsR.string.expand)
-        visible(topicName)
-        screenshot("topic")
+        // Every action operates on the production UI, not injected domain data.
+        // Dialog name fields have distinct semantics tags to prevent multiple
+        // "Name" nodes from being accidentally selected by label substring.
+        stage("subject_open_root") { openRoot("plan") }
+        stage("subject_open_content") { innerTab(WorkspaceR.string.plan_content).performClick() }
+        stage("subject_open_manager") { click(WorkspaceR.string.manage_content) }
+        stage("subject_open_dialog") {
+            rule.onNodeWithContentDescription(text(SubjectsR.string.add_subject)).performClick()
+        }
+        stage("subject_fill_name") {
+            rule.onNodeWithTag("studyflow.subject_editor.name").performTextReplacement(subjectName)
+            rule.waitForIdle()
+        }
+        stage("subject_save") { clickDialog(SubjectsR.string.save) }
+        stage("subject_confirm") { visible(subjectName) }
+        stage("subject_capture") { screenshot("subject") }
+        stage("topic_open_dialog") { click(SubjectsR.string.add_topic) }
+        stage("topic_fill_name") {
+            rule.onNodeWithTag("studyflow.topic_editor.name").performTextReplacement(topicName)
+            rule.waitForIdle()
+        }
+        stage("topic_save") { clickDialog(SubjectsR.string.save) }
+        stage("topic_expand") { click(SubjectsR.string.expand) }
+        stage("topic_confirm") { visible(topicName) }
+        stage("topic_capture") { screenshot("topic") }
     }
 
     @Test fun realUserStartsPausesResumesAndCompletesASession() {

@@ -27,6 +27,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -114,7 +115,7 @@ internal fun SubjectEditorDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                TextFieldLine(name, { name = it }, R.string.name)
+                TextFieldLine(name, { name = it }, R.string.name, testTag = "studyflow.subject_editor.name")
                 TextFieldLine(
                     value = description,
                     onValueChange = { description = it },
@@ -199,7 +200,7 @@ internal fun TopicEditorDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                TextFieldLine(name, { name = it }, R.string.name)
+                TextFieldLine(name, { name = it }, R.string.name, testTag = "studyflow.topic_editor.name")
                 TextFieldLine(
                     value = description,
                     onValueChange = { description = it },
@@ -599,11 +600,12 @@ private fun TextFieldLine(
     onValueChange: (String) -> Unit,
     label: Int,
     minLines: Int = 1,
+    testTag: String? = null,
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = if (testTag == null) Modifier.fillMaxWidth() else Modifier.fillMaxWidth().testTag(testTag)
         label = { Text(stringResource(label)) },
         minLines = minLines,
         singleLine = minLines == 1,

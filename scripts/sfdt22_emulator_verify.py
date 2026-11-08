@@ -42,6 +42,11 @@ STAGES = frozenset({
     'plan_shell', 'plan_system_hub', 'plan_all_plans', 'plan_open',
     'plan_editor_ready', 'plan_name', 'plan_target', 'plan_preferences',
     'plan_save', 'plan_confirm', 'plan_capture',
+    'subject_open_root', 'subject_open_content', 'subject_open_manager',
+    'subject_open_dialog', 'subject_fill_name', 'subject_save',
+    'subject_confirm', 'subject_capture', 'topic_open_dialog',
+    'topic_fill_name', 'topic_save', 'topic_expand',
+    'topic_confirm', 'topic_capture',
 })
 REASON_CODES = frozenset({
     'no_matching_compose_node', 'ambiguous_compose_node',
