@@ -1,0 +1,146 @@
+name: StudyFlow SFDT22 Hosted Real Study Journeys
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sfdt22-study-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source:
+    name: SFDT22 source and trust contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Source and exact manifest contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          echo "afd532c9a2cd8d66c9e71e52173560570607c944741531f719ab2a840bf4394d  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
+          echo "506ac2a2e71afe7d32fc7a8200cf13ba90caba3232a2b55e517c38bb2062109e  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
+          echo "8cfa0ae3f08877b68372e6b25bad1cd9300b2476c96469cf59aa10bd11269253  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_emulator_contract.py
+          python3 -B scripts/sfdt22_emulator_verify.py --source-check
+          python3 -B scripts/test_sfdt21_emulator_contract.py
+          python3 -B scripts/sfdt11_contract.py --source-check
+  emulator:
+    name: SFDT22 API36 real study-workflow instrumentation
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 105
+    env:
+      CI: 'true'
+      PYTHONDONTWRITEBYTECODE: '1'
+      STUDYFLOW_SFDT21_HOSTED_EMULATOR: 'true' # reuse reviewed debug-only Gradle testBuildType gate
+      STUDYFLOW_SFDT22_HOSTED_JOURNEYS: 'true'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Require exact disposable checkout and initialize NOT_RUN receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = X64
+          test "$GITHUB_REPOSITORY" = Mikeyphw/studyflow
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          test -z "${STUDYFLOW_RELEASE_STORE_PASSWORD:-}${STUDYFLOW_RELEASE_KEY_PASSWORD:-}${STUDYFLOW_RELEASE_STORE_FILE:-}"
+          mkdir -p "$RUNNER_TEMP/sfdt22-emulator"
+          printf '%s\n' '{"overall":"NOT_RUN","hosted_emulator_only":true,"physical_device_qualified":false,"release_qualified":false,"publication_allowed":false}' > "$RUNNER_TEMP/sfdt22-emulator/SFDT22_EVIDENCE.json"
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865'
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          cache-disabled: true
+          gradle-version: '9.7.1'
+      - name: Compile production app and actual instrumentation APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          test ! -e app/build/outputs/apk/release/app-release.apk
+      - name: Verify source SHA, APKs, and actual signer before emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt22_emulator_verify.py --preflight-apks \
+            --output-dir "$RUNNER_TEMP/sfdt22-emulator" \
+            --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+      - name: Require hosted Linux KVM and install Android 16 image
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -c /dev/kvm
+          if [[ ! -r /dev/kvm || ! -w /dev/kvm ]]; then sudo chmod a+rw /dev/kvm; fi
+          test -r /dev/kvm && test -w /dev/kvm
+          for i in 1 2 3; do
+            if sdkmanager --install 'system-images;android-36;google_apis;x86_64'; then break; fi
+            if [[ "$i" == 3 ]]; then echo SFDT22_IMAGE_UNAVAILABLE >&2; exit 1; fi
+            sleep 10
+          done
+      - name: Five real production UI journeys and cold-start persistence
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          cores: 2
+          ram-size: 2048M
+          disk-size: 3072M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: bash scripts/sfdt22_emulator_ci.sh
+      - name: Independently verify five test receipts, new PID, seven unique screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt22_emulator_verify.py --verify \
+            --output-dir "$RUNNER_TEMP/sfdt22-emulator" \
+            --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+      - name: Upload minimized acceptance artifacts even on failure
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sfdt22-hosted-journeys-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sfdt22-emulator/
+          if-no-files-found: error
+          retention-days: 14
+  gate:
+    name: SFDT22 hosted real-study UI gate
+    if: always()
+    needs: [source, emulator]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Require source and emulator success, not merely test discovery
+        env:
+          SOURCE_RESULT: ${{ needs.source.result }}
+          EMULATOR_RESULT: ${{ needs.emulator.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_RESULT" = success
+          test "$EMULATOR_RESULT" = success
+          echo SFDT22_HOSTED_REAL_STUDY_JOURNEYS_PASS
