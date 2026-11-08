@@ -62,6 +62,7 @@ REASON_CODES = frozenset({
     'subject_expand_semantic_click_failed', 'subject_expand_state_ambiguous',
     'topic_editor_still_open',
     'session_control_not_ready', 'session_editor_not_ready',
+    'session_start_failed', 'session_start_success_without_running_ui', 'session_running_control_missing', 'session_running_action_missing', 'session_running_control_ambiguous', 'session_running_control_disabled', 'session_running_control_offscreen',
     'inner_tab_missing', 'inner_tab_touch_failed',
     'inner_tab_not_selected', 'inner_pane_not_ready',
     'plan_content_tab_missing',
@@ -124,6 +125,20 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'topic_row_missing'
     elif 'SFDT22_TOPIC_EDITOR_STILL_OPEN' in raw:
         reason = 'topic_editor_still_open'
+    elif 'SFDT22_SESSION_START_FAILED' in raw:
+        reason = 'session_start_failed'
+    elif 'SFDT22_SESSION_START_SUCCEEDED_NO_RUNNING_UI' in raw:
+        reason = 'session_start_success_without_running_ui'
+    elif 'SFDT22_SESSION_RUNNING_CONTROL_MISSING' in raw:
+        reason = 'session_running_control_missing'
+    elif 'SFDT22_SESSION_RUNNING_ACTION_MISSING' in raw:
+        reason = 'session_running_action_missing'
+    elif 'SFDT22_SESSION_RUNNING_CONTROL_AMBIGUOUS' in raw:
+        reason = 'session_running_control_ambiguous'
+    elif 'SFDT22_SESSION_RUNNING_CONTROL_DISABLED' in raw:
+        reason = 'session_running_control_disabled'
+    elif 'SFDT22_SESSION_RUNNING_CONTROL_OFFSCREEN' in raw:
+        reason = 'session_running_control_offscreen'
     elif 'SFDT22_SESSION_CONTROL_NOT_READY' in raw:
         reason = 'session_control_not_ready'
     elif 'SFDT22_SESSION_EDITOR_NOT_READY' in raw:

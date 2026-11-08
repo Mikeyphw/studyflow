@@ -675,6 +675,60 @@ class Sfdt22HostedStudyJourneyTest {
         rule.waitForIdle()
     }
 
+    /** Distinguish production start errors from real UI state/semantics failures.
+     * No mocks, injected data, bypassed repository writes, or diagnostic screenshots. */
+    private fun awaitSessionStartedAndRunning() {
+        val tag = hasTestTag("studyflow.session.active.pause")
+        val tagged = rule.onAllNodes(tag, useUnmergedTree = true)
+        val actions = rule.onAllNodes(tag and hasClickAction(), useUnmergedTree = true)
+        val failures = rule.onAllNodes(hasText(text(SessionsR.string.operation_failed)))
+        val successes = rule.onAllNodes(hasText(text(SessionsR.string.session_started)))
+        var failureSeen = false
+        var successSeen = false
+        try {
+            rule.waitUntil(35_000L) {
+                failureSeen = failureSeen || failures.fetchSemanticsNodes().isNotEmpty()
+                successSeen = successSeen || successes.fetchSemanticsNodes().isNotEmpty()
+                if (failureSeen) true else {
+                    if (actions.fetchSemanticsNodes().size != 1) false else {
+                        val button = actions.onFirst()
+                        runCatching { button.performScrollTo() }
+                        runCatching { button.assertIsDisplayed().assertIsEnabled() }.isSuccess
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            // A timeout is classified below using fresh production semantics.
+            // Never convert a real UI failure into a successful test.
+        }
+        // A real production error always wins over a possible stale UI node.
+        if (failureSeen || failures.fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_SESSION_START_FAILED")
+        }
+        val taggedCount = tagged.fetchSemanticsNodes().size
+        val actionCount = actions.fetchSemanticsNodes().size
+        if (taggedCount > 1 || actionCount > 1) {
+            throw AssertionError("SFDT22_SESSION_RUNNING_CONTROL_AMBIGUOUS")
+        }
+        if (taggedCount == 0) {
+            if (successSeen) throw AssertionError("SFDT22_SESSION_START_SUCCEEDED_NO_RUNNING_UI")
+            throw AssertionError("SFDT22_SESSION_RUNNING_CONTROL_MISSING")
+        }
+        if (actionCount == 0) {
+            throw AssertionError("SFDT22_SESSION_RUNNING_ACTION_MISSING")
+        }
+        val button = actions.onFirst()
+        runCatching { button.performScrollTo() }
+        if (runCatching { button.assertIsEnabled() }.isFailure) {
+            throw AssertionError("SFDT22_SESSION_RUNNING_CONTROL_DISABLED")
+        }
+        if (runCatching { button.assertIsDisplayed() }.isFailure) {
+            throw AssertionError("SFDT22_SESSION_RUNNING_CONTROL_OFFSCREEN")
+        }
+        // Success means the real RUNNING button is unique, enabled, and visible.
+        button.assertIsDisplayed().assertIsEnabled()
+    }
+
     @Test fun realUserStartsPausesResumesAndCompletesASession() {
         stage("session_open_root") { openRoot("plan") }
         stage("session_open_overview") {
@@ -691,7 +745,7 @@ class Sfdt22HostedStudyJourneyTest {
         }
         stage("session_title") { writeSessionEditor("studyflow.session.quick.title", sessionName) }
         stage("session_start") { clickSessionAction("studyflow.session.quick.start") }
-        stage("session_running") { awaitSessionAction("studyflow.session.active.pause") }
+        stage("session_running") { awaitSessionStartedAndRunning() }
         stage("session_pause") { clickSessionAction("studyflow.session.active.pause") }
         stage("session_paused") { awaitSessionAction("studyflow.session.active.resume") }
         stage("session_resume") { clickSessionAction("studyflow.session.active.resume") }
