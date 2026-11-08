@@ -49,6 +49,10 @@ STAGES = frozenset({
     'topic_confirm', 'topic_capture',
 })
 REASON_CODES = frozenset({
+    'topic_dialog_missing',
+    'topic_dialog_ambiguous',
+    'topic_editable_missing',
+    'topic_value_not_written',
     'no_matching_compose_node', 'ambiguous_compose_node',
     'compose_wait_timeout', 'compose_assertion', 'app_process_crashed',
     'test_failed', 'unexpected_runner_status', 'runner_nonzero_exit',
@@ -71,7 +75,15 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
     """Map volatile Android stdout to stable enums; persist none of raw."""
     marker = re.search(r'SFDT22_STEP_([a-z][a-z0-9_]{1,39})', raw)
     stage = marker.group(1) if marker and marker.group(1) in STAGES else 'unavailable'
-    if 'No node found that satisfies' in raw or 'No matching node found' in raw:
+    if 'SFDT22_TOPIC_DIALOG_MISSING' in raw:
+        reason = 'topic_dialog_missing'
+    elif 'SFDT22_TOPIC_DIALOG_AMBIGUOUS' in raw:
+        reason = 'topic_dialog_ambiguous'
+    elif 'SFDT22_TOPIC_EDITABLE_MISSING' in raw:
+        reason = 'topic_editable_missing'
+    elif 'SFDT22_TOPIC_VALUE_NOT_WRITTEN' in raw:
+        reason = 'topic_value_not_written'
+    elif 'No node found that satisfies' in raw or 'No matching node found' in raw:
         reason = 'no_matching_compose_node'
     elif 'Expected exactly' in raw or 'Found multiple nodes' in raw:
         reason = 'ambiguous_compose_node'

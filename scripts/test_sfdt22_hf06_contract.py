@@ -37,8 +37,12 @@ class HF06(unittest.TestCase):
                         TopicEditorValue(""",self.dialog)
         self.assertIn('singleLine = minLines == 1',self.dialog)
     def test_03_instrumentation_targets_real_editable_nodes(self):
-        for type in ('subject','topic'):
-            self.assertIn('rule.onNodeWithTag("studyflow.'+type+'_editor.name").performTextReplacement('+type+'Name)',self.kt)
+        # Subject still uses its unique real editable node. HF08 handles the
+        # duplicated topic tag through a dialog-scoped SetText action instead.
+        self.assertIn('rule.onNodeWithTag("studyflow.subject_editor.name").performTextReplacement(subjectName)',self.kt)
+        self.assertIn('stage("topic_fill_name") { replaceTopicNameInDialog(topicName) }',self.kt)
+        self.assertIn('hasSetTextAction() and hasAnyAncestor(isDialog())',self.kt)
+        self.assertNotIn('rule.onNodeWithTag("studyflow.topic_editor.name").performTextReplacement(topicName)',self.kt)
         self.assertIn('createAndroidComposeRule<MainActivity>()',self.kt)
         self.assertNotIn('fill(SubjectsR.string.name,',self.kt)
         self.assertIn('clickDialog(SubjectsR.string.save)',self.kt)
@@ -84,7 +88,8 @@ class HF06(unittest.TestCase):
         for forbidden in ('setContent {','mockk(','SamplePlanProvisioner','container.manageStudyPlan','runBlocking {','assumeTrue('):
             self.assertNotIn(forbidden,self.kt)
         self.assertIn('performTextReplacement(subjectName)',self.kt)
-        self.assertIn('performTextReplacement(topicName)',self.kt)
+        self.assertIn('stage("topic_fill_name") { replaceTopicNameInDialog(topicName) }',self.kt)
+        self.assertIn('editor.assertIsDisplayed().performTextReplacement(value)',self.kt)
     def test_12_no_release_permissions(self):
         b=m.blank('a'*40,'1','1')
         self.assertFalse(b['publication_allowed'])
