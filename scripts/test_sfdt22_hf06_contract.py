@@ -41,7 +41,7 @@ class HF06(unittest.TestCase):
         # duplicated topic tag through a dialog-scoped SetText action instead.
         self.assertIn('rule.onNodeWithTag("studyflow.subject_editor.name").performTextReplacement(subjectName)',self.kt)
         self.assertIn('stage("topic_fill_name") { replaceTopicNameInDialog(topicName) }',self.kt)
-        self.assertIn('hasSetTextAction() and hasAnyAncestor(isDialog())',self.kt)
+        self.assertIn('hasSetTextAction() and (nameTag or hasAnyAncestor(nameTag))',self.kt)
         self.assertNotIn('rule.onNodeWithTag("studyflow.topic_editor.name").performTextReplacement(topicName)',self.kt)
         self.assertIn('createAndroidComposeRule<MainActivity>()',self.kt)
         self.assertNotIn('fill(SubjectsR.string.name,',self.kt)

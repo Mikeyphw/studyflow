@@ -13,7 +13,6 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -130,51 +129,52 @@ class Sfdt22HostedStudyJourneyTest {
         rule.waitForIdle()
     }
 
-    /**
-     * Material3 can expose an OutlinedTextField test tag on more than one
-     * semantics node. Choose a genuine SetText action inside the *active*
-     * production dialog rather than demanding exactly one tagged node.
-     * TopicEditorDialog puts its name field first; neither the workspace
-     * search field nor a background control can satisfy the dialog scope.
-     */
-    private fun replaceTopicNameInDialog(value: String) {
-        val dialogs = rule.onAllNodes(isDialog(), useUnmergedTree = true)
+    /** The real subject-card action must open the production topic editor. */
+    private fun openTopicEditorFromSubject() {
+        val addActions = rule.onAllNodes(
+            hasTestTag("studyflow.subject_card.add_topic"), useUnmergedTree = true,
+        )
         try {
-            rule.waitUntil(20_000L) { dialogs.fetchSemanticsNodes().isNotEmpty() }
+            rule.waitUntil(20_000L) { addActions.fetchSemanticsNodes().isNotEmpty() }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_TOPIC_ADD_BUTTON_MISSING", failure)
+        }
+        addActions.onFirst().assertIsDisplayed().performTouchInput { click() }
+        rule.waitForIdle()
+        // An actual text input in the production dialog is positive evidence;
+        // isDialog() semantics are not consistent on all API36 Compose windows.
+        val nameField = rule.onAllNodes(
+            hasTestTag("studyflow.topic_editor.name"), useUnmergedTree = true,
+        )
+        try {
+            rule.waitUntil(20_000L) { nameField.fetchSemanticsNodes().isNotEmpty() }
         } catch (failure: Throwable) {
             throw AssertionError("SFDT22_TOPIC_DIALOG_MISSING", failure)
         }
-        if (dialogs.fetchSemanticsNodes().size != 1) {
-            throw AssertionError("SFDT22_TOPIC_DIALOG_AMBIGUOUS")
-        }
-        val inDialog = rule.onAllNodes(
-            hasSetTextAction() and hasAnyAncestor(isDialog()),
-            useUnmergedTree = true,
-        )
+    }
+
+    /** Edit only the tagged production topic-name field; no global fallback. */
+    private fun replaceTopicNameInDialog(value: String) {
+        val nameTag = hasTestTag("studyflow.topic_editor.name")
+        val tagged = rule.onAllNodes(nameTag, useUnmergedTree = true)
         try {
-            rule.waitUntil(20_000L) { inDialog.fetchSemanticsNodes().isNotEmpty() }
+            rule.waitUntil(20_000L) { tagged.fetchSemanticsNodes().isNotEmpty() }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_TOPIC_DIALOG_MISSING", failure)
+        }
+        val editableMatcher = hasSetTextAction() and (nameTag or hasAnyAncestor(nameTag))
+        val fields = rule.onAllNodes(editableMatcher, useUnmergedTree = true)
+        try {
+            rule.waitUntil(20_000L) { fields.fetchSemanticsNodes().isNotEmpty() }
         } catch (failure: Throwable) {
             throw AssertionError("SFDT22_TOPIC_EDITABLE_MISSING", failure)
         }
-        val nameTag = hasTestTag("studyflow.topic_editor.name")
-        val tagged = rule.onAllNodes(
-            hasSetTextAction() and hasAnyAncestor(isDialog()) and
-                (nameTag or hasAnyAncestor(nameTag)),
-            useUnmergedTree = true,
-        )
-        val editor = if (tagged.fetchSemanticsNodes().size == 1) {
-            tagged.onFirst()
-        } else {
-            // A merged/unmerged tag ambiguity cannot pick a background node:
-            // the first SetText control *inside the dialog* is its name field.
-            inDialog.onFirst()
-        }
+        // A tag can appear on multiple semantics nodes. Filter for SetText,
+        // then type into the real tagged field, not a background search field.
+        val editor = fields.onFirst()
         editor.assertIsDisplayed().performTextReplacement(value)
         rule.waitForIdle()
-        val confirmed = rule.onAllNodes(
-            hasSetTextAction() and hasAnyAncestor(isDialog()) and hasText(value),
-            useUnmergedTree = true,
-        )
+        val confirmed = rule.onAllNodes(editableMatcher and hasText(value), useUnmergedTree = true)
         if (confirmed.fetchSemanticsNodes().isEmpty()) {
             throw AssertionError("SFDT22_TOPIC_VALUE_NOT_WRITTEN")
         }
@@ -286,7 +286,7 @@ class Sfdt22HostedStudyJourneyTest {
         stage("subject_save") { clickDialog(SubjectsR.string.save) }
         stage("subject_confirm") { visible(subjectName) }
         stage("subject_capture") { screenshot("subject") }
-        stage("topic_open_dialog") { click(SubjectsR.string.add_topic) }
+        stage("topic_open_dialog") { openTopicEditorFromSubject() }
         stage("topic_fill_name") { replaceTopicNameInDialog(topicName) }
         stage("topic_save") { clickDialog(SubjectsR.string.save) }
         stage("topic_expand") { click(SubjectsR.string.expand) }

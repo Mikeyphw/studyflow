@@ -37,46 +37,45 @@ class HF08(unittest.TestCase):
         self.assertIn('stage("topic_fill_name") { replaceTopicNameInDialog(topicName) }',self.kt)
 
     def test_02_real_dialog_scoping_only(self):
-        for needle in ('rule.onAllNodes(isDialog(), useUnmergedTree = true)',
-                       'hasSetTextAction() and hasAnyAncestor(isDialog())',
-                       'useUnmergedTree = true,',
-                       'private fun replaceTopicNameInDialog(value: String)'):
-            self.assertIn(needle,self.kt)
-        for needle in ('import androidx.compose.ui.test.hasAnyAncestor',
-                       'import androidx.compose.ui.test.hasTestTag',
-                       'import androidx.compose.ui.test.isDialog'):
-            self.assertIn(needle,self.kt)
+        self.assertIn('private fun openTopicEditorFromSubject()',self.kt)
+        self.assertIn('private fun replaceTopicNameInDialog(value: String)',self.kt)
+        self.assertIn('hasTestTag("studyflow.topic_editor.name")',self.kt)
+        self.assertIn('hasSetTextAction() and (nameTag or hasAnyAncestor(nameTag))',self.kt)
+        self.assertNotIn('hasAnyAncestor(isDialog())',self.kt)
+        self.assertIn('import androidx.compose.ui.test.hasAnyAncestor',self.kt)
+        self.assertIn('import androidx.compose.ui.test.hasTestTag',self.kt)
 
     def test_03_both_preferred_tagged_and_safe_dialog_first_fallback(self):
-        self.assertIn('hasTestTag("studyflow.topic_editor.name")',self.kt)
-        self.assertIn('if (tagged.fetchSemanticsNodes().size == 1)',self.kt)
-        self.assertIn('tagged.onFirst()',self.kt)
-        self.assertIn('inDialog.onFirst()',self.kt)
+        self.assertIn('val nameTag = hasTestTag("studyflow.topic_editor.name")',self.kt)
+        self.assertIn('val editableMatcher = hasSetTextAction() and (nameTag or hasAnyAncestor(nameTag))',self.kt)
+        self.assertIn('val editor = fields.onFirst()',self.kt)
         self.assertIn('editor.assertIsDisplayed().performTextReplacement(value)',self.kt)
+        self.assertIn('openTopicEditorFromSubject()',self.kt)
 
     def test_04_real_editable_text_verified_before_save(self):
         index=self.kt.index('stage("topic_fill_name") { replaceTopicNameInDialog(topicName) }')
         self.assertLess(index,self.kt.index('stage("topic_save")'))
-        self.assertIn('hasSetTextAction() and hasAnyAncestor(isDialog()) and hasText(value)',self.kt)
+        self.assertIn('editableMatcher and hasText(value)',self.kt)
         self.assertIn('SFDT22_TOPIC_VALUE_NOT_WRITTEN',self.kt)
 
     def test_05_no_background_search_fallback(self):
         helper=self.kt.split('private fun replaceTopicNameInDialog(value: String) {')[1].split('    private fun click(resId: Int)')[0]
         self.assertNotIn('rule.onAllNodes(hasSetTextAction()).onFirst()',helper)
+        self.assertNotIn('isDialog()',helper)
         self.assertNotIn('setContent {',helper)
         self.assertNotIn('runBlocking',helper)
-        self.assertIn('hasAnyAncestor(isDialog())',helper)
+        self.assertIn('hasTestTag("studyflow.topic_editor.name")',helper)
 
     def test_06_each_diagnostic_enum_allowlisted(self):
-        pair=(('SFDT22_TOPIC_DIALOG_MISSING','topic_dialog_missing'),
-              ('SFDT22_TOPIC_DIALOG_AMBIGUOUS','topic_dialog_ambiguous'),
-              ('SFDT22_TOPIC_EDITABLE_MISSING','topic_editable_missing'),
-              ('SFDT22_TOPIC_VALUE_NOT_WRITTEN','topic_value_not_written'))
-        for marker,reason in pair:
+        pair=(('SFDT22_TOPIC_ADD_BUTTON_MISSING','topic_add_button_missing','topic_open_dialog'),
+              ('SFDT22_TOPIC_DIALOG_MISSING','topic_dialog_missing','topic_fill_name'),
+              ('SFDT22_TOPIC_EDITABLE_MISSING','topic_editable_missing','topic_fill_name'),
+              ('SFDT22_TOPIC_VALUE_NOT_WRITTEN','topic_value_not_written','topic_fill_name'))
+        for marker,reason,step in pair:
             self.assertIn(marker,self.kt)
             self.assertIn(reason,v.REASON_CODES)
-            failure=v.summarize_failure('java.lang.AssertionError: SFDT22_STEP_topic_fill_name\n'+marker+' token=SENSITIVE',v.TESTS[1],0)
-            self.assertEqual((failure.reason,failure.stage),(reason,'topic_fill_name'))
+            failure=v.summarize_failure('java.lang.AssertionError: SFDT22_STEP_'+step+'\n'+marker+' token=SENSITIVE',v.TESTS[1],0)
+            self.assertEqual((failure.reason,failure.stage),(reason,step))
             self.assertNotIn('SENSITIVE',str(failure))
 
     def test_07_original_compose_reason_codes_kept(self):
