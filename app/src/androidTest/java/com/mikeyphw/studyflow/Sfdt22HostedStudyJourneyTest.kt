@@ -122,11 +122,31 @@ class Sfdt22HostedStudyJourneyTest {
     }
 
     private fun fill(resId: Int, value: String) {
-        val label = text(resId)
-        val matcher = hasSetTextAction() and hasText(label, substring = true)
-        seek(matcher)
-        rule.onNode(matcher).performTextReplacement(value)
+        // Material3 labels may be separate semantics nodes from editable text.
+        // In the first, real plan wizard step the plan name is the FIRST of two
+        // fields (name, description). Target its actual SetText action, not the
+        // implementation-dependent label merge. Do not alter production UI.
+        if (resId == PlansR.string.plan_name) {
+            val fields = rule.onAllNodes(hasSetTextAction())
+            rule.waitUntil(20_000L) { fields.fetchSemanticsNodes().size == 2 }
+            fields.onFirst().performTextReplacement(value)
+        } else {
+            val label = text(resId)
+            val matcher = hasSetTextAction() and hasText(label, substring = true)
+            seek(matcher)
+            rule.onNode(matcher).performTextReplacement(value)
+        }
         rule.waitForIdle()
+    }
+
+    private fun stage(name: String, action: () -> Unit) {
+        // A stable allowlisted stage marker travels inside AndroidJUnitRunner's
+        // failure stack. Only the marker and a generic reason code survive on CI.
+        try {
+            action()
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_STEP_" + name, failure)
+        }
     }
 
     private fun visible(value: String) {
@@ -147,16 +167,15 @@ class Sfdt22HostedStudyJourneyTest {
     }
 
     @Test fun realUserCreatesAStudyPlan() {
-        shell()
-        // A fresh emulator is part of the acceptance contract: no pre-seeded plans.
-        click(WorkspaceR.string.create_plan)
-        fill(PlansR.string.plan_name, planName)
-        click(PlansR.string.next)
-        click(PlansR.string.next) // Real default target of 20 h/week, 45 min/session.
-        click(PlansR.string.save_plan)
-        shell()
-        visible(planName)
-        screenshot("plan")
+        // Real UI, fresh emulator and production plan persistence. The stage
+        // wrappers do not catch/suppress failures; they rethrow for a red CI.
+        stage("plan_open") { shell(); click(WorkspaceR.string.create_plan) }
+        stage("plan_name") { fill(PlansR.string.plan_name, planName) }
+        stage("plan_target") { click(PlansR.string.next) }
+        stage("plan_preferences") { click(PlansR.string.next) } // Default 20h, 45min.
+        stage("plan_save") { click(PlansR.string.save_plan) }
+        stage("plan_confirm") { shell(); visible(planName) }
+        stage("plan_capture") { screenshot("plan") }
     }
 
     @Test fun realUserAddsSubjectAndTopic() {

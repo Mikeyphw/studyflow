@@ -27,10 +27,11 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=normal)"
-          echo "afd532c9a2cd8d66c9e71e52173560570607c944741531f719ab2a840bf4394d  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
+          echo "704b2b7bf2517e1af3d70fcd8c6dc43ce45651e7dbc9b69c2a53f261637cfb6e  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
           echo "506ac2a2e71afe7d32fc7a8200cf13ba90caba3232a2b55e517c38bb2062109e  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
-          echo "ad866f8137b78c8599805aeca6499ee6dfbe60b381a9efb44cb4196ebb9d861d  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "0f372a61e50b81d0dfe428536e8168330680db14ff1703553ffc652ec70fc14e  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_emulator_contract.py
+          python3 -B scripts/test_sfdt22_hf02_contract.py
           python3 -B scripts/test_sfdt22_hf01_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
           python3 -B scripts/test_sfdt21_emulator_contract.py

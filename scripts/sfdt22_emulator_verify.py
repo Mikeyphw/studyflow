@@ -38,6 +38,50 @@ PHASES = ('host', 'device', 'fresh', 'apks', 'install', 'installed_apk',
           'plan', 'subjects', 'session', 'practice', 'force_stop',
           'post_restart', 'screenshots', 'complete')
 SHA256 = re.compile(r'^[0-9a-f]{64}$')
+STAGES = frozenset({
+    'plan_open', 'plan_name', 'plan_target', 'plan_preferences',
+    'plan_save', 'plan_confirm', 'plan_capture',
+})
+REASON_CODES = frozenset({
+    'no_matching_compose_node', 'ambiguous_compose_node',
+    'compose_wait_timeout', 'compose_assertion', 'app_process_crashed',
+    'test_failed', 'unexpected_runner_status', 'runner_nonzero_exit',
+})
+
+
+class JourneyFailure(ValueError):
+    """Carries only allowlisted evidence fields, never instrumentation output."""
+    def __init__(self, name: str, *, reason: str, stage: str = 'unavailable'):
+        require(name in TESTS and reason in REASON_CODES and
+                (stage == 'unavailable' or stage in STAGES),
+                'Unreviewed journey diagnostic')
+        super().__init__('SFDT22 instrumentation failed')
+        self.test = name
+        self.reason = reason
+        self.stage = stage
+
+
+def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
+    """Map volatile Android stdout to stable enums; persist none of raw."""
+    marker = re.search(r'SFDT22_STEP_([a-z][a-z0-9_]{1,39})', raw)
+    stage = marker.group(1) if marker and marker.group(1) in STAGES else 'unavailable'
+    if 'No node found that satisfies' in raw or 'No matching node found' in raw:
+        reason = 'no_matching_compose_node'
+    elif 'Expected exactly' in raw or 'Found multiple nodes' in raw:
+        reason = 'ambiguous_compose_node'
+    elif 'ComposeTimeoutException' in raw or 'Condition still not satisfied' in raw:
+        reason = 'compose_wait_timeout'
+    elif 'AssertionError' in raw or 'assertIsDisplayed' in raw:
+        reason = 'compose_assertion'
+    elif 'Process crashed' in raw or 'INSTRUMENTATION_FAILED' in raw:
+        reason = 'app_process_crashed'
+    elif 'FAILURES!!!' in raw or 'INSTRUMENTATION_STATUS_CODE: -2' in raw:
+        reason = 'test_failed'
+    elif returncode != 0:
+        reason = 'runner_nonzero_exit'
+    else:
+        reason = 'unexpected_runner_status'
+    return JourneyFailure(test, reason=reason, stage=stage)
 
 
 def require(ok: bool, message: str) -> None:
@@ -79,11 +123,11 @@ def run_test(name: str) -> dict:
     started = re.findall(r'(?m)^INSTRUMENTATION_STATUS: test=([^\r\n]+)\r?$', raw)
     codes = re.findall(r'(?m)^INSTRUMENTATION_STATUS_CODE: ([^\r\n]+)\r?$', raw)
     results = re.findall(r'(?m)^INSTRUMENTATION_CODE: ([^\r\n]+)\r?$', raw)
-    require(p.returncode == 0 and set(started) == {name}, 'Unexpected instrumentation test')
-    require(codes.count('1') == 1 and codes.count('0') == 1 and
-            len(codes) == 2 and results == ['-1'], 'Instrumentation case did not pass')
-    require('FAILURES!!!' not in raw and 'INSTRUMENTATION_FAILED' not in raw,
-            'Instrumentation reported failure')
+    if not (p.returncode == 0 and set(started) == {name} and
+            codes.count('1') == 1 and codes.count('0') == 1 and
+            len(codes) == 2 and results == ['-1'] and
+            'FAILURES!!!' not in raw and 'INSTRUMENTATION_FAILED' not in raw):
+        raise summarize_failure(raw, name, p.returncode)
     return {'test': name, 'status': 'passed', 'started': 1, 'finished': 1}
 
 
@@ -201,6 +245,10 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path) -> boo
     except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
         evidence['failure_phase'] = phase if phase in PHASES else 'host'
         evidence['failure_class'] = type(exc).__name__
+        if isinstance(exc, JourneyFailure):
+            evidence['failure_test'] = exc.test
+            evidence['failure_step'] = exc.stage
+            evidence['failure_reason_code'] = exc.reason
         for name in SCREENS:
             (output / ('sfdt22-ui-' + name + '.png')).unlink(missing_ok=True)
     receipt.write_text(json.dumps(evidence, sort_keys=True, indent=2) + '\n')
