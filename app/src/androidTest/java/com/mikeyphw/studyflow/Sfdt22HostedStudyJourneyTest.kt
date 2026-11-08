@@ -266,8 +266,8 @@ class Sfdt22HostedStudyJourneyTest {
         topicSaveSuccessSeen = savedSeen
     }
 
-    /** A unique action underneath the exact saved subject; never an arbitrary
-     * "Expand" label. Already-expanded cards are left untouched. */
+    /** Operate exactly the saved subject using its real production Compose action.
+     * Never assume a touch succeeded: prove the collapse-tag transition. */
     private fun ensureSavedSubjectExpanded() {
         awaitSubjectSaved()
         val subjectCardTag = hasTestTag("studyflow.subject_card.name.$subjectName")
@@ -290,13 +290,57 @@ class Sfdt22HostedStudyJourneyTest {
         if (collapsed.fetchSemanticsNodes().size != 1) {
             throw AssertionError("SFDT22_SUBJECT_EXPAND_ACTION_MISSING")
         }
+        // Prefer the genuine TextButton's Semantics click action: a screen
+        // Snackbar may cover the visual coordinate but cannot intercept it.
+        // Retain failure status rather than silently treating a thrown click
+        // as a successful action.
+        val semanticsClick = runCatching {
+            val action = collapsed.onFirst()
+            runCatching { action.performScrollTo() }
+            action.performClick()
+            rule.waitForIdle()
+        }
+        if (expanded.fetchSemanticsNodes().size == 1) return
+        val expandedAfterSemantics = runCatching {
+            rule.waitUntil(5_000L) { expanded.fetchSemanticsNodes().size == 1 }
+        }.isSuccess
+        if (expandedAfterSemantics || expanded.fetchSemanticsNodes().size == 1) return
+        // Ensure the original saved subject is still uniquely collapsed before
+        // a fallback: tapping an already expanded card would collapse it again.
+        if (collapsed.fetchSemanticsNodes().size != 1) {
+            throw AssertionError("SFDT22_SUBJECT_EXPAND_STATE_AMBIGUOUS")
+        }
+        val subjectSnackbar = rule.onAllNodes(hasText(text(SubjectsR.string.subject_saved)))
+        val topicSnackbar = rule.onAllNodes(hasText(text(SubjectsR.string.topic_saved)))
+        val failureSnackbar = rule.onAllNodes(hasText(text(SubjectsR.string.operation_failed)))
+        if (failureSnackbar.fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_TOPIC_SAVE_FAILED")
+        }
+        try {
+            rule.waitUntil(15_000L) {
+                subjectSnackbar.fetchSemanticsNodes().isEmpty() &&
+                    topicSnackbar.fetchSemanticsNodes().isEmpty() &&
+                    failureSnackbar.fetchSemanticsNodes().isEmpty()
+            }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_SUBJECT_EXPAND_SNACKBAR_OBSTRUCTION", failure)
+        }
+        if (expanded.fetchSemanticsNodes().size == 1) return
+        if (collapsed.fetchSemanticsNodes().size != 1) {
+            throw AssertionError("SFDT22_SUBJECT_EXPAND_STATE_AMBIGUOUS")
+        }
+        // Exactly one real pointer retry, only after the semantic action has
+        // failed to establish expanded state. Never insert directly in Room.
         try {
             val action = collapsed.onFirst()
             runCatching { action.performScrollTo() }
             action.assertIsDisplayed().performTouchInput { click() }
             rule.waitForIdle()
         } catch (failure: Throwable) {
-            throw AssertionError("SFDT22_SUBJECT_NOT_EXPANDED", failure)
+            if (semanticsClick.isFailure) {
+                throw AssertionError("SFDT22_SUBJECT_EXPAND_SEMANTIC_CLICK_FAILED", failure)
+            }
+            throw AssertionError("SFDT22_SUBJECT_EXPAND_TOUCH_FAILED", failure)
         }
         try {
             rule.waitUntil(12_000L) { expanded.fetchSemanticsNodes().size == 1 }

@@ -27,9 +27,9 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=normal)"
-          echo "b78a2841fec2d63457c6d375c315c2418aab02e469a2820b7060e9f095729470  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
+          echo "a6527b416ec5c518db8b1201aa3deea7a7a7a4e34d7aca860b72106da29292ff  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
           echo "506ac2a2e71afe7d32fc7a8200cf13ba90caba3232a2b55e517c38bb2062109e  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
-          echo "d181f241cfd02d48d8bd12750821e4442bf5cd553a6ba86a718c34de6a8730f9  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "6f72ab4ec59155c4a2eb99a729f47c6f656378cead160bee3272ace85f9760e3  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
           echo "53d32c91ac814074501ddebbcfc368812aad4d664282a7a6ca975fbc2622321f  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentDialogs.kt" | sha256sum --check --status
           echo "82a314c22c2b5bf86e942b0186d0a3603c9ee4d0d99e52f1bb73d54c4545dcd1  feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceUtilityScreens.kt" | sha256sum --check --status
           echo "b22486e751156118b7a8c09824fd609a1c28eb89c515be4b081ea4c31cdb189c  feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanListScreen.kt" | sha256sum --check --status
@@ -58,6 +58,9 @@ jobs:
           echo "e1c0ca03f91d4260c6e6956a0cd845a52bec72555f30b113d9b901efc96ea8e9  scripts/test_sfdt22_hf13_contract.py" | sha256sum --check --status
           echo "f83faeb504cf2155ec0fa74d55a350f26ee9a165dd0db429384ce41a6fb607e7  docs/actions/SFDT22_HF13_TOPIC_PERSISTENCE_AND_EXPANSION.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf13_contract.py
+          echo "500686b8b5747d4a3b32cd107db69a334d5dbd8b2caba14ccf87b182bb89cf63  scripts/test_sfdt22_hf15_contract.py" | sha256sum --check --status
+          echo "ff0eee2078d10be6b709bce92e39b74e8d402f086d3148b2a6d7e2eb32dd9694  docs/actions/SFDT22_HF15_CI_FAILURE_REMEDIATION.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf15_contract.py
           python3 -B scripts/test_sfdt22_hf01_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
           python3 -B scripts/test_sfdt21_emulator_contract.py
