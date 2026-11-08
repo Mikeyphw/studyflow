@@ -28,13 +28,13 @@ class HF03(unittest.TestCase):
 
     def test_01_stable_production_action_is_located(self):
         self.assertIn('fun tapCreatePlan()',self.kt)
-        self.assertIn('rule.onNodeWithTag("studyflow.no_plan.create_plan", useUnmergedTree = true)',self.kt)
+        self.assertIn('rule.onNodeWithTag("studyflow.plan_list.create_plan", useUnmergedTree = true)',self.kt)
         self.assertNotIn('labels.fetchSemanticsNodes().size == 1',self.kt)
 
     def test_02_real_button_click_not_direct_route_or_mock(self):
-        self.assertIn('button.assertIsDisplayed().performClick()',self.kt)
+        self.assertIn('button.assertIsDisplayed().performTouchInput { click() }',self.kt)
         self.assertIn('import androidx.compose.ui.test.onNodeWithTag',self.kt)
-        self.assertNotIn('performTouchInput',self.kt)
+        self.assertIn('import androidx.compose.ui.test.performTouchInput',self.kt)
         self.assertNotIn('setContent {',self.kt)
         self.assertNotIn('mockk(',self.kt)
         self.assertNotIn('assumeTrue(',self.kt)
@@ -42,10 +42,12 @@ class HF03(unittest.TestCase):
 
     def test_03_readiness_touch_editor_steps_are_independent(self):
         a=self.kt.index('stage("plan_shell") { shell() }')
-        b=self.kt.index('stage("plan_open") { tapCreatePlan() }')
-        c=self.kt.index('stage("plan_editor_ready") {')
-        d=self.kt.index('stage("plan_name") { fill(PlansR.string.plan_name, planName) }')
-        self.assertTrue(a<b<c<d)
+        b=self.kt.index('stage("plan_system_hub") { openSystemHub() }')
+        c=self.kt.index('stage("plan_all_plans") { openAllPlans() }')
+        d=self.kt.index('stage("plan_open") { tapCreatePlan() }')
+        e=self.kt.index('stage("plan_editor_ready") {')
+        f=self.kt.index('stage("plan_name") { fill(PlansR.string.plan_name, planName) }')
+        self.assertTrue(a<b<c<d<e<f)
 
     def test_04_editor_verifies_actual_text_inputs(self):
         self.assertIn('rule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().size == 2',self.kt)
@@ -58,12 +60,12 @@ class HF03(unittest.TestCase):
         for name in m.SCREENS:self.assertIn('screenshot("'+name+'")',self.kt)
 
     def test_06_failure_stages_remain_allowlisted(self):
-        self.assertTrue({'plan_shell','plan_open','plan_editor_ready'}.issubset(m.STAGES))
+        self.assertTrue({'plan_shell','plan_system_hub','plan_all_plans','plan_open','plan_editor_ready'}.issubset(m.STAGES))
         for stage in m.STAGES: self.assertIn('stage("'+stage+'")',self.kt)
         self.assertIn('throw AssertionError("SFDT22_STEP_" + name, failure)',self.kt)
 
     def test_07_stage_specific_timeouts_remain_fatal(self):
-        for stage in ('plan_shell','plan_open','plan_editor_ready'):
+        for stage in ('plan_shell','plan_system_hub','plan_all_plans','plan_open','plan_editor_ready'):
             f=m.summarize_failure('java.lang.AssertionError: SFDT22_STEP_'+stage+
                   '\nCaused by: ComposeTimeoutException: Condition still not satisfied',m.TESTS[0],0)
             self.assertEqual(f.stage,stage)

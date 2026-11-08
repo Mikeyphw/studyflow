@@ -16,6 +16,8 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
@@ -101,19 +103,27 @@ class Sfdt22HostedStudyJourneyTest {
         rule.waitUntil(20_000L) { rule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
     }
 
-    /**
-     * Use the *production* empty-state Button with an explicit semantics tag.
-     * Previous versions timed out waiting for an exact number of merged or
-     * unmerged Text nodes, even though the app shell had already loaded.
-     * This still uses the real onClick handler, actual navigation, and the
-     * persistent production database (no injected routes or mocked content).
-     */
+    /** Real user's route works whether Today shows no plan or an active plan. */
+    private fun openSystemHub() {
+        val more = rule.onNodeWithContentDescription(text(WorkspaceR.string.more))
+        rule.waitUntil(30_000L) { runCatching { more.fetchSemanticsNode() }.isSuccess }
+        more.assertIsDisplayed().performTouchInput { click() }
+        rule.waitForIdle()
+    }
+
+    /** Click the real System Hub -> All plans row. Never invoke a route directly. */
+    private fun openAllPlans() {
+        val row = rule.onNodeWithTag("studyflow.system.all_plans", useUnmergedTree = true)
+        rule.waitUntil(30_000L) { runCatching { row.fetchSemanticsNode() }.isSuccess }
+        row.assertIsDisplayed().performTouchInput { click() }
+        rule.waitForIdle()
+    }
+
+    /** Click the production Plan List floating action button. */
     private fun tapCreatePlan() {
-        val button = rule.onNodeWithTag("studyflow.no_plan.create_plan", useUnmergedTree = true)
-        rule.waitUntil(30_000L) {
-            runCatching { button.fetchSemanticsNode() }.isSuccess
-        }
-        button.assertIsDisplayed().performClick()
+        val button = rule.onNodeWithTag("studyflow.plan_list.create_plan", useUnmergedTree = true)
+        rule.waitUntil(30_000L) { runCatching { button.fetchSemanticsNode() }.isSuccess }
+        button.assertIsDisplayed().performTouchInput { click() }
         rule.waitForIdle()
     }
 
@@ -189,6 +199,8 @@ class Sfdt22HostedStudyJourneyTest {
         // Separate readiness, actual touch, and editor load in the receipt:
         // a time-out now identifies exactly which on-screen step failed.
         stage("plan_shell") { shell() }
+        stage("plan_system_hub") { openSystemHub() }
+        stage("plan_all_plans") { openAllPlans() }
         stage("plan_open") { tapCreatePlan() }
         stage("plan_editor_ready") {
             rule.waitUntil(25_000L) {

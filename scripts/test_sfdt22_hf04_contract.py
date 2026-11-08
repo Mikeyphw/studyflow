@@ -41,11 +41,11 @@ class HF04(unittest.TestCase):
         self.assertIn('actionTestTag = actionTestTag,\n        isError = false',self.design)
     def test_04_real_mainactivity_taps_tagged_button(self):
         self.assertIn('createAndroidComposeRule<MainActivity>()',self.kt)
-        self.assertIn('rule.onNodeWithTag("studyflow.no_plan.create_plan", useUnmergedTree = true)',self.kt)
-        self.assertIn('button.assertIsDisplayed().performClick()',self.kt)
+        self.assertIn('rule.onNodeWithTag("studyflow.plan_list.create_plan", useUnmergedTree = true)',self.kt)
+        self.assertIn('button.assertIsDisplayed().performTouchInput { click() }',self.kt)
         self.assertNotIn('labels.fetchSemanticsNodes().size == 1',self.kt)
     def test_05_readiness_and_navigation_are_verified(self):
-        stages=['stage("plan_shell")','stage("plan_open")','stage("plan_editor_ready")','stage("plan_name")','stage("plan_save")','stage("plan_confirm")']
+        stages=['stage("plan_shell")','stage("plan_system_hub")','stage("plan_all_plans")','stage("plan_open")','stage("plan_editor_ready")','stage("plan_name")','stage("plan_save")','stage("plan_confirm")']
         self.assertEqual(sorted(self.kt.index(s) for s in stages),[self.kt.index(s) for s in stages])
         self.assertIn('rule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().size == 2',self.kt)
         self.assertIn('visible(planName)',self.kt)
