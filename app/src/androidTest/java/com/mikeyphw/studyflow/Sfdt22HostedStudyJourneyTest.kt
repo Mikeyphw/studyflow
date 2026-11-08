@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasClickAction
@@ -170,54 +171,138 @@ class Sfdt22HostedStudyJourneyTest {
         rule.waitForIdle()
     }
 
-    /** The real subject-card action must open the production topic editor. */
+    /** A persisted subject CARD, not typed text inside an unsaved editor. */
+    private fun awaitSubjectSaved() {
+        val subjectCardTag = hasTestTag("studyflow.subject_card.name.$subjectName")
+        val cards = rule.onAllNodes(subjectCardTag, useUnmergedTree = true)
+        if (cards.fetchSemanticsNodes().isEmpty()) {
+            val lists = rule.onAllNodes(hasScrollToIndexAction())
+            if (lists.fetchSemanticsNodes().isNotEmpty()) {
+                runCatching { lists.onFirst().performScrollToNode(subjectCardTag) }
+            }
+        }
+        try {
+            rule.waitUntil(35_000L) { cards.fetchSemanticsNodes().isNotEmpty() }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_SUBJECT_CARD_MISSING", failure)
+        }
+        val nameEditor = hasTestTag("studyflow.subject_editor.name")
+        if (rule.onAllNodes(nameEditor).fetchSemanticsNodes().isNotEmpty() ||
+            rule.onAllNodes(nameEditor, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_SUBJECT_EDITOR_STILL_OPEN")
+        }
+        runCatching { cards.onFirst().performScrollTo() }
+        cards.onFirst().assertIsDisplayed()
+    }
+
+    /** Verify a rendered saved topic ROW after save/expand, never modal text. */
+    private fun awaitTopicSaved() {
+        val topicTag = hasTestTag("studyflow.topic_row.name.$topicName")
+        val rows = rule.onAllNodes(topicTag, useUnmergedTree = true)
+        if (rows.fetchSemanticsNodes().isEmpty()) {
+            val lists = rule.onAllNodes(hasScrollToIndexAction())
+            if (lists.fetchSemanticsNodes().isNotEmpty()) {
+                runCatching { lists.onFirst().performScrollToNode(topicTag) }
+            }
+        }
+        try {
+            rule.waitUntil(35_000L) { rows.fetchSemanticsNodes().isNotEmpty() }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_TOPIC_ROW_MISSING", failure)
+        }
+        val nameEditor = hasTestTag("studyflow.topic_editor.name")
+        if (rule.onAllNodes(nameEditor).fetchSemanticsNodes().isNotEmpty() ||
+            rule.onAllNodes(nameEditor, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_TOPIC_EDITOR_STILL_OPEN")
+        }
+        runCatching { rows.onFirst().performScrollTo() }
+        rows.onFirst().assertIsDisplayed()
+    }
+
+    /** Scope a real click action to the SUBJECT WE JUST SAVED. */
     private fun openTopicEditorFromSubject() {
+        awaitSubjectSaved()
+        val subjectCardTag = hasTestTag("studyflow.subject_card.name.$subjectName")
+        val addTag = hasTestTag("studyflow.subject_card.add_topic")
         val addActions = rule.onAllNodes(
-            hasTestTag("studyflow.subject_card.add_topic"), useUnmergedTree = true,
+            hasClickAction() and hasAnyAncestor(subjectCardTag) and
+                (addTag or hasAnyAncestor(addTag)),
+            useUnmergedTree = true,
         )
         try {
-            rule.waitUntil(20_000L) { addActions.fetchSemanticsNodes().isNotEmpty() }
+            rule.waitUntil(25_000L) { addActions.fetchSemanticsNodes().isNotEmpty() }
         } catch (failure: Throwable) {
             throw AssertionError("SFDT22_TOPIC_ADD_BUTTON_MISSING", failure)
         }
-        addActions.onFirst().assertIsDisplayed().performTouchInput { click() }
+        if (addActions.fetchSemanticsNodes().size != 1) {
+            throw AssertionError("SFDT22_TOPIC_ADD_BUTTON_AMBIGUOUS")
+        }
+        val beforeFields = rule.onAllNodes(hasSetTextAction(), useUnmergedTree = true).fetchSemanticsNodes().size
+        val action = addActions.onFirst()
+        runCatching { action.performScrollTo() }
+        action.assertIsDisplayed()
+        action.performClick()
         rule.waitForIdle()
-        // An actual text input in the production dialog is positive evidence;
-        // isDialog() semantics are not consistent on all API36 Compose windows.
-        val nameField = rule.onAllNodes(
-            hasTestTag("studyflow.topic_editor.name"), useUnmergedTree = true,
-        )
+        // A dialog is positively evidenced by new real editable controls
+        // and not only by a testTag which can disappear between semantics trees.
+        val nameTag = hasTestTag("studyflow.topic_editor.name")
+        val taggedMerged = rule.onAllNodes(nameTag)
+        val taggedUnmerged = rule.onAllNodes(nameTag, useUnmergedTree = true)
+        var afterFields = beforeFields
         try {
-            rule.waitUntil(20_000L) { nameField.fetchSemanticsNodes().isNotEmpty() }
+            rule.waitUntil(25_000L) {
+                afterFields = rule.onAllNodes(hasSetTextAction(), useUnmergedTree = true)
+                    .fetchSemanticsNodes().size
+                taggedMerged.fetchSemanticsNodes().isNotEmpty() ||
+                    taggedUnmerged.fetchSemanticsNodes().isNotEmpty() ||
+                    afterFields >= beforeFields + 3
+            }
         } catch (failure: Throwable) {
             throw AssertionError("SFDT22_TOPIC_DIALOG_MISSING", failure)
         }
+        if (taggedMerged.fetchSemanticsNodes().isEmpty() &&
+            taggedUnmerged.fetchSemanticsNodes().isEmpty()) {
+            throw AssertionError("SFDT22_TOPIC_EDITOR_TAG_MISSING")
+        }
     }
 
-    /** Edit only the tagged production topic-name field; no global fallback. */
+    /** Edit only the active production field, in either Compose semantics tree. */
     private fun replaceTopicNameInDialog(value: String) {
         val nameTag = hasTestTag("studyflow.topic_editor.name")
         val tagged = rule.onAllNodes(nameTag, useUnmergedTree = true)
+        val taggedMerged = rule.onAllNodes(nameTag)
         try {
-            rule.waitUntil(20_000L) { tagged.fetchSemanticsNodes().isNotEmpty() }
+            rule.waitUntil(20_000L) {
+                tagged.fetchSemanticsNodes().isNotEmpty() ||
+                    taggedMerged.fetchSemanticsNodes().isNotEmpty()
+            }
         } catch (failure: Throwable) {
             throw AssertionError("SFDT22_TOPIC_DIALOG_MISSING", failure)
         }
         val editableMatcher = hasSetTextAction() and (nameTag or hasAnyAncestor(nameTag))
-        val fields = rule.onAllNodes(editableMatcher, useUnmergedTree = true)
+        val unmergedFields = rule.onAllNodes(editableMatcher, useUnmergedTree = true)
+        val mergedFields = rule.onAllNodes(hasSetTextAction() and nameTag)
         try {
-            rule.waitUntil(20_000L) { fields.fetchSemanticsNodes().isNotEmpty() }
+            rule.waitUntil(20_000L) {
+                mergedFields.fetchSemanticsNodes().isNotEmpty() ||
+                    unmergedFields.fetchSemanticsNodes().isNotEmpty()
+            }
         } catch (failure: Throwable) {
             throw AssertionError("SFDT22_TOPIC_EDITABLE_MISSING", failure)
         }
-        // A tag can appear on multiple semantics nodes. Filter for SetText,
-        // then type into the real tagged field, not a background search field.
+        val fields = if (mergedFields.fetchSemanticsNodes().isNotEmpty()) mergedFields else unmergedFields
+        // Both matchers are scoped to the unique actual production topic-name testTag.
         val editor = fields.onFirst()
         editor.assertIsDisplayed().performTextReplacement(value)
         rule.waitForIdle()
         val confirmed = rule.onAllNodes(editableMatcher and hasText(value), useUnmergedTree = true)
-        if (confirmed.fetchSemanticsNodes().isEmpty()) {
-            throw AssertionError("SFDT22_TOPIC_VALUE_NOT_WRITTEN")
+        if (confirmed.fetchSemanticsNodes().isEmpty() &&
+            rule.onAllNodes(hasSetTextAction() and nameTag and hasText(value)).fetchSemanticsNodes().isEmpty()) {
+            try {
+                editor.assertTextContains(value)
+            } catch (failure: Throwable) {
+                throw AssertionError("SFDT22_TOPIC_VALUE_NOT_WRITTEN", failure)
+            }
         }
     }
 
@@ -325,13 +410,13 @@ class Sfdt22HostedStudyJourneyTest {
             rule.waitForIdle()
         }
         stage("subject_save") { clickDialog(SubjectsR.string.save) }
-        stage("subject_confirm") { visible(subjectName) }
+        stage("subject_confirm") { awaitSubjectSaved() }
         stage("subject_capture") { screenshot("subject") }
         stage("topic_open_dialog") { openTopicEditorFromSubject() }
         stage("topic_fill_name") { replaceTopicNameInDialog(topicName) }
         stage("topic_save") { clickDialog(SubjectsR.string.save) }
         stage("topic_expand") { click(SubjectsR.string.expand) }
-        stage("topic_confirm") { visible(topicName) }
+        stage("topic_confirm") { awaitTopicSaved() }
         stage("topic_capture") { screenshot("topic") }
     }
 
@@ -387,11 +472,11 @@ class Sfdt22HostedStudyJourneyTest {
         shell()
         visible(planName)
         openRoot("plan")
-        innerTab(WorkspaceR.string.plan_content).performClick()
+        openPlanContentTab()
         click(WorkspaceR.string.manage_content)
-        visible(subjectName)
+        awaitSubjectSaved()
         click(SubjectsR.string.expand)
-        visible(topicName)
+        awaitTopicSaved()
         rule.onNodeWithContentDescription(text(SubjectsR.string.go_back)).performClick()
         innerTab(WorkspaceR.string.plan_overview).performClick()
         click(WorkspaceR.string.study_sessions)

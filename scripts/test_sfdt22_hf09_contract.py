@@ -43,8 +43,8 @@ class HF09(unittest.TestCase):
     def test_03_topic_open_is_genuine_touch_and_positive_verification(self):
         self.assertIn('private fun openTopicEditorFromSubject()',self.kt)
         self.assertIn('val addActions = rule.onAllNodes(',self.kt)
-        self.assertIn('hasTestTag("studyflow.subject_card.add_topic"), useUnmergedTree = true',self.kt)
-        self.assertIn('addActions.onFirst().assertIsDisplayed().performTouchInput { click() }',self.kt)
+        self.assertIn('hasTestTag("studyflow.subject_card.add_topic")',self.kt)
+        self.assertIn('action.performClick()',self.kt)
         self.assertIn('stage("topic_open_dialog") { openTopicEditorFromSubject() }',self.kt)
         self.assertNotIn('stage("topic_open_dialog") { click(SubjectsR.string.add_topic) }',self.kt)
     def test_04_topic_field_does_not_rely_on_isDialog_semantics(self):
@@ -60,7 +60,7 @@ class HF09(unittest.TestCase):
         self.assertIn('hasText(value)',self.kt)
         self.assertIn('SFDT22_TOPIC_VALUE_NOT_WRITTEN',self.kt)
         self.assertLess(self.kt.index('stage("topic_fill_name") { replaceTopicNameInDialog(topicName) }'),self.kt.index('stage("topic_save")'))
-        self.assertIn('stage("topic_confirm") { visible(topicName) }',self.kt)
+        self.assertIn('stage("topic_confirm") { awaitTopicSaved() }',self.kt)
     def test_06_new_failure_codes_are_sanitized_and_reported(self):
         for marker,reason,step in (('SFDT22_TOPIC_ADD_BUTTON_MISSING','topic_add_button_missing','topic_open_dialog'),('SFDT22_TOPIC_DIALOG_MISSING','topic_dialog_missing','topic_open_dialog'),('SFDT22_TOPIC_EDITABLE_MISSING','topic_editable_missing','topic_fill_name'),('SFDT22_TOPIC_VALUE_NOT_WRITTEN','topic_value_not_written','topic_fill_name')):
             self.assertIn(marker,self.kt)

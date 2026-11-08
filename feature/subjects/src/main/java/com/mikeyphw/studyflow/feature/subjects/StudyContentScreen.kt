@@ -629,7 +629,7 @@ private fun SubjectCard(
     onMoveTopic: (Topic, Int) -> Unit,
 ) {
     var menuExpanded by rememberSaveable(subject.id.value) { mutableStateOf(false) }
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth().testTag("studyflow.subject_card.name.${subject.name}")) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -785,7 +785,7 @@ private fun TopicNodeRow(
             Checkbox(checked = selected, onCheckedChange = null)
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(topic.name, fontWeight = FontWeight.SemiBold)
+            Text(topic.name, modifier = Modifier.testTag("studyflow.topic_row.name.${topic.name}"), fontWeight = FontWeight.SemiBold)
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
