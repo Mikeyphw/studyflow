@@ -47,7 +47,8 @@ STAGES = frozenset({
     'subject_confirm', 'subject_capture', 'topic_open_dialog',
     'topic_fill_name', 'topic_save', 'topic_save_feedback', 'topic_expand',
     'topic_confirm', 'topic_capture',
-    'session_open_overview', 'practice_open_questions', 'practice_open_reviews',
+    'session_open_root', 'session_open_overview', 'session_open_sessions', 'session_quick_dialog', 'session_title', 'session_start', 'session_running', 'session_pause', 'session_paused', 'session_resume', 'session_resumed', 'session_finish_open', 'session_finish_dialog', 'session_finish_notes', 'session_finish_confirm', 'session_finished', 'session_capture',
+    'practice_open_questions', 'practice_open_reviews',
     'restart_open_content', 'restart_open_overview', 'restart_open_questions', 'restart_open_reviews',
 })
 REASON_CODES = frozenset({
@@ -60,6 +61,7 @@ REASON_CODES = frozenset({
     'subject_expand_snackbar_obstruction', 'subject_expand_touch_failed',
     'subject_expand_semantic_click_failed', 'subject_expand_state_ambiguous',
     'topic_editor_still_open',
+    'session_control_not_ready', 'session_editor_not_ready',
     'inner_tab_missing', 'inner_tab_touch_failed',
     'inner_tab_not_selected', 'inner_pane_not_ready',
     'plan_content_tab_missing',
@@ -122,6 +124,10 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'topic_row_missing'
     elif 'SFDT22_TOPIC_EDITOR_STILL_OPEN' in raw:
         reason = 'topic_editor_still_open'
+    elif 'SFDT22_SESSION_CONTROL_NOT_READY' in raw:
+        reason = 'session_control_not_ready'
+    elif 'SFDT22_SESSION_EDITOR_NOT_READY' in raw:
+        reason = 'session_editor_not_ready'
     elif 'SFDT22_INNER_TAB_MISSING' in raw:
         reason = 'inner_tab_missing'
     elif 'SFDT22_INNER_TAB_TOUCH_FAILED' in raw:

@@ -7,6 +7,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.captureToImage
@@ -623,26 +624,86 @@ class Sfdt22HostedStudyJourneyTest {
         stage("topic_capture") { screenshot("topic") }
     }
 
+    /** Exact production session control; require it to be visible and enabled. */
+    private fun awaitSessionAction(tag: String) {
+        val actions = rule.onAllNodes(hasTestTag(tag) and hasClickAction(), useUnmergedTree = true)
+        try {
+            rule.waitUntil(35_000L) {
+                actions.fetchSemanticsNodes().size == 1 &&
+                    runCatching { actions.onFirst().assertIsDisplayed().assertIsEnabled() }.isSuccess
+            }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_SESSION_CONTROL_NOT_READY", failure)
+        }
+    }
+
+    private fun clickSessionAction(tag: String) {
+        awaitSessionAction(tag)
+        rule.onAllNodes(hasTestTag(tag) and hasClickAction(), useUnmergedTree = true)
+            .onFirst().performClick()
+        rule.waitForIdle()
+    }
+
+    /** Material3 may not merge an OutlinedTextField's label with its editor. */
+    private fun awaitSessionEditor(tag: String) {
+        val tagged = hasTestTag(tag)
+        val inputs = rule.onAllNodes(
+            hasSetTextAction() and (tagged or hasAnyAncestor(tagged)),
+            useUnmergedTree = true,
+        )
+        try {
+            rule.waitUntil(30_000L) {
+                if (inputs.fetchSemanticsNodes().size != 1) false else {
+                    runCatching { inputs.onFirst().performScrollTo() }
+                    runCatching { inputs.onFirst().assertIsDisplayed() }.isSuccess
+                }
+            }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_SESSION_EDITOR_NOT_READY", failure)
+        }
+    }
+
+    private fun writeSessionEditor(tag: String, value: String) {
+        awaitSessionEditor(tag)
+        val tagged = hasTestTag(tag)
+        val input = rule.onAllNodes(
+            hasSetTextAction() and (tagged or hasAnyAncestor(tagged)),
+            useUnmergedTree = true,
+        ).onFirst()
+        input.performTextReplacement(value)
+        input.assertTextContains(value)
+        rule.waitForIdle()
+    }
+
     @Test fun realUserStartsPausesResumesAndCompletesASession() {
-        openRoot("plan")
+        stage("session_open_root") { openRoot("plan") }
         stage("session_open_overview") {
             openInnerTabReady(WorkspaceR.string.plan_overview, WorkspaceR.string.study_sessions)
         }
-        click(WorkspaceR.string.study_sessions)
-        click(SessionsR.string.quick_session)
-        fill(SessionsR.string.session_title, sessionName)
-        clickDialog(SessionsR.string.start_session)
-        // Actual active-session controls prove that the persisted session started.
-        click(SessionsR.string.pause_session)
-        click(SessionsR.string.resume_session)
-        click(SessionsR.string.finish_session)
-        // The history card displays notes, not the quick-session title: persist
-        // our unique marker in the actual production completion dialog.
-        fill(SessionsR.string.session_notes, sessionName)
-        // All numeric fields are initialized to zero; completion is a real mutation.
-        clickDialog(SessionsR.string.finish_session)
-        visible(sessionName)
-        screenshot("session")
+        stage("session_open_sessions") { click(WorkspaceR.string.study_sessions) }
+        stage("session_quick_dialog") {
+            val action = rule.onNodeWithContentDescription(text(SessionsR.string.quick_session))
+            rule.waitUntil(30_000L) {
+                runCatching { action.assertIsDisplayed().assertIsEnabled() }.isSuccess
+            }
+            action.performClick()
+            awaitSessionEditor("studyflow.session.quick.title")
+        }
+        stage("session_title") { writeSessionEditor("studyflow.session.quick.title", sessionName) }
+        stage("session_start") { clickSessionAction("studyflow.session.quick.start") }
+        stage("session_running") { awaitSessionAction("studyflow.session.active.pause") }
+        stage("session_pause") { clickSessionAction("studyflow.session.active.pause") }
+        stage("session_paused") { awaitSessionAction("studyflow.session.active.resume") }
+        stage("session_resume") { clickSessionAction("studyflow.session.active.resume") }
+        stage("session_resumed") { awaitSessionAction("studyflow.session.active.pause") }
+        stage("session_finish_open") { clickSessionAction("studyflow.session.active.finish") }
+        stage("session_finish_dialog") { awaitSessionEditor("studyflow.session.finish.notes") }
+        stage("session_finish_notes") {
+            writeSessionEditor("studyflow.session.finish.notes", sessionName)
+        }
+        stage("session_finish_confirm") { clickSessionAction("studyflow.session.finish.confirm") }
+        stage("session_finished") { visible(sessionName) }
+        stage("session_capture") { screenshot("session") }
     }
 
     @Test fun realUserAnswersQuestionAndOpensReviewQueue() {
