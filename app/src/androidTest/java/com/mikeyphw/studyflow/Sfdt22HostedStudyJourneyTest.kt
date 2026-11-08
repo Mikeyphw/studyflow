@@ -9,6 +9,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasScrollToIndexAction
@@ -22,6 +23,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertTrue
@@ -100,6 +102,22 @@ class Sfdt22HostedStudyJourneyTest {
         rule.waitUntil(20_000L) { rule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
     }
 
+    /**
+     * The empty-workspace button renders a Material3 Button wrapping Text.
+     * A composite (hasText AND hasClickAction) matcher can miss this actual
+     * user-visible action when merged semantics vary by Compose version.
+     * Locate the visible text node in the unmerged tree, then send a genuine
+     * screen-coordinate touch through the real production Button.
+     * No test tags, injected routes, or direct repository calls are used.
+     */
+    private fun tapCreatePlan() {
+        val label = text(WorkspaceR.string.create_plan)
+        val labels = rule.onAllNodes(hasText(label), useUnmergedTree = true)
+        rule.waitUntil(25_000L) { labels.fetchSemanticsNodes().size == 1 }
+        labels.onFirst().assertIsDisplayed().performTouchInput { click() }
+        rule.waitForIdle()
+    }
+
     private fun click(resId: Int) = clickLabel(text(resId))
 
     private fun clickLabel(label: String) {
@@ -169,7 +187,16 @@ class Sfdt22HostedStudyJourneyTest {
     @Test fun realUserCreatesAStudyPlan() {
         // Real UI, fresh emulator and production plan persistence. The stage
         // wrappers do not catch/suppress failures; they rethrow for a red CI.
-        stage("plan_open") { shell(); click(WorkspaceR.string.create_plan) }
+        // Separate readiness, actual touch, and editor load in the receipt:
+        // a time-out now identifies exactly which on-screen step failed.
+        stage("plan_shell") { shell() }
+        stage("plan_open") { tapCreatePlan() }
+        stage("plan_editor_ready") {
+            rule.waitUntil(25_000L) {
+                // The production objective step has name and description.
+                rule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().size == 2
+            }
+        }
         stage("plan_name") { fill(PlansR.string.plan_name, planName) }
         stage("plan_target") { click(PlansR.string.next) }
         stage("plan_preferences") { click(PlansR.string.next) } // Default 20h, 45min.

@@ -39,7 +39,7 @@ PHASES = ('host', 'device', 'fresh', 'apks', 'install', 'installed_apk',
           'post_restart', 'screenshots', 'complete')
 SHA256 = re.compile(r'^[0-9a-f]{64}$')
 STAGES = frozenset({
-    'plan_open', 'plan_name', 'plan_target', 'plan_preferences',
+    'plan_shell', 'plan_open', 'plan_editor_ready', 'plan_name', 'plan_target', 'plan_preferences',
     'plan_save', 'plan_confirm', 'plan_capture',
 })
 REASON_CODES = frozenset({
