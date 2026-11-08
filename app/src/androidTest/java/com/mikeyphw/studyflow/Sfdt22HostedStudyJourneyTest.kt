@@ -9,13 +9,13 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
@@ -23,7 +23,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
-import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertTrue
@@ -103,18 +102,18 @@ class Sfdt22HostedStudyJourneyTest {
     }
 
     /**
-     * The empty-workspace button renders a Material3 Button wrapping Text.
-     * A composite (hasText AND hasClickAction) matcher can miss this actual
-     * user-visible action when merged semantics vary by Compose version.
-     * Locate the visible text node in the unmerged tree, then send a genuine
-     * screen-coordinate touch through the real production Button.
-     * No test tags, injected routes, or direct repository calls are used.
+     * Use the *production* empty-state Button with an explicit semantics tag.
+     * Previous versions timed out waiting for an exact number of merged or
+     * unmerged Text nodes, even though the app shell had already loaded.
+     * This still uses the real onClick handler, actual navigation, and the
+     * persistent production database (no injected routes or mocked content).
      */
     private fun tapCreatePlan() {
-        val label = text(WorkspaceR.string.create_plan)
-        val labels = rule.onAllNodes(hasText(label), useUnmergedTree = true)
-        rule.waitUntil(25_000L) { labels.fetchSemanticsNodes().size == 1 }
-        labels.onFirst().assertIsDisplayed().performTouchInput { click() }
+        val button = rule.onNodeWithTag("studyflow.no_plan.create_plan", useUnmergedTree = true)
+        rule.waitUntil(30_000L) {
+            runCatching { button.fetchSemanticsNode() }.isSuccess
+        }
+        button.assertIsDisplayed().performClick()
         rule.waitForIdle()
     }
 

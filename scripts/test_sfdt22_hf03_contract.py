@@ -26,15 +26,15 @@ class HF03(unittest.TestCase):
         cls.kt = (ROOT/'app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt').read_text()
         cls.wf = (ROOT/'.github/workflows/studyflow-sfdt22-hosted-journeys.yml').read_text()
 
-    def test_01_real_unmerged_text_is_located(self):
+    def test_01_stable_production_action_is_located(self):
         self.assertIn('fun tapCreatePlan()',self.kt)
-        self.assertIn('rule.onAllNodes(hasText(label), useUnmergedTree = true)',self.kt)
-        self.assertIn('labels.fetchSemanticsNodes().size == 1',self.kt)
+        self.assertIn('rule.onNodeWithTag("studyflow.no_plan.create_plan", useUnmergedTree = true)',self.kt)
+        self.assertNotIn('labels.fetchSemanticsNodes().size == 1',self.kt)
 
-    def test_02_real_touch_not_direct_route_or_mock(self):
-        self.assertIn('labels.onFirst().assertIsDisplayed().performTouchInput { click() }',self.kt)
-        self.assertIn('import androidx.compose.ui.test.performTouchInput',self.kt)
-        self.assertIn('import androidx.compose.ui.test.click',self.kt)
+    def test_02_real_button_click_not_direct_route_or_mock(self):
+        self.assertIn('button.assertIsDisplayed().performClick()',self.kt)
+        self.assertIn('import androidx.compose.ui.test.onNodeWithTag',self.kt)
+        self.assertNotIn('performTouchInput',self.kt)
         self.assertNotIn('setContent {',self.kt)
         self.assertNotIn('mockk(',self.kt)
         self.assertNotIn('assumeTrue(',self.kt)

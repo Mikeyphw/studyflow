@@ -29,10 +29,13 @@ jobs:
           test -z "$(git status --porcelain --untracked-files=normal)"
           echo "a9d185c8f8812861ae9d9e3ff6b8094b7a9fd40e09c0462f13858f23f7b3483f  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
           echo "506ac2a2e71afe7d32fc7a8200cf13ba90caba3232a2b55e517c38bb2062109e  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
-          echo "5caf0473f2b8ab1e8af05cf2ef35e29436c99be573960b57fbae73b65b2c4f63  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "d087b34209770600a48f7c9996b43dedba2b97c120932f38aa1e6079fe00572b  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "b5d0cd2bb44d893bc8564b0db2a72eb294d6edcfef3d888454681552c9f5977a  core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowComponents.kt" | sha256sum --check --status
+          echo "635f59b946d224e201966e56d7a0876a784dee8c31e27b0f99920d215cca83ff  feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceCommon.kt" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_emulator_contract.py
           python3 -B scripts/test_sfdt22_hf02_contract.py
           python3 -B scripts/test_sfdt22_hf03_contract.py
+          python3 -B scripts/test_sfdt22_hf04_contract.py
           python3 -B scripts/test_sfdt22_hf01_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
           python3 -B scripts/test_sfdt21_emulator_contract.py

@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -83,6 +84,7 @@ fun StudyFlowErrorPane(
         message = message,
         actionLabel = onRetry?.let { stringResource(R.string.retry) },
         onAction = onRetry,
+        actionTestTag = null,
         isError = true,
         modifier = modifier,
     )
@@ -95,12 +97,14 @@ fun StudyFlowEmptyState(
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    actionTestTag: String? = null,
 ) {
     MessagePane(
         title = title,
         message = message,
         actionLabel = actionLabel,
         onAction = onAction,
+        actionTestTag = actionTestTag,
         isError = false,
         modifier = modifier,
     )
@@ -112,6 +116,7 @@ private fun MessagePane(
     message: String,
     actionLabel: String?,
     onAction: (() -> Unit)?,
+    actionTestTag: String?,
     isError: Boolean,
     modifier: Modifier,
 ) {
@@ -142,7 +147,10 @@ private fun MessagePane(
         )
         if (actionLabel != null && onAction != null) {
             Spacer(modifier = Modifier.height(20.dp))
-            Button(onClick = onAction) {
+            Button(
+                onClick = onAction,
+                modifier = if (actionTestTag == null) Modifier else Modifier.testTag(actionTestTag),
+            ) {
                 Text(text = actionLabel)
             }
         }
