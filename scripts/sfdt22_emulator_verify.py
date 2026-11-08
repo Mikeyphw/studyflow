@@ -45,7 +45,7 @@ STAGES = frozenset({
     'subject_open_root', 'subject_open_content', 'subject_open_manager',
     'subject_open_dialog', 'subject_fill_name', 'subject_save',
     'subject_confirm', 'subject_capture', 'topic_open_dialog',
-    'topic_fill_name', 'topic_save', 'topic_expand',
+    'topic_fill_name', 'topic_save', 'topic_save_feedback', 'topic_expand',
     'topic_confirm', 'topic_capture',
     'session_open_overview', 'practice_open_questions', 'practice_open_reviews',
     'restart_open_content', 'restart_open_overview', 'restart_open_questions', 'restart_open_reviews',
@@ -55,7 +55,8 @@ REASON_CODES = frozenset({
     'subject_editor_still_open',
     'topic_add_button_ambiguous',
     'topic_editor_tag_missing',
-    'topic_row_missing',
+    'topic_row_missing', 'topic_row_not_composed',
+    'topic_save_failed', 'subject_expand_action_missing', 'subject_not_expanded',
     'topic_editor_still_open',
     'inner_tab_missing', 'inner_tab_touch_failed',
     'inner_tab_not_selected', 'inner_pane_not_ready',
@@ -99,6 +100,14 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'topic_add_button_ambiguous'
     elif 'SFDT22_TOPIC_EDITOR_TAG_MISSING' in raw:
         reason = 'topic_editor_tag_missing'
+    elif 'SFDT22_TOPIC_SAVE_FAILED' in raw:
+        reason = 'topic_save_failed'
+    elif 'SFDT22_SUBJECT_EXPAND_ACTION_MISSING' in raw:
+        reason = 'subject_expand_action_missing'
+    elif 'SFDT22_SUBJECT_NOT_EXPANDED' in raw:
+        reason = 'subject_not_expanded'
+    elif 'SFDT22_TOPIC_ROW_NOT_COMPOSED' in raw:
+        reason = 'topic_row_not_composed'
     elif 'SFDT22_TOPIC_ROW_MISSING' in raw:
         reason = 'topic_row_missing'
     elif 'SFDT22_TOPIC_EDITOR_STILL_OPEN' in raw:

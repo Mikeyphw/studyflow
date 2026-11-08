@@ -243,25 +243,103 @@ class Sfdt22HostedStudyJourneyTest {
         cards.onFirst().assertIsDisplayed()
     }
 
-    /** Verify a rendered saved topic ROW after save/expand, never modal text. */
-    private fun awaitTopicSaved() {
-        val topicTag = hasTestTag("studyflow.topic_row.name.$topicName")
-        val rows = rule.onAllNodes(topicTag, useUnmergedTree = true)
-        if (rows.fetchSemanticsNodes().isEmpty()) {
-            val lists = rule.onAllNodes(hasScrollToIndexAction())
-            if (lists.fetchSemanticsNodes().isNotEmpty()) {
-                runCatching { lists.onFirst().performScrollToNode(topicTag) }
+    /** Snackbar is additional real UI evidence, not a substitute for a persisted row.
+     * A Snackbar may expire before this observer runs; that alone never qualifies
+     * or disqualifies a database write. The persisted row remains mandatory. */
+    private var topicSaveSuccessSeen = false
+
+    private fun observeTopicSaveFeedback() {
+        val saved = rule.onAllNodes(hasText(text(SubjectsR.string.topic_saved)))
+        val failed = rule.onAllNodes(hasText(text(SubjectsR.string.operation_failed)))
+        var savedSeen = false
+        var failedSeen = false
+        // The real save is asynchronous. Observe actual production feedback,
+        // without requiring a transient Snackbar to outlive its UI lifetime.
+        runCatching {
+            rule.waitUntil(12_000L) {
+                failedSeen = failedSeen || failed.fetchSemanticsNodes().isNotEmpty()
+                savedSeen = savedSeen || saved.fetchSemanticsNodes().isNotEmpty()
+                failedSeen || savedSeen
             }
         }
+        if (failedSeen) throw AssertionError("SFDT22_TOPIC_SAVE_FAILED")
+        topicSaveSuccessSeen = savedSeen
+    }
+
+    /** A unique action underneath the exact saved subject; never an arbitrary
+     * "Expand" label. Already-expanded cards are left untouched. */
+    private fun ensureSavedSubjectExpanded() {
+        awaitSubjectSaved()
+        val subjectCardTag = hasTestTag("studyflow.subject_card.name.$subjectName")
+        val collapsedControl = hasClickAction() and
+            hasTestTag("studyflow.subject_card.expand") and hasAnyAncestor(subjectCardTag)
+        val expandedControl = hasClickAction() and
+            hasTestTag("studyflow.subject_card.collapse") and hasAnyAncestor(subjectCardTag)
+        val collapsed = rule.onAllNodes(collapsedControl, useUnmergedTree = true)
+        val expanded = rule.onAllNodes(expandedControl, useUnmergedTree = true)
+        if (expanded.fetchSemanticsNodes().size == 1) return
         try {
-            rule.waitUntil(35_000L) { rows.fetchSemanticsNodes().isNotEmpty() }
+            rule.waitUntil(12_000L) {
+                collapsed.fetchSemanticsNodes().size == 1 ||
+                    expanded.fetchSemanticsNodes().size == 1
+            }
         } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_SUBJECT_EXPAND_ACTION_MISSING", failure)
+        }
+        if (expanded.fetchSemanticsNodes().size == 1) return
+        if (collapsed.fetchSemanticsNodes().size != 1) {
+            throw AssertionError("SFDT22_SUBJECT_EXPAND_ACTION_MISSING")
+        }
+        try {
+            val action = collapsed.onFirst()
+            runCatching { action.performScrollTo() }
+            action.assertIsDisplayed().performTouchInput { click() }
+            rule.waitForIdle()
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_SUBJECT_NOT_EXPANDED", failure)
+        }
+        try {
+            rule.waitUntil(12_000L) { expanded.fetchSemanticsNodes().size == 1 }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_SUBJECT_NOT_EXPANDED", failure)
+        }
+    }
+
+    /** Verify a persisted topic row in the actually expanded saved subject. */
+    private fun awaitTopicSaved() {
+        ensureSavedSubjectExpanded()
+        val editorTag = hasTestTag("studyflow.topic_editor.name")
+        if (rule.onAllNodes(editorTag).fetchSemanticsNodes().isNotEmpty() ||
+            rule.onAllNodes(editorTag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_TOPIC_EDITOR_STILL_OPEN")
+        }
+        val topicTag = hasTestTag("studyflow.topic_row.name.$topicName")
+        val rows = rule.onAllNodes(topicTag, useUnmergedTree = true)
+        val failureToast = rule.onAllNodes(hasText(text(SubjectsR.string.operation_failed)))
+        var saveFailed = false
+        try {
+            rule.waitUntil(35_000L) {
+                saveFailed = saveFailed || failureToast.fetchSemanticsNodes().isNotEmpty()
+                saveFailed || rows.fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (failure: Throwable) {
+            if (saveFailed) throw AssertionError("SFDT22_TOPIC_SAVE_FAILED", failure)
+            val subjectCardTag = hasTestTag("studyflow.subject_card.name.$subjectName")
+            val expandedControl = hasTestTag("studyflow.subject_card.collapse") and
+                hasAnyAncestor(subjectCardTag)
+            if (rule.onAllNodes(expandedControl, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isEmpty()) {
+                throw AssertionError("SFDT22_SUBJECT_NOT_EXPANDED", failure)
+            }
+            if (topicSaveSuccessSeen) {
+                // Successful production save was seen, but no row has composed.
+                throw AssertionError("SFDT22_TOPIC_ROW_NOT_COMPOSED", failure)
+            }
             throw AssertionError("SFDT22_TOPIC_ROW_MISSING", failure)
         }
-        val nameEditor = hasTestTag("studyflow.topic_editor.name")
-        if (rule.onAllNodes(nameEditor).fetchSemanticsNodes().isNotEmpty() ||
-            rule.onAllNodes(nameEditor, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()) {
-            throw AssertionError("SFDT22_TOPIC_EDITOR_STILL_OPEN")
+        if (saveFailed) throw AssertionError("SFDT22_TOPIC_SAVE_FAILED")
+        if (rows.fetchSemanticsNodes().isEmpty()) {
+            throw AssertionError("SFDT22_TOPIC_ROW_MISSING")
         }
         runCatching { rows.onFirst().performScrollTo() }
         rows.onFirst().assertIsDisplayed()
@@ -495,7 +573,8 @@ class Sfdt22HostedStudyJourneyTest {
         stage("topic_open_dialog") { openTopicEditorFromSubject() }
         stage("topic_fill_name") { replaceTopicNameInDialog(topicName) }
         stage("topic_save") { clickDialog(SubjectsR.string.save) }
-        stage("topic_expand") { click(SubjectsR.string.expand) }
+        stage("topic_save_feedback") { observeTopicSaveFeedback() }
+        stage("topic_expand") { ensureSavedSubjectExpanded() }
         stage("topic_confirm") { awaitTopicSaved() }
         stage("topic_capture") { screenshot("topic") }
     }
@@ -565,7 +644,7 @@ class Sfdt22HostedStudyJourneyTest {
         stage("restart_open_content") { openPlanContentTab() }
         click(WorkspaceR.string.manage_content)
         awaitSubjectSaved()
-        click(SubjectsR.string.expand)
+        ensureSavedSubjectExpanded()
         awaitTopicSaved()
         rule.onNodeWithContentDescription(text(SubjectsR.string.go_back)).performClick()
         stage("restart_open_overview") {

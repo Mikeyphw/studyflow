@@ -27,15 +27,15 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=normal)"
-          echo "bc7490bff1949772d82cde05a3e17157e4d18b5d6355aea3865ce040005e1ace  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
+          echo "b78a2841fec2d63457c6d375c315c2418aab02e469a2820b7060e9f095729470  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
           echo "506ac2a2e71afe7d32fc7a8200cf13ba90caba3232a2b55e517c38bb2062109e  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
-          echo "5a3a3510a45806372161914097d965c8d82694a2948582867b0e0b47425b88d2  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "d181f241cfd02d48d8bd12750821e4442bf5cd553a6ba86a718c34de6a8730f9  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
           echo "53d32c91ac814074501ddebbcfc368812aad4d664282a7a6ca975fbc2622321f  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentDialogs.kt" | sha256sum --check --status
           echo "82a314c22c2b5bf86e942b0186d0a3603c9ee4d0d99e52f1bb73d54c4545dcd1  feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceUtilityScreens.kt" | sha256sum --check --status
           echo "b22486e751156118b7a8c09824fd609a1c28eb89c515be4b081ea4c31cdb189c  feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanListScreen.kt" | sha256sum --check --status
           echo "b5d0cd2bb44d893bc8564b0db2a72eb294d6edcfef3d888454681552c9f5977a  core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowComponents.kt" | sha256sum --check --status
           echo "635f59b946d224e201966e56d7a0876a784dee8c31e27b0f99920d215cca83ff  feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceCommon.kt" | sha256sum --check --status
-          echo "e03171a911968921f72052cfb73cec5b832fefa638782b75f15d39855f298829  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentScreen.kt" | sha256sum --check --status
+          echo "2334ec3ab657082d58f48d07a6f7c46dc48960b85245fa6475334280cd592c0b  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentScreen.kt" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_emulator_contract.py
           python3 -B scripts/test_sfdt22_hf02_contract.py
           python3 -B scripts/test_sfdt22_hf03_contract.py
@@ -55,6 +55,9 @@ jobs:
           python3 -B scripts/test_sfdt22_hf11_contract.py
           echo "e36a52c836c9878ec18b52e556ecf8ba5ddae09be979f7079db0db2674267679  scripts/test_sfdt22_hf12_contract.py" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf12_contract.py
+          echo "e1c0ca03f91d4260c6e6956a0cd845a52bec72555f30b113d9b901efc96ea8e9  scripts/test_sfdt22_hf13_contract.py" | sha256sum --check --status
+          echo "f83faeb504cf2155ec0fa74d55a350f26ee9a165dd0db429384ce41a6fb607e7  docs/actions/SFDT22_HF13_TOPIC_PERSISTENCE_AND_EXPANSION.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf13_contract.py
           python3 -B scripts/test_sfdt22_hf01_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
           python3 -B scripts/test_sfdt21_emulator_contract.py

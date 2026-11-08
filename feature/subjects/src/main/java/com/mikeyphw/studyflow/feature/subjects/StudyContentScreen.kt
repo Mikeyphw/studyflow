@@ -720,7 +720,13 @@ private fun SubjectCard(
                     Icon(Icons.Outlined.Add, contentDescription = null)
                     Text(stringResource(R.string.add_topic))
                 }
-                TextButton(onClick = onToggleExpanded) {
+                TextButton(
+                    onClick = onToggleExpanded,
+                    modifier = Modifier.testTag(
+                        if (expanded) "studyflow.subject_card.collapse"
+                        else "studyflow.subject_card.expand",
+                    ),
+                ) {
                     Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
                     Text(stringResource(if (expanded) R.string.collapse else R.string.expand))
                 }

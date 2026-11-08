@@ -1,139 +1,89 @@
 {
-  "schema_version": 1,
-  "type": "overlay",
-  "name": "studyflow_failure_audit_ov02_sflp_programming_contracts_v1",
-  "target": "studyflow_android",
-  "description": "Failure-audit remediation overlay 2 of 3: converge programming-course UI contract tests on persisted Termux runtime readiness; modernize OV09/OV12 Web interoperability validation around encrypted P-256 ECDH pairing grants, opaque trust-key persistence, and authenticated reconnect proofs; restore the missing OV09 Python regression module.",
-  "commit_message": "fix(studyflow): converge SFLP and programming UI contracts",
-  "commit": {
-    "enabled": true,
-    "strategy": "single",
-    "message": "fix(studyflow): converge SFLP and programming UI contracts"
-  },
   "apply": {
     "commit": {
       "enabled": true,
-      "strategy": "single",
-      "message": "fix(studyflow): converge SFLP and programming UI contracts"
+      "message": "fix(sfdt22-hf13): verify topic save and expand exact subject",
+      "strategy": "single"
     }
   },
   "baseline": {
+    "branch": "feature/sfdt22-real-study-workflows-20261107",
     "repo": "studyflow",
-    "target": "studyflow_android",
-    "roadmap_overlay": "2 of 3",
-    "source_snapshot": "studyflow-20260918-114523-074751.tar.gz",
-    "audit_log": "20260918-113944-422073.log",
-    "requires_overlay": "studyflow_failure_audit_ov01_active_time_backup_v1",
-    "requires_overlay_sha256": "2b94b6893fbd95d4325d4c7716967794b42437e580f625abc33c29f74a851a6a",
-    "observed_applied_commit": "a05d9e2e",
-    "notes": "Built on the uploaded snapshot with Overlay 1 changes reconstructed. This overlay intentionally contains no production pairing implementation changes: production already implements encrypted pairing correctly; the failing interop fixtures and stale UI test are brought back into contract."
+    "source_artifact_id": 13624354057,
+    "source_commit": "cf6d116c8c81283581138760061aae1d1b33a1a8",
+    "source_run_id": 42497613558
   },
-  "structure": {
-    "format": 1,
-    "name": "studyflow_failure_audit_ov02_sflp_programming_contracts_v1",
-    "target": "studyflow_android",
-    "sections": [
-      {
-        "id": "programming-ui-contract-convergence",
-        "purpose": "Make the JUnit UI contract assert persisted ProgrammingCourseSnapshot Termux readiness, matching production and the canonical Python verifier.",
-        "paths": [
-          "feature/workspace/src/test/java/com/mikeyphw/studyflow/feature/workspace/ProgrammingCourseUiContractTest.kt"
-        ]
-      },
-      {
-        "id": "sflp-encrypted-interop-fixture",
-        "purpose": "Exercise the current encrypted SFLP pairing protocol end to end: P-256 ECDH, derived AES-GCM grant, opaque trust-key ID persistence, and HMAC reconnect proof.",
-        "paths": [
-          "web/tests/ov09_interop_runner.mjs",
-          "scripts/verify_ov09_sflp_native_web_interop.py",
-          "web/tests/test_ov09_native_web_interop.py"
-        ]
-      },
-      {
-        "id": "overlay-metadata",
-        "purpose": "Devtool overlay metadata and immutable inventory.",
-        "paths": [
-          "devtool-overlay.json"
-        ]
-      }
-    ]
+  "commit": {
+    "enabled": true,
+    "message": "fix(sfdt22-hf13): verify topic save and expand exact subject",
+    "strategy": "single"
   },
-  "findings": [
-    {
-      "id": "AUDIT-OV02-PROGRAMMING-UI-STALE-CONTRACT",
-      "severity": "HIGH",
-      "status": "closed",
-      "summary": "ProgrammingCourseUiContractTest no longer requires the removed content-mode capability shortcut and now requires snapshot.termuxRuntimeReady, matching production and verify_programming_course_ui.py."
-    },
-    {
-      "id": "AUDIT-OV02-SFLP-PLAINTEXT-FIXTURE",
-      "severity": "HIGH",
-      "status": "closed",
-      "summary": "OV09 Web/native interop now constructs a valid encrypted pairing grant and verifies opaque trust-key persistence plus the reconnect HMAC proof instead of modeling a plaintext trustSecret grant."
-    },
-    {
-      "id": "AUDIT-OV02-SFLP-MISSING-REGRESSION-MODULE",
-      "severity": "MEDIUM",
-      "status": "closed",
-      "summary": "Restores web/tests/test_ov09_native_web_interop.py, which the canonical OV09 validator invokes after the Node runner and which was absent from the snapshot."
-    }
-  ],
-  "validation": {
-    "source_checks": [
-      "python3 scripts/verify_programming_course_ui.py",
-      "python3 scripts/verify_ov09_sflp_native_web_interop.py",
-      "bash scripts/validate_ov09_sflp_native_web_interop.sh",
-      "bash scripts/validate_ov12_sflp_advanced_rpc_semantics.sh"
-    ],
-    "gradle_tasks": [
-      ":feature:workspace:testDebugUnitTest",
-      "verifyProgrammingCourseUi",
-      "verifyOv09SflpNativeWebInterop",
-      "verifyOv12SflpAdvancedRpcSemantics"
-    ],
-    "local_result": "Programming UI source contract, OV09 full Web validator, and OV12 full Web validator all passed. The OV09 validator includes TypeScript runtime parity, encrypted interop, parity04, and the restored Python regression module. Full Android Gradle execution is deferred to the final overlay per campaign validation policy."
-  },
+  "commit_message": "fix(sfdt22-hf13): verify topic save and expand exact subject",
+  "description": "SFDT22 HF13: exact subject expansion, persisted topic UI confirmation, sanitized diagnostics, source regression",
   "inventory": {
-    "format": 1,
-    "count": 4,
+    "count": 6,
     "entries": [
       {
         "action": "modify",
-        "path": "feature/workspace/src/test/java/com/mikeyphw/studyflow/feature/workspace/ProgrammingCourseUiContractTest.kt",
         "mode": "0o600",
-        "sha256": "48829a637516b5e36e07ffc311b19d2bf426af6e8ae404b7323432fcd864d722",
-        "size": 2142,
+        "path": "app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt",
+        "sha256": "d181f241cfd02d48d8bd12750821e4442bf5cd553a6ba86a718c34de6a8730f9",
+        "size": 32034,
         "source_mode": "0o600",
-        "source_sha256": "78f51f9ca94781530452054f418c16caec5671ec688eb385491b059f76e85966",
-        "source_size": 2061
+        "source_sha256": "5a3a3510a45806372161914097d965c8d82694a2948582867b0e0b47425b88d2",
+        "source_size": 27992
       },
       {
         "action": "modify",
-        "path": "scripts/verify_ov09_sflp_native_web_interop.py",
-        "mode": "0o755",
-        "sha256": "6ee98726ccdab40db6b9a09c118dee2de635d46006174eaa0c3c90469f6da82c",
-        "size": 3858,
-        "source_mode": "0o755",
-        "source_sha256": "2dfaf8594cd9db19cf911a3344e9f6f64b5cb12c59e94e284ffdc35336a18d41",
-        "source_size": 3126
+        "mode": "0o600",
+        "path": "feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentScreen.kt",
+        "sha256": "2334ec3ab657082d58f48d07a6f7c46dc48960b85245fa6475334280cd592c0b",
+        "size": 43144,
+        "source_mode": "0o600",
+        "source_sha256": "e03171a911968921f72052cfb73cec5b832fefa638782b75f15d39855f298829",
+        "source_size": 42899
       },
       {
         "action": "modify",
-        "path": "web/tests/ov09_interop_runner.mjs",
-        "mode": "0o644",
-        "sha256": "0a7ff87812d48d447d34fdb6ec7228a072079f3db56fe895073fd3964367b0ec",
-        "size": 9444,
-        "source_mode": "0o644",
-        "source_sha256": "3fcb4a5874ceb4b0e39beee59a44da5555e9e0187bb04d04fd6ff76bb45d8099",
-        "source_size": 4923
+        "mode": "0o600",
+        "path": "scripts/sfdt22_emulator_verify.py",
+        "sha256": "b78a2841fec2d63457c6d375c315c2418aab02e469a2820b7060e9f095729470",
+        "size": 20634,
+        "source_mode": "0o600",
+        "source_sha256": "bc7490bff1949772d82cde05a3e17157e4d18b5d6355aea3865ce040005e1ace",
+        "source_size": 20139
+      },
+      {
+        "action": "modify",
+        "mode": "0o600",
+        "path": ".github/workflows/studyflow-sfdt22-hosted-journeys.yml",
+        "sha256": "06f2919e2f6587e43c7506ba14314f9d9e378c880bf662b554912918bb171447",
+        "size": 10016,
+        "source_mode": "0o600",
+        "source_sha256": "cd606c3da9da637f4501ea88b8e991c7a6ce2691e8342aeb27d2b75b3aadb571",
+        "source_size": 9637
       },
       {
         "action": "add",
-        "path": "web/tests/test_ov09_native_web_interop.py",
         "mode": "0o644",
-        "sha256": "00d7d8a9602b73f2845b4947254212b97340ebed2e7b24ef55137682c326bba0",
-        "size": 1685
+        "path": "scripts/test_sfdt22_hf13_contract.py",
+        "sha256": "e1c0ca03f91d4260c6e6956a0cd845a52bec72555f30b113d9b901efc96ea8e9",
+        "size": 6658,
+        "source_sha256": null
+      },
+      {
+        "action": "add",
+        "mode": "0o644",
+        "path": "docs/actions/SFDT22_HF13_TOPIC_PERSISTENCE_AND_EXPANSION.md",
+        "sha256": "f83faeb504cf2155ec0fa74d55a350f26ee9a165dd0db429384ce41a6fb607e7",
+        "size": 2619,
+        "source_sha256": null
       }
-    ]
-  }
+    ],
+    "format": 1
+  },
+  "name": "studyflow_sfdt22_hf13_topic_persistence_expansion",
+  "schema_version": 1,
+  "target": "studyflow_android",
+  "type": "overlay"
 }
