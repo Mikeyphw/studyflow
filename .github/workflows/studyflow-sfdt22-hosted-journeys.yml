@@ -1,0 +1,213 @@
+name: StudyFlow SFDT22 Hosted Real Study Journeys
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sfdt22-study-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source:
+    name: SFDT22 source and trust contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Source and exact manifest contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          echo "80f15a7f0a8d981502a7396e886078a8036c50594d7c9bb9506e46975ba28dab  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
+          echo "506ac2a2e71afe7d32fc7a8200cf13ba90caba3232a2b55e517c38bb2062109e  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
+          echo "704b44ded89f0020fc0379a58067355f9cbb930a0b2bf9c7c0102d824d5ad40a  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "53d32c91ac814074501ddebbcfc368812aad4d664282a7a6ca975fbc2622321f  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentDialogs.kt" | sha256sum --check --status
+          echo "82a314c22c2b5bf86e942b0186d0a3603c9ee4d0d99e52f1bb73d54c4545dcd1  feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceUtilityScreens.kt" | sha256sum --check --status
+          echo "b22486e751156118b7a8c09824fd609a1c28eb89c515be4b081ea4c31cdb189c  feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanListScreen.kt" | sha256sum --check --status
+          echo "b5d0cd2bb44d893bc8564b0db2a72eb294d6edcfef3d888454681552c9f5977a  core/designsystem/src/main/java/com/mikeyphw/studyflow/core/designsystem/StudyFlowComponents.kt" | sha256sum --check --status
+          echo "635f59b946d224e201966e56d7a0876a784dee8c31e27b0f99920d215cca83ff  feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceCommon.kt" | sha256sum --check --status
+          echo "9935a40cd89221160bf79c770b0d465079bcce00ab6ff559ab7e1987b8a1613d  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentScreen.kt" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_emulator_contract.py
+          python3 -B scripts/test_sfdt22_hf02_contract.py
+          python3 -B scripts/test_sfdt22_hf03_contract.py
+          python3 -B scripts/test_sfdt22_hf04_contract.py
+          python3 -B scripts/test_sfdt22_hf05_contract.py
+          echo "3ab00fc61634a0ea3e962ed2ec607d248ce9ad381b53f10e191e5faa52d4e6cb  scripts/test_sfdt22_hf07_contract.py" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf06_contract.py
+          python3 -B scripts/test_sfdt22_hf07_contract.py
+          echo "5f081e64cafb7c5592be7439f7d3330d81e6c1c2a2b5360f21d50085738e8d21  scripts/test_sfdt22_hf06_contract.py" | sha256sum --check --status
+          echo "2b485192f2e75a63d6c4961cfba1318a97662c02b794b177c39a958b62861ddb  scripts/test_sfdt22_hf08_contract.py" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf08_contract.py
+          echo "c69a268e879385dd4d95f4a5f80b7f8bf0165018e3fd2258e13b26d94d86777f  scripts/test_sfdt22_hf09_contract.py" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf09_contract.py
+          echo "054bc96146db45321705049482a8b4fca2e7d1a9d2ea6987da0a9e89d1692cff  scripts/test_sfdt22_hf10_contract.py" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf10_contract.py
+          echo "015fcd1191c15b1854ea1dce89cfd40419b0d6656dc432abb179524e980fc9df  scripts/test_sfdt22_hf11_contract.py" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf11_contract.py
+          echo "e36a52c836c9878ec18b52e556ecf8ba5ddae09be979f7079db0db2674267679  scripts/test_sfdt22_hf12_contract.py" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf12_contract.py
+          echo "e1c0ca03f91d4260c6e6956a0cd845a52bec72555f30b113d9b901efc96ea8e9  scripts/test_sfdt22_hf13_contract.py" | sha256sum --check --status
+          echo "f83faeb504cf2155ec0fa74d55a350f26ee9a165dd0db429384ce41a6fb607e7  docs/actions/SFDT22_HF13_TOPIC_PERSISTENCE_AND_EXPANSION.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf13_contract.py
+          echo "500686b8b5747d4a3b32cd107db69a334d5dbd8b2caba14ccf87b182bb89cf63  scripts/test_sfdt22_hf15_contract.py" | sha256sum --check --status
+          echo "ff0eee2078d10be6b709bce92e39b74e8d402f086d3148b2a6d7e2eb32dd9694  docs/actions/SFDT22_HF15_CI_FAILURE_REMEDIATION.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf15_contract.py
+          echo "084e0f81ab577c134a9fc61b67cef4c9b19e3825c1c21988729e0f379f9011d7  feature/sessions/src/main/java/com/mikeyphw/studyflow/feature/sessions/StudySessionScreen.kt" | sha256sum --check --status
+          echo "9ed84227998473d61414b90fc2d430514cbe85e13dfa6886ec1f660d5fd4f88e  feature/sessions/src/main/java/com/mikeyphw/studyflow/feature/sessions/StudySessionDialogs.kt" | sha256sum --check --status
+          echo "318d4576400aaacb1dbbb4740c49e65aab74a8d918e0b89e03dda75a731092bf  scripts/test_sfdt22_hf16_contract.py" | sha256sum --check --status
+          echo "993ce5ea04f9c32d84fc80010b4e5e74f680be9f5d19e3c52d0254af1d049a3d  docs/actions/SFDT22_HF16_SESSION_WORKFLOW_ACCEPTANCE.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf16_contract.py
+          echo "187ac1330336555880b6260719fa441bb96b6170b8e426e6f6f6d8337484b5bb  scripts/test_sfdt22_hf17_contract.py" | sha256sum --check --status
+          echo "342b069cd64b27cb01a26b7dc336144bf67e21bc8e776e6392bdf1b9a775160e  docs/actions/SFDT22_HF17_SESSION_START_DIAGNOSTICS.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf17_contract.py
+          echo "e3f31e558b33d1a87b2fee2091fdaabe0ac5ef14806d68f3ed3dc3cc21eb79e6  core/domain/src/main/kotlin/com/mikeyphw/studyflow/core/domain/ManageStudySession.kt" | sha256sum --check --status
+          echo "b938da06a047b6dd0bdb630dcc34a0edf56c299352b984dd3ee63101876bc936  scripts/test_sfdt22_hf18_contract.py" | sha256sum --check --status
+          echo "513fdd6f11032d7949f4c8c9390be14452b9da35e6d0f1a700e83fe1176410f6  docs/actions/SFDT22_HF18_QUICK_SESSION_FAILURE_CLASSIFICATION.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf18_contract.py
+          echo "8cd9d9c991871c82abbca1813b968087c1ad1cf1e543a95a1c372d742ac0aba5  scripts/test_sfdt22_hf19_contract.py" | sha256sum --check --status
+          echo "5aa57ee0d59bca9582db431b2edc66e97657163db017e264d6fe5fc75c4c9784  docs/actions/SFDT22_HF19_PLAN_SETTINGS_FAILURE_SPLIT.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf19_contract.py
+          echo "c686796f8d2496ad9fd6a851e9019f790f8a046221d7a4947077cac042cb26cf  scripts/test_sfdt22_hf20_contract.py" | sha256sum --check --status
+          echo "bb723a8e32ae4b61306ed0c3aeeaab03f02c17c4275c076fb6c2fb8347b26796  docs/actions/SFDT22_HF20_TOPIC_ROW_VISIBLE_SEARCH_RECOVERY.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf20_contract.py
+          echo "eb9a0a06ec82ba1573d7c39047d181bccd9f6fcf924c063e52282cd57635d118  core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyPlanDao.kt" | sha256sum --check --status
+          echo "5b00ccef1735847e2b7b35ac01185d4a8b6aee6abdebc73b0a85864dcdb3e326  core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudySupportDao.kt" | sha256sum --check --status
+          echo "d1c67e3fccfff176172062d5bb3bb09b9ba11e15d0a1f71860752b7c9bf81eff  core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanRepository.kt" | sha256sum --check --status
+          echo "36091be66dd3c33bfd9c0d5cb5931a24dce6b8fbbec350bdf767e57ed0917084  scripts/test_sfdt22_hf21_contract.py" | sha256sum --check --status
+          echo "650a88c38f8586e675a0711831da9f3ff5240e784c55ccda69799475f08dd05e  docs/actions/SFDT22_HF21_LEGACY_PLAN_SETTINGS_REPAIR.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf21_contract.py
+          echo "7e79e0cebb9aed8524abf2714d8335517b23def56929442f60e644d8694dfe2c  scripts/test_sfdt22_hf22_contract.py" | sha256sum --check --status
+          echo "90915ecdf5c1222f3fbed8f42ac77b0c305bdfb374bdec2945df9be1c09a06b0  docs/actions/SFDT22_HF22_FAILURE_DIAGNOSTICS_AND_HOTFIX_LANE.md" | sha256sum --check --status
+          echo "7f328f91d6fc2a22cfc1e504f654bf88b05b7baae0b5d99a084055695601f94f  scripts/sfdt22_failure_triage.py" | sha256sum --check --status
+          echo "7911652755f1ce6b8fce69c0b7045018ca56f3557aaaa4188e66e12f93617ab7  .github/workflows/studyflow-sfdt22-hotfix-session.yml" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf22_contract.py
+          echo "0a1b51990d7e72e28831434549b946fd080370ba16e1baf723d50036f97d4807  core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyContentRepository.kt" | sha256sum --check --status
+          echo "c6b01b5e246e5767d1faec8a37861d5e1e8fdc2d95ac5a857ed81ddb0bff2490  scripts/test_sfdt22_hf23_contract.py" | sha256sum --check --status
+          echo "032f80cf2380c5aa4aec6b723c8e952c616b99dac17b688411515f9e3698bf59  docs/actions/SFDT22_HF23_SETTINGS_PRESERVATION.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf23_contract.py
+          echo "01f51e33eb8187d2bc47b0bc379fbd9ef58174a93be1a398e5d7c3ac16e5a274  scripts/test_sfdt22_hf24_contract.py" | sha256sum --check --status
+          echo "1ed321109491da79de3866e5c2068600f23ec3f04b28bfcb1599484d036c9f9a  docs/actions/SFDT22_HF24_SANITIZED_TOPIC_SAVE_FAILURES.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf24_contract.py
+          python3 -B scripts/test_sfdt22_hf01_contract.py
+          python3 -B scripts/sfdt22_emulator_verify.py --source-check
+          python3 -B scripts/test_sfdt21_emulator_contract.py
+          python3 -B scripts/sfdt11_contract.py --source-check
+  emulator:
+    name: SFDT22 API36 real study-workflow instrumentation
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 105
+    env:
+      CI: 'true'
+      PYTHONDONTWRITEBYTECODE: '1'
+      STUDYFLOW_SFDT21_HOSTED_EMULATOR: 'true' # reuse reviewed debug-only Gradle testBuildType gate
+      STUDYFLOW_SFDT22_HOSTED_JOURNEYS: 'true'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Require exact disposable checkout and initialize NOT_RUN receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = X64
+          test "$GITHUB_REPOSITORY" = Mikeyphw/studyflow
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          test -z "${STUDYFLOW_RELEASE_STORE_PASSWORD:-}${STUDYFLOW_RELEASE_KEY_PASSWORD:-}${STUDYFLOW_RELEASE_STORE_FILE:-}"
+          mkdir -p "$RUNNER_TEMP/sfdt22-emulator"
+          printf '%s\n' '{"overall":"NOT_RUN","hosted_emulator_only":true,"physical_device_qualified":false,"release_qualified":false,"publication_allowed":false}' > "$RUNNER_TEMP/sfdt22-emulator/SFDT22_EVIDENCE.json"
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865'
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          cache-read-only: ${{ github.event_name != 'push' }}
+          gradle-version: '9.7.1'
+      - name: Compile production app and actual instrumentation APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          test ! -e app/build/outputs/apk/release/app-release.apk
+      - name: Verify source SHA, APKs, and actual signer before emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt22_emulator_verify.py --preflight-apks \
+            --output-dir "$RUNNER_TEMP/sfdt22-emulator" \
+            --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+      - name: Require hosted Linux KVM and install Android 16 image
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -c /dev/kvm
+          if [[ ! -r /dev/kvm || ! -w /dev/kvm ]]; then sudo chmod a+rw /dev/kvm; fi
+          test -r /dev/kvm && test -w /dev/kvm
+          for i in 1 2 3; do
+            if sdkmanager --install 'system-images;android-36;google_apis;x86_64'; then break; fi
+            if [[ "$i" == 3 ]]; then echo SFDT22_IMAGE_UNAVAILABLE >&2; exit 1; fi
+            sleep 10
+          done
+      - name: Five real production UI journeys and cold-start persistence
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          cores: 2
+          ram-size: 2048M
+          disk-size: 3072M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: bash scripts/sfdt22_emulator_ci.sh
+      - name: Independently verify five test receipts, new PID, seven unique screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B scripts/sfdt22_emulator_verify.py --verify \
+            --output-dir "$RUNNER_TEMP/sfdt22-emulator" \
+            --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+      - name: Upload minimized acceptance artifacts even on failure
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sfdt22-hosted-journeys-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sfdt22-emulator/
+          if-no-files-found: error
+          retention-days: 14
+  gate:
+    name: SFDT22 hosted real-study UI gate
+    if: always()
+    needs: [source, emulator]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Require source and emulator success, not merely test discovery
+        env:
+          SOURCE_RESULT: ${{ needs.source.result }}
+          EMULATOR_RESULT: ${{ needs.emulator.result }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_RESULT" = success
+          test "$EMULATOR_RESULT" = success
+          echo SFDT22_HOSTED_REAL_STUDY_JOURNEYS_PASS

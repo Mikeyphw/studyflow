@@ -85,6 +85,9 @@ internal class RoomStudyContentRepository(
 
     override suspend fun upsertTopic(topic: Topic): Topic = database.withTransaction {
         requirePlan(topic.studyPlanId)
+        val settingsBeforeTopic = requireNotNull(database.studySupportDao().findPlanSettings(topic.studyPlanId.value)) {
+            "PLAN_SETTINGS_MISSING_BEFORE_TOPIC_SAVE"
+        }
         val subject = requireNotNull(structureDao.findSubject(topic.studyPlanId.value, topic.subjectId.value)) {
             "The selected subject does not belong to this Study Plan."
         }
@@ -92,7 +95,14 @@ internal class RoomStudyContentRepository(
         validateParent(topic, structureDao.findTopics(topic.studyPlanId.value).map { it.asExternalModel() })
         val normalized = normalizeTopic(topic.copy(subjectId = SubjectId(subject.id)))
         structureDao.upsertTopic(normalized.asEntity())
+        // Rehydrate the exact prior row if topic insertion deleted its FK child.
+        if (database.studySupportDao().findPlanSettings(topic.studyPlanId.value) == null) {
+            database.studySupportDao().insertMissingPlanSettings(settingsBeforeTopic)
+        }
         recalculateProgress(topic.studyPlanId)
+        check(database.studySupportDao().findPlanSettings(topic.studyPlanId.value) == settingsBeforeTopic) {
+            "PLAN_SETTINGS_CHANGED_DURING_TOPIC_SAVE"
+        }
         requireNotNull(structureDao.findTopic(topic.studyPlanId.value, topic.id.value)).asExternalModel()
     }
 
@@ -315,6 +325,14 @@ internal class RoomStudyContentRepository(
         }
 
     private suspend fun recalculateProgress(planId: StudyPlanId) {
+        // This method is invoked WITHIN the caller's Room transaction. A plan
+        // progress write must never discard user preferences stored in the
+        // onDelete=CASCADE study_plan_settings table. Snapshot the exact bytes
+        // before any content/progress update: do not manufacture defaults.
+        val settingsDao = database.studySupportDao()
+        val settingsBefore = requireNotNull(settingsDao.findPlanSettings(planId.value)) {
+            "PLAN_SETTINGS_MISSING_BEFORE_CONTENT_PROGRESS"
+        }
         val subjects = structureDao.findSubjects(planId.value).map { it.asExternalModel() }
         val topics = structureDao.findTopics(planId.value).map { it.asExternalModel() }
         val updated = subjects.map { subject ->
@@ -331,6 +349,15 @@ internal class RoomStudyContentRepository(
         }
         if (updated.isNotEmpty()) structureDao.upsertSubjects(updated.map(Subject::asEntity))
         planDao.updateProgress(planId.value, StudyProgressCalculator.planProgress(updated), clock())
+        // Defensive rollback-safe repair against destructive legacy writes:
+        // insert ONLY if the exact original row vanished, never replace an
+        // existing row or overwrite personalized settings.
+        if (settingsDao.findPlanSettings(planId.value) == null) {
+            settingsDao.insertMissingPlanSettings(settingsBefore)
+        }
+        check(settingsDao.findPlanSettings(planId.value) == settingsBefore) {
+            "PLAN_SETTINGS_CHANGED_DURING_CONTENT_PROGRESS"
+        }
     }
 
     private suspend fun requirePlan(planId: StudyPlanId) {

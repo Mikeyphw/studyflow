@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
@@ -20,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -60,7 +63,7 @@ fun QuickSessionDialog(
                     onValueChange = { title = it },
                     label = { Text(stringResource(R.string.session_title)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("studyflow.session.quick.title"),
                 )
                 ExposedDropdownMenuBox(
                     expanded = expanded,
@@ -94,6 +97,7 @@ fun QuickSessionDialog(
         confirmButton = {
             TextButton(
                 enabled = valid,
+                modifier = Modifier.testTag("studyflow.session.quick.start"),
                 onClick = { onStart(QuickSessionForm(title.trim(), type)) },
             ) {
                 Text(stringResource(R.string.start_session))
@@ -132,7 +136,10 @@ fun FinishSessionDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.finish_session)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     NumberField(
                         value = pages,
@@ -172,13 +179,14 @@ fun FinishSessionDialog(
                     onValueChange = { notes = it },
                     label = { Text(stringResource(R.string.session_notes)) },
                     minLines = 3,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("studyflow.session.finish.notes"),
                 )
             }
         },
         confirmButton = {
             TextButton(
                 enabled = valid,
+                modifier = Modifier.testTag("studyflow.session.finish.confirm"),
                 onClick = {
                     onFinish(
                         FinishSessionForm(

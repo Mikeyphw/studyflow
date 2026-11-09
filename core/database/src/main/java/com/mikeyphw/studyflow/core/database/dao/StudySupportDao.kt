@@ -1,6 +1,8 @@
 package com.mikeyphw.studyflow.core.database.dao
 
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import com.mikeyphw.studyflow.core.database.entity.PlanSnapshotEntity
@@ -21,6 +23,11 @@ interface StudySupportDao {
 
     @Upsert
     suspend fun upsertPlanSettings(settings: StudyPlanSettingsEntity)
+
+    /** Preserve every existing setting even if a stale repair query raced. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertMissingPlanSettings(settings: StudyPlanSettingsEntity): Long
+
 
     @Query("SELECT * FROM study_notes WHERE studyPlanId = :planId ORDER BY pinned DESC, updatedAtEpochMillis DESC")
     fun observeNotes(planId: String): Flow<List<StudyNoteEntity>>

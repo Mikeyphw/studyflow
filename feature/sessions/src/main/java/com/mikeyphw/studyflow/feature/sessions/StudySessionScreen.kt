@@ -40,6 +40,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +52,7 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.BancoDoBrasilAgenteComercialPreset
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
+import com.mikeyphw.studyflow.core.domain.QuickSessionStartFailureCategory
 import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
@@ -101,6 +103,7 @@ fun StudySessionScreen(
     }.take(6)
     var timerTick by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     var mutationInFlight by remember { mutableStateOf(false) }
+    var sessionStartFailureCategory by remember { mutableStateOf<QuickSessionStartFailureCategory?>(null) }
     var showQuickDialog by rememberSaveable { mutableStateOf(false) }
     var finishingSession by remember { mutableStateOf<StudySession?>(null) }
     var historyFilter by rememberSaveable { mutableStateOf(SessionHistoryFilter.ALL) }
@@ -125,22 +128,45 @@ fun StudySessionScreen(
         if (mutationInFlight || !sessionsReady) return
         mutationInFlight = true
         scope.launch {
-            try {
+            // SnackbarHostState.showSnackbar suspends until dismissal. Never
+            // keep session mutations disabled throughout that UI notification.
+            val message = try {
                 action()
-                snackbar.showSnackbar(success)
+                success
             } catch (cancelled: java.util.concurrent.CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                snackbar.showSnackbar(operationFailed)
+                operationFailed
             } finally {
                 mutationInFlight = false
             }
+            snackbar.showSnackbar(message)
         }
     }
 
     Scaffold(
         modifier = modifier,
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = {
+            // Stable, non-sensitive semantics. No exception text or user data.
+            val categoryTag = when (sessionStartFailureCategory) {
+                QuickSessionStartFailureCategory.VALIDATION ->
+                    "studyflow.session.start.failure.validation"
+                QuickSessionStartFailureCategory.PLAN_SETTINGS ->
+                    "studyflow.session.start.failure.plan_settings"
+                QuickSessionStartFailureCategory.PLAN_SETTINGS_MISSING ->
+                    "studyflow.session.start.failure.plan_settings_missing"
+                QuickSessionStartFailureCategory.PLAN_SETTINGS_LOOKUP_FAILED ->
+                    "studyflow.session.start.failure.plan_settings_lookup_failed"
+                QuickSessionStartFailureCategory.ACTIVE_SESSION ->
+                    "studyflow.session.start.failure.active_session"
+                QuickSessionStartFailureCategory.ACTIVE_LOOKUP ->
+                    "studyflow.session.start.failure.active_lookup"
+                QuickSessionStartFailureCategory.PERSISTENCE ->
+                    "studyflow.session.start.failure.persistence"
+                null -> "studyflow.session.start.failure.none"
+            }
+            SnackbarHost(snackbar, modifier = Modifier.testTag(categoryTag))
+        },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.sessions_title)) },
@@ -310,12 +336,14 @@ fun StudySessionScreen(
             onDismiss = { showQuickDialog = false },
             onStart = { form ->
                 showQuickDialog = false
+                sessionStartFailureCategory = null
                 launchAction(sessionStarted) {
                     sessionManager.startQuickSession(
                         sessionId = StudySessionId(UUID.randomUUID().toString()),
                         studyPlanId = plan.id,
                         title = form.title,
                         type = form.type,
+                        onFailureCategory = { category -> sessionStartFailureCategory = category },
                     )
                 }
             },
@@ -379,18 +407,21 @@ private fun ActiveSessionCard(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 if (session.status == StudySessionStatus.RUNNING) {
-                    OutlinedButton(onClick = { onPause(session) }, enabled = controlsEnabled) {
+                    OutlinedButton(onClick = { onPause(session) }, enabled = controlsEnabled,
+                        modifier = Modifier.testTag("studyflow.session.active.pause")) {
                         Icon(Icons.Outlined.PauseCircle, contentDescription = null)
                         Text(stringResource(R.string.pause_session))
                     }
                 } else {
-                    OutlinedButton(onClick = { onResume(session) }, enabled = controlsEnabled) {
+                    OutlinedButton(onClick = { onResume(session) }, enabled = controlsEnabled,
+                        modifier = Modifier.testTag("studyflow.session.active.resume")) {
                         Icon(Icons.Outlined.PlayCircle, contentDescription = null)
                         Text(stringResource(R.string.resume_session))
                     }
                 }
                 if (session.type != StudyActivityType.WRITING) {
-                    Button(onClick = { onFinish(session) }, enabled = controlsEnabled) {
+                    Button(onClick = { onFinish(session) }, enabled = controlsEnabled,
+                        modifier = Modifier.testTag("studyflow.session.active.finish")) {
                         Icon(Icons.Outlined.CheckCircle, contentDescription = null)
                         Text(stringResource(R.string.finish_session))
                     }

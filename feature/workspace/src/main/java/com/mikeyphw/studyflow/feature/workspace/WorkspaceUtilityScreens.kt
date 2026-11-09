@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -231,6 +232,7 @@ fun SystemHubScreen(
             item(key = "plans", contentType = "workspace-utility") {
                 StudyFlowTimelineItem(
                     title = stringResource(R.string.all_plans),
+                    modifier = Modifier.testTag("studyflow.system.all_plans"),
                     metadata = stringResource(R.string.system_hub_all_plans_meta),
                     icon = Icons.AutoMirrored.Outlined.ListAlt,
                     onClick = onAllPlans,

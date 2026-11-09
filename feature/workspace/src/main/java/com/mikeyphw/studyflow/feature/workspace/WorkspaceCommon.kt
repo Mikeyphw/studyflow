@@ -80,6 +80,7 @@ fun WorkspaceNoPlanScreen(
             message = stringResource(R.string.no_plan_message),
             actionLabel = stringResource(R.string.create_plan),
             onAction = onCreatePlan,
+            actionTestTag = "studyflow.no_plan.create_plan",
             modifier = Modifier.weight(1f),
         )
     }
