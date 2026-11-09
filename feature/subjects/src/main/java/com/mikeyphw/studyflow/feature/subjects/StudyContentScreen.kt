@@ -140,6 +140,21 @@ internal fun writeTopicSaveDiagnostic(context: android.content.Context, code: St
     }
 }
 
+/** Debug-only on-device identity proof. Only the SHA-256 digest is saved privately.
+ * Never put this hash, the plan ID, or the plan name in an Actions artifact. */
+private fun writeSfdt27UiPlanDigest(context: android.content.Context, kind: String, planId: String) {
+    if ((context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return
+    if (kind !in setOf("subject", "topic")) return
+    runCatching {
+        val hash = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(planId.toByteArray(Charsets.UTF_8))
+            .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+        context.openFileOutput("sfdt27-" + kind + "-plan.sha256", android.content.Context.MODE_PRIVATE).use {
+            it.write(hash.toByteArray(Charsets.US_ASCII))
+        }
+    }
+}
+
 private data class TopicEditorRequest(
     val subject: Subject,
     val topic: Topic?,
@@ -513,6 +528,7 @@ fun StudyContentScreen(
                 )
                 addingSubject = false
                 editingSubjectId = null
+                writeSfdt27UiPlanDigest(diagnosticsContext, "subject", subject.studyPlanId.value)
                 launchAction(subjectSaved) { content.saveSubject(subject) }
             },
         )
@@ -564,6 +580,7 @@ fun StudyContentScreen(
                     examStageId = value.examStageId,
                 )
                 closeTopicEditor()
+                writeSfdt27UiPlanDigest(diagnosticsContext, "topic", topic.studyPlanId.value)
                 launchAction(topicSaved) { content.saveTopic(topic) }
             },
         )

@@ -35,11 +35,12 @@ SCREENS = ('plan', 'subject', 'topic', 'session', 'question', 'review', 'restart
 EXPECTED = 'PASS_HOSTED_REAL_STUDY_JOURNEYS'
 SERIAL = 'emulator-5554'
 PHASES = ('host', 'device', 'fresh', 'apks', 'install', 'installed_apk',
-          'plan', 'subjects', 'session', 'practice', 'force_stop',
+          'plan', 'subjects', 'session', 'practice', 'room_regression', 'force_stop',
           'post_restart', 'screenshots', 'complete')
 SHA256 = re.compile(r'^[0-9a-f]{64}$')
 STAGES = frozenset({
     'settings_after_create', 'settings_after_subject', 'settings_after_topic',
+    'sfdt27_after_subject', 'sfdt27_before_topic', 'sfdt27_after_topic_action', 'sfdt27_after_topic_saved',
     'session_route_identity', 'settings_before_session_start',
     'plan_shell', 'plan_system_hub', 'plan_all_plans', 'plan_open',
     'plan_editor_ready', 'plan_name', 'plan_target', 'plan_preferences',
@@ -97,6 +98,49 @@ REASON_CODES = frozenset({
 # Only these exact categories may be emitted; names, ids and raw Android output are forbidden.
 BOUNDARY_POINTS = ('after_create', 'after_subject', 'after_topic', 'session_route', 'before_session_start')
 BOUNDARY_STATES = frozenset({'present', 'missing', 'lookup_failed', 'ambiguous', 'mismatched', 'matched'})
+SFDT27_POINTS = ('after_subject', 'before_topic', 'after_topic_action', 'after_topic_saved')
+SFDT27_STATES = frozenset({
+    'matched', 'ui_marker_missing', 'lookup_failed', 'plan_ambiguous',
+    'different_plan_id', 'subject_not_owned', 'room_missing_sql_present',
+    'room_present_sql_missing', 'row_missing', 'read_only_snapshot_mismatch',
+    'row_changed', 'baseline_missing',
+})
+
+
+def sfdt27_parse_probes(raw: bytes) -> list[dict]:
+    require(len(raw) <= 384, 'HF27 probe exceeds fixed bound')
+    records = []
+    for line in raw.decode('ascii', 'strict').splitlines():
+        parts = line.split('|')
+        require(len(parts) == 2 and parts[0] in SFDT27_POINTS and
+                parts[1] in SFDT27_STATES, 'HF27 probe contains an unreviewed value')
+        require(parts[0] not in {r['point'] for r in records}, 'HF27 duplicate probe')
+        records.append({'point': parts[0], 'state': parts[1]})
+    require([x['point'] for x in records] == list(SFDT27_POINTS[:len(records)]),
+            'HF27 probe order mismatch')
+    return records
+
+
+def sfdt27_read_probes() -> list[dict]:
+    p = subprocess.run(['adb', '-s', SERIAL, 'exec-out', 'run-as', PACKAGE,
+                        'cat', 'files/sfdt27-probes.txt'],
+                       capture_output=True, timeout=20, check=False)
+    return [] if p.returncode else sfdt27_parse_probes(p.stdout)
+
+
+def sfdt27_expected_probes() -> list[dict]:
+    return [{'point': p, 'state': 'matched'} for p in SFDT27_POINTS]
+
+
+def sfdt27_hosted_room_regression() -> None:
+    # Executed on the SAME hosted Android 36 emulator after app/test APK
+    # installation, before the five UI journeys. Stdout remains in RAM only.
+    result = base.adb('shell', 'am', 'instrument', '-w', '-e', 'class',
+                      PACKAGE + '.Sfdt27RoomSettingsRegressionTest', RUNNER,
+                      timeout=180)
+    require(b'INSTRUMENTATION_CODE: -1' in result and b'OK (2 tests)' in result,
+            'HF27 real Room regression failed (no raw Android log retained)')
+
 DIAGNOSTIC_THROUGH = {'plan': 1, 'subjects': 2, 'session': 3, 'practice': 4}
 DIAGNOSTIC_PASS = 'DIAGNOSTIC_PASS_NOT_RELEASE_QUALIFIED'
 
@@ -408,6 +452,9 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
                 'Unexpected installed APK path')
         installed_hash = base.adb('shell', 'sha256sum', path.removeprefix('package:')).decode().split()[0]
         require(installed_hash == app_hash['sha256'], 'Installed APK provenance mismatch')
+        phase = 'room_regression'
+        sfdt27_hosted_room_regression()
+        evidence['hf27_room_regression'] = 'passed'
         results = []
         diagnostic_limit = DIAGNOSTIC_THROUGH.get(diagnostic_through) if diagnostic_through else 4
         for index, name in enumerate(TESTS[:diagnostic_limit]):
@@ -416,12 +463,14 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
         if diagnostic_through:
             evidence.update(overall=DIAGNOSTIC_PASS, tests=results,
                             test_count=len(results), diagnostic_through=diagnostic_through,
-                            boundaries=read_boundaries(),
+                            boundaries=read_boundaries(), sfdt27_probes=sfdt27_read_probes(),
                             app_apk=app_hash, test_apk=test_hash,
                             debug_signing_certificates=certs,
                             installed_app_sha256=installed_hash)
             require(evidence['boundaries'] == expected_boundaries(len(results)),
                     'Incomplete diagnostic-only boundary evidence')
+            require(evidence['sfdt27_probes'] == (sfdt27_expected_probes() if len(results) >= 2 else []),
+                    'HF27 exact-plan diagnostics incomplete or inconsistent')
             phase = 'diagnostic_complete'
         else:
             phase = 'force_stop'
@@ -447,7 +496,9 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
                             test_apk=test_hash, debug_signing_certificates=certs,
                             installed_app_sha256=installed_hash,
                             force_stopped_app_and_verified_new_pid=True,
-                            boundaries=read_boundaries())
+                            boundaries=read_boundaries(), sfdt27_probes=sfdt27_read_probes())
+            require(evidence['sfdt27_probes'] == sfdt27_expected_probes(),
+                    'HF27 exact-plan diagnostics incomplete or inconsistent')
             require(evidence['boundaries'] == expected_boundaries(5),
                     'Incomplete full-gate boundary evidence')
         phase = 'complete'
@@ -459,6 +510,11 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
             evidence['failure_step'] = exc.stage
             evidence['failure_reason_code'] = exc.reason
         evidence['completed_before_failure'] = len(results) if 'results' in locals() else 0
+        evidence['hf27_room_regression'] = evidence.get('hf27_room_regression', 'not_passed')
+        try:
+            evidence['sfdt27_probes'] = sfdt27_read_probes()
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            evidence['sfdt27_probes_capture'] = 'unavailable'
         try:
             evidence['boundaries'] = read_boundaries()
         except (OSError, ValueError, subprocess.TimeoutExpired):
@@ -488,6 +544,9 @@ def verify(output: Path, source: str, run_id: str, attempt: str, repo: Path) -> 
         require(data.get(key) == value, 'Evidence identity mismatch: ' + key)
     require(data.get('tests') == [dict(test=x, status='passed', started=1, finished=1) for x in TESTS],
             'Test count/order/outcome mismatch')
+    require(data.get('hf27_room_regression') == 'passed' and
+            data.get('sfdt27_probes') == sfdt27_expected_probes(),
+            'HF27 hosted Room/probe evidence incomplete')
     require(data.get('boundaries') == expected_boundaries(5),
             'Missing required source-of-truth lifecycle boundaries')
     app_hash, test_hash, certs = apk_facts(repo)
@@ -532,6 +591,9 @@ def verify_diagnostic(output: Path, source: str, run_id: str, attempt: str,
                                    for x in TESTS[:count]], 'Diagnostic tests incomplete')
     require(data.get('test_count') == count and data.get('boundaries') == expected_boundaries(count),
             'Diagnostic state checkpoints incomplete')
+    require(data.get('hf27_room_regression') == 'passed' and
+            data.get('sfdt27_probes') == (sfdt27_expected_probes() if count >= 2 else []),
+            'HF27 hosted Room/probe evidence incomplete')
     app_hash, test_hash, certs = apk_facts(repo)
     require(data.get('app_apk') == app_hash and data.get('test_apk') == test_hash and
             data.get('debug_signing_certificates') == certs and

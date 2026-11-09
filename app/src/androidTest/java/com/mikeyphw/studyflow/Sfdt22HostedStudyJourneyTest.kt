@@ -33,6 +33,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertTrue
 import android.database.sqlite.SQLiteDatabase
+import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
+import com.mikeyphw.studyflow.core.database.entity.StudyPlanSettingsEntity
+import java.security.MessageDigest
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -106,6 +109,106 @@ class Sfdt22HostedStudyJourneyTest {
         recordBoundary(point, state)
         if (state != "present") {
             throw AssertionError("SFDT22_BOUNDARY_${point.uppercase()}_${state.uppercase()}")
+        }
+    }
+
+    /** HF27 private, exact-ID, read-only SQL versus a SECOND real Room handle.
+     * This is NOT the production repository's transaction connection. The
+     * distinction matters: disagreement is diagnostic, not proof of deletion.
+     * Only allowlisted categories are exported; no hashes, IDs, rows or SQL. */
+    private fun recordSfdt27Probe(point: String, producer: String) {
+        require(point in setOf("after_subject", "before_topic", "after_topic_action", "after_topic_saved"))
+        require(producer in setOf("subject", "topic"))
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val state = runCatching {
+            val recorded = context.openFileInput("sfdt27-$producer-plan.sha256").use { input ->
+                val bytes = input.readBytes()
+                String(bytes, Charsets.US_ASCII).takeIf { bytes.size == 64 &&
+                    it.matches(Regex("[0-9a-f]{64}")) }
+            } ?: return@runCatching "ui_marker_missing"
+            val file = context.getDatabasePath(StudyFlowDatabase.DATABASE_NAME)
+            if (!file.isFile) return@runCatching "lookup_failed"
+            SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                val ids = mutableListOf<String>()
+                sql.rawQuery("SELECT id FROM study_plans WHERE name = ?", arrayOf(planName)).use { cursor ->
+                    while (cursor.moveToNext() && ids.size < 2) ids.add(cursor.getString(0))
+                }
+                if (ids.size != 1) return@runCatching "plan_ambiguous"
+                val exactId = ids.single()
+                val digest = MessageDigest.getInstance("SHA-256")
+                    .digest(exactId.toByteArray(Charsets.UTF_8))
+                    .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+                if (digest != recorded) return@runCatching "different_plan_id"
+                fun count(query: String, args: Array<String>): Long =
+                    sql.rawQuery(query, args).use { cursor ->
+                        check(cursor.moveToFirst())
+                        cursor.getLong(0)
+                    }
+                if (count("SELECT COUNT(*) FROM subjects WHERE studyPlanId = ? AND name = ?",
+                        arrayOf(exactId, subjectName)) != 1L) return@runCatching "subject_not_owned"
+                // Snapshot the exact same-settings row by its REAL plan identity.
+                // Only in-memory typed values and a private one-way checksum exist.
+                val sqlSettings = sql.rawQuery(
+                    "SELECT studyPlanId, adaptivePlanningEnabled, reviewNotificationsEnabled, " +
+                        "strictExamModeEnabled, preferredSessionMinutes, quietHoursStartMinute, " +
+                        "quietHoursEndMinute, configurationJson " +
+                        "FROM study_plan_settings WHERE studyPlanId = ?",
+                    arrayOf(exactId),
+                ).use { cursor ->
+                    if (!cursor.moveToFirst()) null else StudyPlanSettingsEntity(
+                        studyPlanId = cursor.getString(0),
+                        adaptivePlanningEnabled = cursor.getInt(1) != 0,
+                        reviewNotificationsEnabled = cursor.getInt(2) != 0,
+                        strictExamModeEnabled = cursor.getInt(3) != 0,
+                        preferredSessionMinutes = cursor.getInt(4),
+                        quietHoursStartMinute = if (cursor.isNull(5)) null else cursor.getInt(5),
+                        quietHoursEndMinute = if (cursor.isNull(6)) null else cursor.getInt(6),
+                        configurationJson = cursor.getString(7),
+                    )
+                }
+                // The independent Room read lives in an Android-test-only helper;
+                // the five-journey UI suite does not block coroutines directly.
+                val roomSettings = Sfdt27RoomSettingsProbe.read(context, exactId)
+                when {
+                    sqlSettings == null && roomSettings == null -> "row_missing"
+                    sqlSettings == null -> "room_present_sql_missing"
+                    roomSettings == null -> "room_missing_sql_present"
+                    sqlSettings != roomSettings -> "read_only_snapshot_mismatch"
+                    else -> {
+                        val checksum = MessageDigest.getInstance("SHA-256")
+                            .digest(sqlSettings.toString().toByteArray(Charsets.UTF_8))
+                            .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+                        val checksumFile = "sfdt27-settings-baseline.sha256"
+                        if (point == "after_subject") {
+                            context.openFileOutput(checksumFile, Context.MODE_PRIVATE).use { output ->
+                                output.write(checksum.toByteArray(Charsets.US_ASCII))
+                            }
+                            "matched"
+                        } else {
+                            val baseline = runCatching {
+                                context.openFileInput(checksumFile).use { input ->
+                                    val bytes = input.readBytes()
+                                    String(bytes, Charsets.US_ASCII).takeIf {
+                                        bytes.size == 64 && it.matches(Regex("[0-9a-f]{64}"))
+                                    }
+                                }
+                            }.getOrNull()
+                            when {
+                                baseline == null -> "baseline_missing"
+                                baseline != checksum -> "row_changed"
+                                else -> "matched"
+                            }
+                        }
+                    }
+                }
+            }
+        }.getOrDefault("lookup_failed")
+        require(state in setOf("matched", "ui_marker_missing", "lookup_failed", "plan_ambiguous",
+            "different_plan_id", "subject_not_owned", "room_missing_sql_present",
+            "room_present_sql_missing", "row_missing", "read_only_snapshot_mismatch",
+            "row_changed", "baseline_missing"))
+        context.openFileOutput("sfdt27-probes.txt", Context.MODE_APPEND).use { output ->
+            output.write("$point|$state\n".toByteArray(Charsets.US_ASCII))
         }
     }
 
@@ -795,13 +898,17 @@ class Sfdt22HostedStudyJourneyTest {
         stage("subject_confirm") { awaitSubjectSaved() }
         stage("subject_owner_confirm") { assertCreatedPlanOwnsSavedSubject() }
         stage("settings_after_subject") { persistedSettingsBoundary("after_subject") }
+        stage("sfdt27_after_subject") { recordSfdt27Probe("after_subject", "subject") }
         stage("subject_capture") { screenshot("subject") }
+        stage("sfdt27_before_topic") { recordSfdt27Probe("before_topic", "subject") }
         stage("topic_open_dialog") { openTopicEditorFromSubject() }
         stage("topic_fill_name") { replaceTopicNameInDialog(topicName) }
         stage("topic_save") { clickDialog(SubjectsR.string.save) }
+        stage("sfdt27_after_topic_action") { recordSfdt27Probe("after_topic_action", "topic") }
         stage("topic_save_feedback") { observeTopicSaveFeedback() }
         stage("topic_expand") { ensureSavedSubjectExpanded() }
         stage("topic_confirm") { awaitTopicSaved() }
+        stage("sfdt27_after_topic_saved") { recordSfdt27Probe("after_topic_saved", "topic") }
         stage("settings_after_topic") { persistedSettingsBoundary("after_topic") }
         stage("topic_capture") { screenshot("topic") }
     }
