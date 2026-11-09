@@ -53,13 +53,15 @@ STAGES = frozenset({
     'practice_open_questions', 'practice_open_reviews',
     'restart_open_content', 'restart_open_overview', 'restart_open_questions', 'restart_open_reviews',
 })
+TOPIC_CAUSE_CODES = frozenset({'settings_before_topic', 'settings_before_progress', 'settings_changed_progress', 'settings_changed_topic', 'sqlite_constraint', 'sqlite_locked', 'sqlite_other', 'invalid_input', 'unexpected'})
 REASON_CODES = frozenset({
     'subject_card_missing',
     'subject_editor_still_open',
     'topic_add_button_ambiguous',
     'topic_editor_tag_missing',
     'topic_row_missing', 'topic_row_not_composed',
-    'topic_save_failed', 'subject_expand_action_missing', 'subject_not_expanded',
+    'topic_save_failed', *('topic_save_' + code for code in TOPIC_CAUSE_CODES),
+    'subject_expand_action_missing', 'subject_not_expanded',
     'topic_search_editor_missing', 'topic_search_write_failed',
     'subject_expand_snackbar_obstruction', 'subject_expand_touch_failed',
     'subject_expand_semantic_click_failed', 'subject_expand_state_ambiguous',
@@ -146,8 +148,11 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
     marker = re.search(r'SFDT22_STEP_([a-z][a-z0-9_]{1,39})', raw)
     stage = marker.group(1) if marker and marker.group(1) in STAGES else 'unavailable'
     boundary = re.search(r'SFDT22_BOUNDARY_(AFTER_CREATE|AFTER_SUBJECT|AFTER_TOPIC|BEFORE_SESSION_START)_(MISSING|LOOKUP_FAILED|AMBIGUOUS|MISMATCHED)', raw)
+    topic_cause = re.search(r'SFDT22_TOPIC_CAUSE_([A-Z_]{2,50})\b', raw)
     if boundary:
         reason = 'boundary_' + boundary.group(1).lower() + '_' + boundary.group(2).lower()
+    elif topic_cause and test == TESTS[1] and stage == 'topic_save_feedback' and topic_cause.group(1).lower() in TOPIC_CAUSE_CODES:
+        reason = 'topic_save_' + topic_cause.group(1).lower()
     elif 'SFDT22_BOUNDARY_SESSION_ROUTE_MISMATCHED' in raw:
         reason = 'boundary_session_route_mismatched'
     elif 'SFDT22_SUBJECT_CARD_MISSING' in raw:

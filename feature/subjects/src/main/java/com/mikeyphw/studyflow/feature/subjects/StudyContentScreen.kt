@@ -62,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.pluralStringResource
@@ -95,6 +96,50 @@ import com.mikeyphw.studyflow.core.model.TopicNode
 import java.util.UUID
 import kotlinx.coroutines.launch
 
+/** Only these constants may leave a debuggable process; never persist exception text. */
+internal val topicSaveDiagnosticCodes = setOf(
+    "settings_before_topic", "settings_before_progress", "settings_changed_progress",
+    "settings_changed_topic", "sqlite_constraint", "sqlite_locked", "sqlite_other",
+    "invalid_input", "unexpected",
+)
+
+/** Inspect known invariants and exception *types* only. Never stringify the cause. */
+internal fun classifyTopicSaveFailure(error: Throwable): String {
+    var current: Throwable? = error
+    repeat(6) {
+        val cause = current ?: return "unexpected"
+        val reason = when {
+            cause.message == "PLAN_SETTINGS_MISSING_BEFORE_TOPIC_SAVE" -> "settings_before_topic"
+            cause.message == "PLAN_SETTINGS_MISSING_BEFORE_CONTENT_PROGRESS" -> "settings_before_progress"
+            cause.message == "PLAN_SETTINGS_CHANGED_DURING_CONTENT_PROGRESS" -> "settings_changed_progress"
+            cause.message == "PLAN_SETTINGS_CHANGED_DURING_TOPIC_SAVE" -> "settings_changed_topic"
+            cause.javaClass.name == "android.database.sqlite.SQLiteConstraintException" -> "sqlite_constraint"
+            cause.javaClass.name == "android.database.sqlite.SQLiteDatabaseLockedException" -> "sqlite_locked"
+            cause.javaClass.name.startsWith("android.database.sqlite.SQLite") -> "sqlite_other"
+            cause is IllegalArgumentException -> "invalid_input"
+            else -> null
+        }
+        if (reason != null) return reason
+        current = cause.cause?.takeUnless { it === cause }
+    }
+    return "unexpected"
+}
+
+/** Debug-only, private, bounded one-code diagnostic. Release builds never write it. */
+internal fun writeTopicSaveDiagnostic(context: android.content.Context, code: String?) {
+    if ((context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) return
+    runCatching {
+        if (code == null) {
+            context.deleteFile("sfdt22-topic-failure.txt")
+        } else if (code in topicSaveDiagnosticCodes) {
+            // No name, ID, SQL query, exception message, stack or user data is written.
+            context.openFileOutput("sfdt22-topic-failure.txt", android.content.Context.MODE_PRIVATE).use {
+                it.write(code.toByteArray(Charsets.US_ASCII))
+            }
+        }
+    }
+}
+
 private data class TopicEditorRequest(
     val subject: Subject,
     val topic: Topic?,
@@ -117,6 +162,7 @@ fun StudyContentScreen(
     specializedImportWorkflow: ApplySpecializedContentImport? = null,
 ) {
     val scope = rememberCoroutineScope()
+    val diagnosticsContext = LocalContext.current.applicationContext
     val snackbar = remember { SnackbarHostState() }
     val syllabusFlow = remember(plan.id) { content.observeSyllabus(plan.id) }
     val syllabus by syllabusFlow.collectAsStateWithLifecycle(
@@ -180,10 +226,21 @@ fun StudyContentScreen(
     val importCompleted = stringResource(R.string.import_completed)
 
     fun launchAction(success: String, action: suspend () -> Unit) {
+        // Prevent a failed or interrupted prior attempt from being misattributed.
+        if (success == topicSaved) writeTopicSaveDiagnostic(diagnosticsContext, null)
         scope.launch {
             runRecoverableOperation { action() }
-                .onSuccess { snackbar.showSnackbar(success) }
-                .onFailure { snackbar.showSnackbar(operationFailed) }
+                .onSuccess {
+                    if (success == topicSaved) writeTopicSaveDiagnostic(diagnosticsContext, null)
+                    snackbar.showSnackbar(success)
+                }
+                .onFailure { failure ->
+                    if (success == topicSaved) {
+                        writeTopicSaveDiagnostic(diagnosticsContext, classifyTopicSaveFailure(failure))
+                    }
+                    // Keep the same localized production error and retry semantics.
+                    snackbar.showSnackbar(operationFailed)
+                }
         }
     }
 

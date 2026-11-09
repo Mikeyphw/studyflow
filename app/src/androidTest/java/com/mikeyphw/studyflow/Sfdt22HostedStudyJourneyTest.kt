@@ -323,6 +323,29 @@ class Sfdt22HostedStudyJourneyTest {
                 failedSeen || savedSeen
             }
         }
+        if (failedSeen) {
+            // The production app writes only a strict code in its private debug
+            // data. The actual exception, row values, names and IDs never leave it.
+            val diagnosticCode = runCatching {
+                val context = InstrumentationRegistry.getInstrumentation().targetContext
+                context.openFileInput("sfdt22-topic-failure.txt").use { input ->
+                    val buffer = ByteArray(64)
+                    val length = input.read(buffer)
+                    if (length <= 0 || input.read() != -1) null
+                    else String(buffer, 0, length, Charsets.US_ASCII).takeIf {
+                        it in setOf(
+                            "settings_before_topic", "settings_before_progress",
+                            "settings_changed_progress", "settings_changed_topic",
+                            "sqlite_constraint", "sqlite_locked", "sqlite_other",
+                            "invalid_input", "unexpected",
+                        )
+                    }
+                }
+            }.getOrNull()
+            if (diagnosticCode != null) {
+                throw AssertionError("SFDT22_TOPIC_CAUSE_" + diagnosticCode.uppercase())
+            }
+        }
         if (failedSeen) throw AssertionError("SFDT22_TOPIC_SAVE_FAILED")
         topicSaveSuccessSeen = savedSeen
     }
