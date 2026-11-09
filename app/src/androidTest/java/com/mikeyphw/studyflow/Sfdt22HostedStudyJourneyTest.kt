@@ -703,6 +703,28 @@ class Sfdt22HostedStudyJourneyTest {
         }
         // A real production error always wins over a possible stale UI node.
         if (failureSeen || failures.fetchSemanticsNodes().isNotEmpty()) {
+            val categories = listOf(
+                "studyflow.session.start.failure.validation" to
+                    "SFDT22_SESSION_START_VALIDATION_FAILED",
+                "studyflow.session.start.failure.plan_settings" to
+                    "SFDT22_SESSION_START_PLAN_SETTINGS_FAILED",
+                "studyflow.session.start.failure.active_session" to
+                    "SFDT22_SESSION_START_ALREADY_ACTIVE",
+                "studyflow.session.start.failure.active_lookup" to
+                    "SFDT22_SESSION_START_ACTIVE_LOOKUP_FAILED",
+                "studyflow.session.start.failure.persistence" to
+                    "SFDT22_SESSION_START_PERSISTENCE_FAILED",
+            )
+            val matches = categories.filter { (tag, _) ->
+                rule.onAllNodes(hasTestTag(tag), useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
+            if (matches.size > 1) {
+                throw AssertionError("SFDT22_SESSION_START_DIAGNOSTIC_AMBIGUOUS")
+            }
+            if (matches.size == 1) {
+                throw AssertionError(matches.single().second)
+            }
             throw AssertionError("SFDT22_SESSION_START_FAILED")
         }
         val taggedCount = tagged.fetchSemanticsNodes().size

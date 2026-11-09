@@ -52,6 +52,7 @@ import com.mikeyphw.studyflow.core.designsystem.StudyFlowStatusPill
 import com.mikeyphw.studyflow.core.domain.BancoDoBrasilAgenteComercialPreset
 import com.mikeyphw.studyflow.core.domain.ManageStudySchedule
 import com.mikeyphw.studyflow.core.domain.ManageStudySession
+import com.mikeyphw.studyflow.core.domain.QuickSessionStartFailureCategory
 import com.mikeyphw.studyflow.core.domain.asStudyFlowLoadState
 import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
@@ -102,6 +103,7 @@ fun StudySessionScreen(
     }.take(6)
     var timerTick by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     var mutationInFlight by remember { mutableStateOf(false) }
+    var sessionStartFailureCategory by remember { mutableStateOf<QuickSessionStartFailureCategory?>(null) }
     var showQuickDialog by rememberSaveable { mutableStateOf(false) }
     var finishingSession by remember { mutableStateOf<StudySession?>(null) }
     var historyFilter by rememberSaveable { mutableStateOf(SessionHistoryFilter.ALL) }
@@ -144,7 +146,23 @@ fun StudySessionScreen(
 
     Scaffold(
         modifier = modifier,
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = {
+            // Stable, non-sensitive semantics. No exception text or user data.
+            val categoryTag = when (sessionStartFailureCategory) {
+                QuickSessionStartFailureCategory.VALIDATION ->
+                    "studyflow.session.start.failure.validation"
+                QuickSessionStartFailureCategory.PLAN_SETTINGS ->
+                    "studyflow.session.start.failure.plan_settings"
+                QuickSessionStartFailureCategory.ACTIVE_SESSION ->
+                    "studyflow.session.start.failure.active_session"
+                QuickSessionStartFailureCategory.ACTIVE_LOOKUP ->
+                    "studyflow.session.start.failure.active_lookup"
+                QuickSessionStartFailureCategory.PERSISTENCE ->
+                    "studyflow.session.start.failure.persistence"
+                null -> "studyflow.session.start.failure.none"
+            }
+            SnackbarHost(snackbar, modifier = Modifier.testTag(categoryTag))
+        },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.sessions_title)) },
@@ -314,12 +332,14 @@ fun StudySessionScreen(
             onDismiss = { showQuickDialog = false },
             onStart = { form ->
                 showQuickDialog = false
+                sessionStartFailureCategory = null
                 launchAction(sessionStarted) {
                     sessionManager.startQuickSession(
                         sessionId = StudySessionId(UUID.randomUUID().toString()),
                         studyPlanId = plan.id,
                         title = form.title,
                         type = form.type,
+                        onFailureCategory = { category -> sessionStartFailureCategory = category },
                     )
                 }
             },

@@ -62,6 +62,7 @@ REASON_CODES = frozenset({
     'subject_expand_semantic_click_failed', 'subject_expand_state_ambiguous',
     'topic_editor_still_open',
     'session_control_not_ready', 'session_editor_not_ready',
+    'session_start_validation_failed', 'session_start_plan_settings_failed', 'session_start_already_active', 'session_start_active_lookup_failed', 'session_start_persistence_failed', 'session_start_diagnostic_ambiguous',
     'session_start_failed', 'session_start_success_without_running_ui', 'session_running_control_missing', 'session_running_action_missing', 'session_running_control_ambiguous', 'session_running_control_disabled', 'session_running_control_offscreen',
     'inner_tab_missing', 'inner_tab_touch_failed',
     'inner_tab_not_selected', 'inner_pane_not_ready',
@@ -125,6 +126,18 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'topic_row_missing'
     elif 'SFDT22_TOPIC_EDITOR_STILL_OPEN' in raw:
         reason = 'topic_editor_still_open'
+    elif 'SFDT22_SESSION_START_VALIDATION_FAILED' in raw:
+        reason = 'session_start_validation_failed'
+    elif 'SFDT22_SESSION_START_PLAN_SETTINGS_FAILED' in raw:
+        reason = 'session_start_plan_settings_failed'
+    elif 'SFDT22_SESSION_START_ALREADY_ACTIVE' in raw:
+        reason = 'session_start_already_active'
+    elif 'SFDT22_SESSION_START_ACTIVE_LOOKUP_FAILED' in raw:
+        reason = 'session_start_active_lookup_failed'
+    elif 'SFDT22_SESSION_START_PERSISTENCE_FAILED' in raw:
+        reason = 'session_start_persistence_failed'
+    elif 'SFDT22_SESSION_START_DIAGNOSTIC_AMBIGUOUS' in raw:
+        reason = 'session_start_diagnostic_ambiguous'
     elif 'SFDT22_SESSION_START_FAILED' in raw:
         reason = 'session_start_failed'
     elif 'SFDT22_SESSION_START_SUCCEEDED_NO_RUNNING_UI' in raw:

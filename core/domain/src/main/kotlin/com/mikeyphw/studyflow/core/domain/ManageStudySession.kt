@@ -18,6 +18,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
+enum class QuickSessionStartFailureCategory {
+    VALIDATION,
+    PLAN_SETTINGS,
+    ACTIVE_SESSION,
+    ACTIVE_LOOKUP,
+    PERSISTENCE,
+}
+
 class ManageStudySession(
     private val repository: StudySessionRepository,
     private val studyPlanRepository: StudyPlanRepository? = null,
@@ -46,42 +54,69 @@ class ManageStudySession(
         videoResourceId: VideoResourceId? = null,
         targetDurationMinutes: Int? = null,
         cycleBinding: StudyCycleSessionBinding? = null,
+        onFailureCategory: (QuickSessionStartFailureCategory) -> Unit = {},
     ): StudySession {
-        require(title.isNotBlank()) { "Quick Study Session title cannot be blank." }
-        StudyDomainInvariants.requireOptionalSessionMinutes(targetDurationMinutes, "Target duration")
-        val resolvedTargetDurationMinutes = targetDurationMinutes ?: studyPlanRepository?.let { plans ->
-            requireNotNull(plans.observeStoredPlanSettings(studyPlanId).first()) {
-                "Study Plan settings must be persisted before starting a quick Study Session."
-            }.preferredSessionMinutes
+        // Only a fixed enum is reported. Preserve original exception types,
+        // validation rules and Room mutations for all existing callers.
+        suspend fun <T> classify(
+            category: QuickSessionStartFailureCategory,
+            action: suspend () -> T,
+        ): T = try {
+            action()
+        } catch (cancelled: java.util.concurrent.CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            onFailureCategory(category)
+            throw failure
         }
-        require(repository.findAnyActiveSession() == null) {
+
+        classify(QuickSessionStartFailureCategory.VALIDATION) {
+            require(title.isNotBlank()) { "Quick Study Session title cannot be blank." }
+            StudyDomainInvariants.requireOptionalSessionMinutes(targetDurationMinutes, "Target duration")
+        }
+        val resolvedTargetDurationMinutes = classify(QuickSessionStartFailureCategory.PLAN_SETTINGS) {
+            targetDurationMinutes ?: studyPlanRepository?.let { plans ->
+                requireNotNull(plans.observeStoredPlanSettings(studyPlanId).first()) {
+                    "Study Plan settings must be persisted before starting a quick Study Session."
+                }.preferredSessionMinutes
+            }
+        }
+        val existingActive = classify(QuickSessionStartFailureCategory.ACTIVE_LOOKUP) {
+            repository.findAnyActiveSession()
+        }
+        if (existingActive != null) {
+            onFailureCategory(QuickSessionStartFailureCategory.ACTIVE_SESSION)
+        }
+        require(existingActive == null) {
             "Finish or cancel the active Study Session before starting another one."
         }
-        val created = repository.createSession(
-            StudySession(
-                id = sessionId,
-                studyPlanId = studyPlanId,
-                plannedActivityId = null,
-                subjectId = subjectId,
-                topicId = topicId,
-                materialId = materialId,
-                videoResourceId = videoResourceId,
-                type = type,
-                status = StudySessionStatus.RUNNING,
-                startedAtEpochMillis = clock(),
-                endedAtEpochMillis = null,
-                grossDurationSeconds = 0,
-                pauseDurationSeconds = 0,
-                pagesCompleted = 0,
-                questionsAnswered = 0,
-                correctAnswers = 0,
-                concentrationRating = null,
-                difficultyRating = null,
-                notes = title.trim(),
-                targetDurationMinutes = resolvedTargetDurationMinutes,
-            ),
-            cycleBinding = cycleBinding,
-        )
+        val created = classify(QuickSessionStartFailureCategory.PERSISTENCE) {
+            repository.createSession(
+                StudySession(
+                    id = sessionId,
+                    studyPlanId = studyPlanId,
+                    plannedActivityId = null,
+                    subjectId = subjectId,
+                    topicId = topicId,
+                    materialId = materialId,
+                    videoResourceId = videoResourceId,
+                    type = type,
+                    status = StudySessionStatus.RUNNING,
+                    startedAtEpochMillis = clock(),
+                    endedAtEpochMillis = null,
+                    grossDurationSeconds = 0,
+                    pauseDurationSeconds = 0,
+                    pagesCompleted = 0,
+                    questionsAnswered = 0,
+                    correctAnswers = 0,
+                    concentrationRating = null,
+                    difficultyRating = null,
+                    notes = title.trim(),
+                    targetDurationMinutes = resolvedTargetDurationMinutes,
+                ),
+                cycleBinding = cycleBinding,
+            )
+        }
         runtimeClock.register(created)
         return created
     }
