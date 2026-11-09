@@ -84,6 +84,12 @@ class HF27(unittest.TestCase):
         self.assertNotIn('Room.databaseBuilder(',self.kt)
         self.assertIn('Sfdt27RoomSettingsProbe.read(context, exactId)',self.kt)
         self.assertEqual(self.probe.count('runBlocking(Dispatchers.IO)'),1)
+        # HF27 HF02: the actual API-36 compile rejected RoomDatabase.use().
+        # Require explicit try/finally cleanup, not a Closeable extension.
+        self.assertNotIn('.build().use {', self.probe)
+        self.assertIn('return try {', self.probe)
+        self.assertIn('} finally {', self.probe)
+        self.assertIn('secondHandle.close()', self.probe)
         self.assertNotIn('@Test fun ',self.probe)
         self.assertNotIn('upsertPlanSettings(',self.probe)
         self.assertNotIn('StudyPlanSettings.defaults(',self.probe)

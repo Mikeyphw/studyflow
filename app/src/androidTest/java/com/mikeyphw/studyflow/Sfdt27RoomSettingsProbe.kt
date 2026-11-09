@@ -18,14 +18,18 @@ import kotlinx.coroutines.runBlocking
  * active transaction: a discrepancy is evidence, not an inferred root cause.
  */
 internal object Sfdt27RoomSettingsProbe {
-    fun read(context: Context, planId: String): StudyPlanSettingsEntity? =
-        Room.databaseBuilder(
+    fun read(context: Context, planId: String): StudyPlanSettingsEntity? {
+        val secondHandle = Room.databaseBuilder(
             context.applicationContext,
             StudyFlowDatabase::class.java,
             StudyFlowDatabase.DATABASE_NAME,
-        ).addMigrations(*StudyFlowMigrations.All).build().use { secondHandle ->
+        ).addMigrations(*StudyFlowMigrations.All).build()
+        return try {
             runBlocking(Dispatchers.IO) {
                 secondHandle.studySupportDao().findPlanSettings(planId)
             }
+        } finally {
+            secondHandle.close()
         }
+    }
 }

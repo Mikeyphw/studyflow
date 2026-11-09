@@ -108,9 +108,9 @@ jobs:
           echo "624883052f463833694232f2a48716097580984e8ab79a4842e838af64f0425e  docs/actions/SFDT22_HF26_FAST_HOTFIX_LOOP.md" | sha256sum --check --status
           echo "0a97630b4455f02aab534a1d08504b425f1bf33122b1a5529ecb2aff2839bc64  app/build.gradle.kts" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf26_fast_contract.py
-          echo "f4b9948aba59c31c8ab0c1f5379057486919b4d0884849ad213b71469f9b7c56  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt27RoomSettingsProbe.kt" | sha256sum --check --status
+          echo "ae217aa888d1fac8396c9a64047896c4536223d613b53cd87539c2dd73f227d2  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt27RoomSettingsProbe.kt" | sha256sum --check --status
           echo "f0c4f6253095ac6b6055f652fa9983d9ef3a1afd82e54d0c138c89146c19f28c  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt27RoomSettingsRegressionTest.kt" | sha256sum --check --status
-          echo "6e147375d76187f1c34d5368dbadce207ef81b254beae6747e14d5f6af85401f  scripts/test_sfdt22_hf27_contract.py" | sha256sum --check --status
+          echo "f603526ccc5344cee7fce8291da55015c2ab3dccb122c90284c7c1dd6c0807e2  scripts/test_sfdt22_hf27_contract.py" | sha256sum --check --status
           echo "ddf6d8181c513d3b5fe3d7dc729884400481a81d12cce1489ff5b3d2a04a7e81  docs/actions/SFDT22_HF27_SAME_PLAN_DIAGNOSTICS.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf27_contract.py
           python3 -B scripts/test_sfdt22_hf01_contract.py
