@@ -350,6 +350,55 @@ class Sfdt22HostedStudyJourneyTest {
         }
     }
 
+    /** A user can find a saved topic through syllabus search even when the
+     * lazily rendered list did not initially compose its row. Only the actual
+     * topic Text node can qualify this fallback; a Snackbar cannot. */
+    private fun findSavedTopicThroughSearch(): Boolean {
+        val searchTag = hasTestTag("studyflow.syllabus.search")
+        val searchMatcher = hasSetTextAction() and (searchTag or hasAnyAncestor(searchTag))
+        val searchEditors = rule.onAllNodes(searchMatcher, useUnmergedTree = true)
+        if (searchEditors.fetchSemanticsNodes().isEmpty()) {
+            // Locate the real search field in the production LazyColumn, without
+            // creating or writing any domain object.
+            val lists = rule.onAllNodes(hasScrollToIndexAction())
+            if (lists.fetchSemanticsNodes().isNotEmpty()) {
+                runCatching { lists.onFirst().performScrollToNode(searchTag) }
+            }
+        }
+        try {
+            rule.waitUntil(12_000L) { searchEditors.fetchSemanticsNodes().size == 1 }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_TOPIC_SEARCH_EDITOR_MISSING", failure)
+        }
+        try {
+            val searchEditor = searchEditors.onFirst()
+            runCatching { searchEditor.performScrollTo() }
+            searchEditor.assertIsDisplayed().performTextReplacement(topicName)
+            searchEditor.assertTextContains(topicName)
+            rule.waitForIdle()
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_TOPIC_SEARCH_WRITE_FAILED", failure)
+        }
+        // Production query.isNotBlank() expands matching subjects. Require
+        // exactly one real, saved-topic Text node to become visible.
+        val tag = hasTestTag("studyflow.topic_row.name.$topicName")
+        val matchingRows = rule.onAllNodes(tag, useUnmergedTree = true)
+        val errorFeedback = rule.onAllNodes(hasText(text(SubjectsR.string.operation_failed)))
+        runCatching {
+            rule.waitUntil(25_000L) {
+                matchingRows.fetchSemanticsNodes().size == 1 ||
+                    errorFeedback.fetchSemanticsNodes().isNotEmpty()
+            }
+        }
+        if (errorFeedback.fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_TOPIC_SAVE_FAILED")
+        }
+        if (matchingRows.fetchSemanticsNodes().size != 1) return false
+        runCatching { matchingRows.onFirst().performScrollTo() }
+        // Never accept a matching name in a hidden or uncomposed row.
+        return runCatching { matchingRows.onFirst().assertIsDisplayed() }.isSuccess
+    }
+
     /** Verify a persisted topic row in the actually expanded saved subject. */
     private fun awaitTopicSaved() {
         ensureSavedSubjectExpanded()
@@ -360,6 +409,13 @@ class Sfdt22HostedStudyJourneyTest {
         }
         val topicTag = hasTestTag("studyflow.topic_row.name.$topicName")
         val rows = rule.onAllNodes(topicTag, useUnmergedTree = true)
+        // A lazy row may not yet be composed. Ask the real outer list to
+        // scroll to this content before treating its absence as a timeout.
+        val topicLists = rule.onAllNodes(hasScrollToIndexAction())
+        if (rows.fetchSemanticsNodes().isEmpty() &&
+            topicLists.fetchSemanticsNodes().isNotEmpty()) {
+            runCatching { topicLists.onFirst().performScrollToNode(topicTag) }
+        }
         val failureToast = rule.onAllNodes(hasText(text(SubjectsR.string.operation_failed)))
         var saveFailed = false
         try {
@@ -376,8 +432,12 @@ class Sfdt22HostedStudyJourneyTest {
                     .fetchSemanticsNodes().isEmpty()) {
                 throw AssertionError("SFDT22_SUBJECT_NOT_EXPANDED", failure)
             }
+            // Save feedback alone never qualifies a successful journey. On a
+            // lazy-row timeout, use actual production search to reveal the
+            // exact topic name, then require its visible Text node.
+            if (findSavedTopicThroughSearch()) return
             if (topicSaveSuccessSeen) {
-                // Successful production save was seen, but no row has composed.
+                // Even after a real UI search, no saved topic row was visible.
                 throw AssertionError("SFDT22_TOPIC_ROW_NOT_COMPOSED", failure)
             }
             throw AssertionError("SFDT22_TOPIC_ROW_MISSING", failure)

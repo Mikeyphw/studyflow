@@ -58,6 +58,7 @@ REASON_CODES = frozenset({
     'topic_editor_tag_missing',
     'topic_row_missing', 'topic_row_not_composed',
     'topic_save_failed', 'subject_expand_action_missing', 'subject_not_expanded',
+    'topic_search_editor_missing', 'topic_search_write_failed',
     'subject_expand_snackbar_obstruction', 'subject_expand_touch_failed',
     'subject_expand_semantic_click_failed', 'subject_expand_state_ambiguous',
     'topic_editor_still_open',
@@ -121,6 +122,10 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'subject_expand_state_ambiguous'
     elif 'SFDT22_SUBJECT_NOT_EXPANDED' in raw:
         reason = 'subject_not_expanded'
+    elif 'SFDT22_TOPIC_SEARCH_EDITOR_MISSING' in raw:
+        reason = 'topic_search_editor_missing'
+    elif 'SFDT22_TOPIC_SEARCH_WRITE_FAILED' in raw:
+        reason = 'topic_search_write_failed'
     elif 'SFDT22_TOPIC_ROW_NOT_COMPOSED' in raw:
         reason = 'topic_row_not_composed'
     elif 'SFDT22_TOPIC_ROW_MISSING' in raw:

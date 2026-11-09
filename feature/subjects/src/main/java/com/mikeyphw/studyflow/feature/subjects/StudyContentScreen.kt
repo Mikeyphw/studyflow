@@ -273,7 +273,7 @@ fun StudyContentScreen(
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().testTag("studyflow.syllabus.search"),
                         label = { Text(stringResource(R.string.search_content)) },
                         singleLine = true,
                     )
