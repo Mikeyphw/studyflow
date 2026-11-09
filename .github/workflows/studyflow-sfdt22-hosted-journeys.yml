@@ -90,6 +90,10 @@ jobs:
           echo "7f328f91d6fc2a22cfc1e504f654bf88b05b7baae0b5d99a084055695601f94f  scripts/sfdt22_failure_triage.py" | sha256sum --check --status
           echo "7911652755f1ce6b8fce69c0b7045018ca56f3557aaaa4188e66e12f93617ab7  .github/workflows/studyflow-sfdt22-hotfix-session.yml" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf22_contract.py
+          echo "0a1b51990d7e72e28831434549b946fd080370ba16e1baf723d50036f97d4807  core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyContentRepository.kt" | sha256sum --check --status
+          echo "c6b01b5e246e5767d1faec8a37861d5e1e8fdc2d95ac5a857ed81ddb0bff2490  scripts/test_sfdt22_hf23_contract.py" | sha256sum --check --status
+          echo "032f80cf2380c5aa4aec6b723c8e952c616b99dac17b688411515f9e3698bf59  docs/actions/SFDT22_HF23_SETTINGS_PRESERVATION.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf23_contract.py
           python3 -B scripts/test_sfdt22_hf01_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
           python3 -B scripts/test_sfdt21_emulator_contract.py
