@@ -27,9 +27,9 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=normal)"
-          echo "8a7203c097f062e21d4b268d46266c2aed7668b99bb5afa88ea751a3f8df4598  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
+          echo "a39ff42d0f8ab72e34578b9a50254e205242610f4d462b79726998e5c87ad026  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
           echo "506ac2a2e71afe7d32fc7a8200cf13ba90caba3232a2b55e517c38bb2062109e  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
-          echo "b9bf421d3f2fcbab5ea0a0111e0fb0ed2d6f0d915feecf08641befa7c49baf0b  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "3389c2f5faa8dd8a03f1fdc1b3ee2c0c955ec44204b0d8de9506f092f35f5c13  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
           echo "53d32c91ac814074501ddebbcfc368812aad4d664282a7a6ca975fbc2622321f  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentDialogs.kt" | sha256sum --check --status
           echo "82a314c22c2b5bf86e942b0186d0a3603c9ee4d0d99e52f1bb73d54c4545dcd1  feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceUtilityScreens.kt" | sha256sum --check --status
           echo "b22486e751156118b7a8c09824fd609a1c28eb89c515be4b081ea4c31cdb189c  feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanListScreen.kt" | sha256sum --check --status
@@ -85,6 +85,11 @@ jobs:
           echo "36091be66dd3c33bfd9c0d5cb5931a24dce6b8fbbec350bdf767e57ed0917084  scripts/test_sfdt22_hf21_contract.py" | sha256sum --check --status
           echo "650a88c38f8586e675a0711831da9f3ff5240e784c55ccda69799475f08dd05e  docs/actions/SFDT22_HF21_LEGACY_PLAN_SETTINGS_REPAIR.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf21_contract.py
+          echo "7e79e0cebb9aed8524abf2714d8335517b23def56929442f60e644d8694dfe2c  scripts/test_sfdt22_hf22_contract.py" | sha256sum --check --status
+          echo "90915ecdf5c1222f3fbed8f42ac77b0c305bdfb374bdec2945df9be1c09a06b0  docs/actions/SFDT22_HF22_FAILURE_DIAGNOSTICS_AND_HOTFIX_LANE.md" | sha256sum --check --status
+          echo "7f328f91d6fc2a22cfc1e504f654bf88b05b7baae0b5d99a084055695601f94f  scripts/sfdt22_failure_triage.py" | sha256sum --check --status
+          echo "7911652755f1ce6b8fce69c0b7045018ca56f3557aaaa4188e66e12f93617ab7  .github/workflows/studyflow-sfdt22-hotfix-session.yml" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf22_contract.py
           python3 -B scripts/test_sfdt22_hf01_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
           python3 -B scripts/test_sfdt21_emulator_contract.py
@@ -125,7 +130,7 @@ jobs:
           packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865'
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
         with:
-          cache-disabled: true
+          cache-read-only: ${{ github.event_name != 'push' }}
           gradle-version: '9.7.1'
       - name: Compile production app and actual instrumentation APK
         shell: bash

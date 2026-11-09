@@ -32,6 +32,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertTrue
+import android.database.sqlite.SQLiteDatabase
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -63,6 +64,65 @@ class Sfdt22HostedStudyJourneyTest {
     private val questionStatement = "SFDT22: ecosystems include living organisms?"
     private val flashcardFront = "SFDT22 review: what is ecology?"
     private val flashcardBack = "Relationships between organisms and their environment"
+
+    /** Read-only SQLite inspection of the *actual* app database, never a test fixture. */
+    private fun recordBoundary(point: String, state: String) {
+        require(point in setOf("after_create", "after_subject", "after_topic", "session_route", "before_session_start"))
+        require(state in setOf("present", "missing", "lookup_failed", "ambiguous", "mismatched", "matched"))
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        context.openFileOutput("sfdt22-boundaries.txt", Context.MODE_APPEND).use { output ->
+            output.write("$point|$state\n".toByteArray(Charsets.US_ASCII))
+        }
+    }
+
+    private fun persistedSettingsBoundary(point: String) {
+        require(point in setOf("after_create", "after_subject", "after_topic", "before_session_start"))
+        // The explicit READONLY open cannot create a database or mutate app state.
+        // Name is an on-device SQL argument only. No IDs, names or rows are exported.
+        val state = try {
+            val context = InstrumentationRegistry.getInstrumentation().targetContext
+            val file = context.getDatabasePath("studyflow.db")
+            if (!file.isFile) "lookup_failed" else {
+                SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+                    db.rawQuery(
+                        "SELECT COUNT(*) AS matchedPlans, COUNT(settings.studyPlanId) AS storedSettings " +
+                            "FROM study_plans AS plans " +
+                            "LEFT JOIN study_plan_settings AS settings ON settings.studyPlanId = plans.id " +
+                            "WHERE plans.name = ?",
+                        arrayOf(planName),
+                    ).use { cursor ->
+                        if (!cursor.moveToFirst()) "lookup_failed"
+                        else when {
+                            cursor.getLong(0) != 1L -> "ambiguous"
+                            cursor.getLong(1) == 1L -> "present"
+                            else -> "missing"
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            "lookup_failed"
+        }
+        recordBoundary(point, state)
+        if (state != "present") {
+            throw AssertionError("SFDT22_BOUNDARY_${point.uppercase()}_${state.uppercase()}")
+        }
+    }
+
+    private fun sessionRouteBoundary() {
+        val expected = rule.activity.getString(SessionsR.string.sessions_subtitle, planName)
+        val matched = runCatching {
+            rule.waitUntil(20_000L) {
+                rule.onAllNodes(hasText(expected, substring = false), useUnmergedTree = true)
+                    .fetchSemanticsNodes().size == 1
+            }
+            rule.onAllNodes(hasText(expected, substring = false), useUnmergedTree = true)
+                .onFirst().assertIsDisplayed()
+            true
+        }.getOrDefault(false)
+        recordBoundary("session_route", if (matched) "matched" else "mismatched")
+        if (!matched) throw AssertionError("SFDT22_BOUNDARY_SESSION_ROUTE_MISMATCHED")
+    }
 
     private fun text(resId: Int): String = rule.activity.getString(resId)
 
@@ -655,6 +715,7 @@ class Sfdt22HostedStudyJourneyTest {
         stage("plan_preferences") { click(PlansR.string.next) } // Default 20h, 45min.
         stage("plan_save") { click(PlansR.string.save_plan) }
         stage("plan_confirm") { shell(); visible(planName) }
+        stage("settings_after_create") { persistedSettingsBoundary("after_create") }
         stage("plan_capture") { screenshot("plan") }
     }
 
@@ -674,6 +735,7 @@ class Sfdt22HostedStudyJourneyTest {
         }
         stage("subject_save") { clickDialog(SubjectsR.string.save) }
         stage("subject_confirm") { awaitSubjectSaved() }
+        stage("settings_after_subject") { persistedSettingsBoundary("after_subject") }
         stage("subject_capture") { screenshot("subject") }
         stage("topic_open_dialog") { openTopicEditorFromSubject() }
         stage("topic_fill_name") { replaceTopicNameInDialog(topicName) }
@@ -681,6 +743,7 @@ class Sfdt22HostedStudyJourneyTest {
         stage("topic_save_feedback") { observeTopicSaveFeedback() }
         stage("topic_expand") { ensureSavedSubjectExpanded() }
         stage("topic_confirm") { awaitTopicSaved() }
+        stage("settings_after_topic") { persistedSettingsBoundary("after_topic") }
         stage("topic_capture") { screenshot("topic") }
     }
 
@@ -821,6 +884,7 @@ class Sfdt22HostedStudyJourneyTest {
             openInnerTabReady(WorkspaceR.string.plan_overview, WorkspaceR.string.study_sessions)
         }
         stage("session_open_sessions") { click(WorkspaceR.string.study_sessions) }
+        stage("session_route_identity") { sessionRouteBoundary() }
         stage("session_quick_dialog") {
             val action = rule.onNodeWithContentDescription(text(SessionsR.string.quick_session))
             rule.waitUntil(30_000L) {
@@ -830,6 +894,7 @@ class Sfdt22HostedStudyJourneyTest {
             awaitSessionEditor("studyflow.session.quick.title")
         }
         stage("session_title") { writeSessionEditor("studyflow.session.quick.title", sessionName) }
+        stage("settings_before_session_start") { persistedSettingsBoundary("before_session_start") }
         stage("session_start") { clickSessionAction("studyflow.session.quick.start") }
         stage("session_running") { awaitSessionStartedAndRunning() }
         stage("session_pause") { clickSessionAction("studyflow.session.active.pause") }

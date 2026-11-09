@@ -39,6 +39,8 @@ PHASES = ('host', 'device', 'fresh', 'apks', 'install', 'installed_apk',
           'post_restart', 'screenshots', 'complete')
 SHA256 = re.compile(r'^[0-9a-f]{64}$')
 STAGES = frozenset({
+    'settings_after_create', 'settings_after_subject', 'settings_after_topic',
+    'session_route_identity', 'settings_before_session_start',
     'plan_shell', 'plan_system_hub', 'plan_all_plans', 'plan_open',
     'plan_editor_ready', 'plan_name', 'plan_target', 'plan_preferences',
     'plan_save', 'plan_confirm', 'plan_capture',
@@ -81,7 +83,50 @@ REASON_CODES = frozenset({
     'no_matching_compose_node', 'ambiguous_compose_node',
     'compose_wait_timeout', 'compose_assertion', 'app_process_crashed',
     'test_failed', 'unexpected_runner_status', 'runner_nonzero_exit',
+    *('boundary_' + point + '_' + state for point in
+      ('after_create', 'after_subject', 'after_topic', 'before_session_start') for state in
+      ('missing', 'lookup_failed', 'ambiguous', 'mismatched')),
+    'boundary_session_route_mismatched',
 })
+
+
+# Only these exact categories may be emitted; names, ids and raw Android output are forbidden.
+BOUNDARY_POINTS = ('after_create', 'after_subject', 'after_topic', 'session_route', 'before_session_start')
+BOUNDARY_STATES = frozenset({'present', 'missing', 'lookup_failed', 'ambiguous', 'mismatched', 'matched'})
+DIAGNOSTIC_THROUGH = {'plan': 1, 'subjects': 2, 'session': 3, 'practice': 4}
+DIAGNOSTIC_PASS = 'DIAGNOSTIC_PASS_NOT_RELEASE_QUALIFIED'
+
+
+def parse_boundaries(raw: bytes) -> list[dict]:
+    require(len(raw) <= 1024, 'Boundary evidence too large')
+    decoded = raw.decode('ascii', 'strict')
+    records = []
+    for line in decoded.splitlines():
+        fields = line.split('|')
+        require(len(fields) == 2 and fields[0] in BOUNDARY_POINTS and
+                fields[1] in BOUNDARY_STATES, 'Unreviewed boundary evidence')
+        require(fields[0] not in {r['point'] for r in records}, 'Duplicate boundary checkpoint')
+        records.append({'point': fields[0], 'state': fields[1]})
+    # The test writes checkpoints in the order in which users encounter them.
+    require([r['point'] for r in records] ==
+            list(BOUNDARY_POINTS[:len(records)]), 'Out-of-order boundary checkpoints')
+    return records
+
+
+def read_boundaries() -> list[dict]:
+    p = subprocess.run(['adb', '-s', SERIAL, 'exec-out', 'run-as', PACKAGE,
+                        'cat', 'files/sfdt22-boundaries.txt'],
+                       capture_output=True, timeout=20, check=False)
+    if p.returncode != 0:
+        return []  # Earlier host/install failure: no production UI checkpoints yet.
+    return parse_boundaries(p.stdout)
+
+
+def expected_boundaries(count: int) -> list[dict]:
+    points = ('after_create', 'after_subject', 'after_topic', 'session_route', 'before_session_start')
+    n = (0, 1, 3, 5, 5, 5)[count]
+    return [{'point': point, 'state': 'matched' if point == 'session_route' else 'present'}
+            for point in points[:n]]
 
 
 class JourneyFailure(ValueError):
@@ -100,7 +145,12 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
     """Map volatile Android stdout to stable enums; persist none of raw."""
     marker = re.search(r'SFDT22_STEP_([a-z][a-z0-9_]{1,39})', raw)
     stage = marker.group(1) if marker and marker.group(1) in STAGES else 'unavailable'
-    if 'SFDT22_SUBJECT_CARD_MISSING' in raw:
+    boundary = re.search(r'SFDT22_BOUNDARY_(AFTER_CREATE|AFTER_SUBJECT|AFTER_TOPIC|BEFORE_SESSION_START)_(MISSING|LOOKUP_FAILED|AMBIGUOUS|MISMATCHED)', raw)
+    if boundary:
+        reason = 'boundary_' + boundary.group(1).lower() + '_' + boundary.group(2).lower()
+    elif 'SFDT22_BOUNDARY_SESSION_ROUTE_MISMATCHED' in raw:
+        reason = 'boundary_session_route_mismatched'
+    elif 'SFDT22_SUBJECT_CARD_MISSING' in raw:
         reason = 'subject_card_missing'
     elif 'SFDT22_SUBJECT_EDITOR_STILL_OPEN' in raw:
         reason = 'subject_editor_still_open'
@@ -317,7 +367,7 @@ def blank(source: str, run_id: str, attempt: str) -> dict:
                 network_disabled=True, raw_logs_retained=False)
 
 
-def run(output: Path, source: str, run_id: str, attempt: str, repo: Path) -> bool:
+def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagnostic_through: str | None = None) -> bool:
     output.mkdir(parents=True, exist_ok=True)
     receipt = output / 'SFDT22_EVIDENCE.json'
     evidence = blank(source, run_id, attempt)
@@ -346,32 +396,47 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path) -> boo
         installed_hash = base.adb('shell', 'sha256sum', path.removeprefix('package:')).decode().split()[0]
         require(installed_hash == app_hash['sha256'], 'Installed APK provenance mismatch')
         results = []
-        for index, name in enumerate(TESTS[:4]):
+        diagnostic_limit = DIAGNOSTIC_THROUGH.get(diagnostic_through) if diagnostic_through else 4
+        for index, name in enumerate(TESTS[:diagnostic_limit]):
             phase = ('plan', 'subjects', 'session', 'practice')[index]
             results.append(run_test(name))
-        phase = 'force_stop'
-        real_process_restart()
-        phase = 'post_restart'
-        results.append(run_test(TESTS[4]))
-        phase = 'screenshots'
-        images = []
-        seen = set()
-        for name in SCREENS:
-            raw = base.adb('exec-out', 'run-as', PACKAGE, 'cat', 'files/sfdt22-ui-' + name + '.png')
-            width, height = base.png_dimensions(raw)
-            digest = hashlib.sha256(raw).hexdigest()
-            require(digest not in seen, 'Identical screenshots cannot prove distinct screens')
-            seen.add(digest)
-            file = output / ('sfdt22-ui-' + name + '.png')
-            file.write_bytes(raw)
-            images.append(dict(name=file.name, width=width, height=height,
-                               size=len(raw), sha256=digest))
-        evidence.update(overall=EXPECTED, api_level=36, emulator_serial=SERIAL,
-                        tests=results, test_count=len(TESTS), screenshots=images,
-                        screenshot_count=len(SCREENS), app_apk=app_hash,
-                        test_apk=test_hash, debug_signing_certificates=certs,
-                        installed_app_sha256=installed_hash,
-                        force_stopped_app_and_verified_new_pid=True)
+        if diagnostic_through:
+            evidence.update(overall=DIAGNOSTIC_PASS, tests=results,
+                            test_count=len(results), diagnostic_through=diagnostic_through,
+                            boundaries=read_boundaries(),
+                            app_apk=app_hash, test_apk=test_hash,
+                            debug_signing_certificates=certs,
+                            installed_app_sha256=installed_hash)
+            require(evidence['boundaries'] == expected_boundaries(len(results)),
+                    'Incomplete diagnostic-only boundary evidence')
+            phase = 'diagnostic_complete'
+        else:
+            phase = 'force_stop'
+            real_process_restart()
+            phase = 'post_restart'
+            results.append(run_test(TESTS[4]))
+            phase = 'screenshots'
+            images = []
+            seen = set()
+            for name in SCREENS:
+                raw = base.adb('exec-out', 'run-as', PACKAGE, 'cat', 'files/sfdt22-ui-' + name + '.png')
+                width, height = base.png_dimensions(raw)
+                digest = hashlib.sha256(raw).hexdigest()
+                require(digest not in seen, 'Identical screenshots cannot prove distinct screens')
+                seen.add(digest)
+                file = output / ('sfdt22-ui-' + name + '.png')
+                file.write_bytes(raw)
+                images.append(dict(name=file.name, width=width, height=height,
+                                   size=len(raw), sha256=digest))
+            evidence.update(overall=EXPECTED, api_level=36, emulator_serial=SERIAL,
+                            tests=results, test_count=len(TESTS), screenshots=images,
+                            screenshot_count=len(SCREENS), app_apk=app_hash,
+                            test_apk=test_hash, debug_signing_certificates=certs,
+                            installed_app_sha256=installed_hash,
+                            force_stopped_app_and_verified_new_pid=True,
+                            boundaries=read_boundaries())
+            require(evidence['boundaries'] == expected_boundaries(5),
+                    'Incomplete full-gate boundary evidence')
         phase = 'complete'
     except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
         evidence['failure_phase'] = phase if phase in PHASES else 'host'
@@ -381,13 +446,19 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path) -> boo
             evidence['failure_step'] = exc.stage
             evidence['failure_reason_code'] = exc.reason
         evidence['completed_before_failure'] = len(results) if 'results' in locals() else 0
+        try:
+            evidence['boundaries'] = read_boundaries()
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            evidence['boundary_capture'] = 'unavailable'
         for name in SCREENS:
             (output / ('sfdt22-ui-' + name + '.png')).unlink(missing_ok=True)
     receipt.write_text(json.dumps(evidence, sort_keys=True, indent=2) + '\n')
-    print('SFDT22_REAL_JOURNEY_' + ('PASS' if evidence['overall'] == EXPECTED else 'REFUSED') +
-          ' phase=' + phase + ' verified_tests=' +
+    ok = evidence['overall'] in (EXPECTED, DIAGNOSTIC_PASS)
+    status = ('DIAGNOSTIC_PASS_ONLY' if evidence['overall'] == DIAGNOSTIC_PASS else
+              'REAL_JOURNEY_PASS' if evidence['overall'] == EXPECTED else 'REAL_JOURNEY_REFUSED')
+    print('SFDT22_' + status + ' phase=' + phase + ' verified_tests=' +
           str(evidence.get('test_count', evidence.get('completed_before_failure', 0))), flush=True)
-    return evidence['overall'] == EXPECTED
+    return ok
 
 
 def verify(output: Path, source: str, run_id: str, attempt: str, repo: Path) -> None:
@@ -404,6 +475,8 @@ def verify(output: Path, source: str, run_id: str, attempt: str, repo: Path) -> 
         require(data.get(key) == value, 'Evidence identity mismatch: ' + key)
     require(data.get('tests') == [dict(test=x, status='passed', started=1, finished=1) for x in TESTS],
             'Test count/order/outcome mismatch')
+    require(data.get('boundaries') == expected_boundaries(5),
+            'Missing required source-of-truth lifecycle boundaries')
     app_hash, test_hash, certs = apk_facts(repo)
     require(data.get('app_apk') == app_hash and data.get('test_apk') == test_hash and
             data.get('debug_signing_certificates') == certs and
@@ -426,6 +499,33 @@ def verify(output: Path, source: str, run_id: str, attempt: str, repo: Path) -> 
                 'Image bytes or dimensions differ')
         seen.add(digest)
     require(not list(output.glob('*log*')), 'Raw instrumentation logs are forbidden')
+
+
+def verify_diagnostic(output: Path, source: str, run_id: str, attempt: str,
+                      repo: Path, through: str) -> None:
+    host(source, run_id, attempt)
+    p = output / 'SFDT22_EVIDENCE.json'
+    require(p.is_file() and not p.is_symlink() and p.stat().st_size <= 20_000,
+            'No bounded diagnostic receipt')
+    data = json.loads(p.read_text())
+    expected = blank(source, run_id, attempt)
+    for key, value in expected.items():
+        if key != 'overall':
+            require(data.get(key) == value, 'Diagnostic identity mismatch: ' + key)
+    require(data.get('overall') == DIAGNOSTIC_PASS and data.get('diagnostic_through') == through,
+            'Diagnostic-only success marker missing')
+    count = DIAGNOSTIC_THROUGH[through]
+    require(data.get('tests') == [dict(test=x, status='passed', started=1, finished=1)
+                                   for x in TESTS[:count]], 'Diagnostic tests incomplete')
+    require(data.get('test_count') == count and data.get('boundaries') == expected_boundaries(count),
+            'Diagnostic state checkpoints incomplete')
+    app_hash, test_hash, certs = apk_facts(repo)
+    require(data.get('app_apk') == app_hash and data.get('test_apk') == test_hash and
+            data.get('debug_signing_certificates') == certs and
+            data.get('installed_app_sha256') == app_hash['sha256'],
+            'Diagnostic APK provenance mismatch')
+    require(not list(output.glob('*.png')),
+            'Diagnostic lane must not masquerade as seven-screen qualification')
 
 
 def source_check(repo: Path) -> None:
@@ -454,12 +554,13 @@ def source_check(repo: Path) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_mutually_exclusive_group(required=True)
-    for arg in ('source-check', 'preflight-apks', 'run', 'verify'):
+    for arg in ('source-check', 'preflight-apks', 'run', 'verify', 'verify-diagnostic'):
         modes.add_argument('--' + arg, action='store_true')
     parser.add_argument('--output-dir', type=Path)
     parser.add_argument('--source-sha')
     parser.add_argument('--run-id')
     parser.add_argument('--attempt')
+    parser.add_argument('--diagnostic-through', choices=tuple(DIAGNOSTIC_THROUGH))
     args = parser.parse_args()
     repo = Path(__file__).resolve().parents[1]
     try:
@@ -475,7 +576,15 @@ def main() -> int:
             print('SFDT22_DEBUG_APK_PREFLIGHT_PASS')
             return 0
         if args.run:
-            return 0 if run(args.output_dir, args.source_sha, args.run_id, args.attempt, repo) else 2
+            return 0 if run(args.output_dir, args.source_sha, args.run_id, args.attempt, repo,
+                               args.diagnostic_through) else 2
+        if args.verify_diagnostic:
+            require(args.diagnostic_through in DIAGNOSTIC_THROUGH, 'Explicit diagnostic phase required')
+            verify_diagnostic(args.output_dir, args.source_sha, args.run_id, args.attempt,
+                              repo, args.diagnostic_through)
+            print('SFDT22_DIAGNOSTIC_ONLY_VERIFIED: not release qualified')
+            return 0
+        require(args.diagnostic_through is None, 'Diagnostic selector incompatible with full verifier')
         verify(args.output_dir, args.source_sha, args.run_id, args.attempt, repo)
         print('SFDT22_EVIDENCE_VERIFIED: five real UI tests, forced restart, seven screenshots')
         return 0
