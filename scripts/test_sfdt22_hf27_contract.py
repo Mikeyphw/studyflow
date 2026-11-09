@@ -122,6 +122,26 @@ class HF27(unittest.TestCase):
         self.assertEqual(mod.sfdt27_room_result(b'private=SECRET', mod.SFDT27_ROOM_TESTS[0], 0),
                          'runner_no_test_status')
 
+    def test_09_existing_plan_update_is_non_destructive_and_atomic(self):
+        dao = (ROOT/'core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyPlanDao.kt').read_text()
+        repo = (ROOT/'core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanRepository.kt').read_text()
+        self.assertIn('import androidx.room.Update', dao)
+        self.assertIn('@Update\n    suspend fun updateExisting(plan: StudyPlanEntity): Int', dao)
+        self.assertIn('updateExistingPlanPreservingSettings(entity: StudyPlanEntity)', repo)
+        self.assertEqual(repo.count('updateExistingPlanPreservingSettings('), 5)
+        self.assertEqual(repo.count('studyPlanDao.upsert('), 0)
+        self.assertIn('studyPlanDao.updateExisting(entity) == 1', repo)
+        self.assertIn('PLAN_SETTINGS_MISSING_BEFORE_EXISTING_PLAN_UPDATE', repo)
+        self.assertIn('PLAN_SETTINGS_CHANGED_DURING_EXISTING_PLAN_UPDATE', repo)
+        self.assertIn('database.studyPlanDao().updateExisting(', self.room)
+        self.assertIn('hf27RoomStage = "PLAN_UPDATE"', self.room)
+        self.assertIn("'PLAN_UPDATE'", self.ver)
+        self.assertIn('stage_plan_update', mod.SFDT27_ROOM_CODES)
+        self.assertNotIn('StudyPlanSettings.defaults(', repo.split('private suspend fun updateExistingPlanPreservingSettings',1)[1].split('override val plans',1)[0])
+        for path in ('core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyPlanDao.kt',
+                     'core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanRepository.kt'):
+            self.assertIn(hashlib.sha256((ROOT/path).read_bytes()).hexdigest()+'  '+path,self.wf)
+
     def test_07_no_production_mutation_or_release_qualification(self):
         self.assertIn('nonqualifying',(ROOT/DOC).read_text().lower())
         self.assertNotIn('StudyPlanSettings.defaults(',self.ui)

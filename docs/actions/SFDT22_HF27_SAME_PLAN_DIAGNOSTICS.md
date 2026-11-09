@@ -50,3 +50,33 @@ commit, keeps all nine earlier HF27 owned changes intact, and includes the repai
 self-contained source-pinned CI watcher; no separate watcher download is necessary.
 Native Devtool/Gradle policies, clean staging, no force-push, no PR #15 mutation and
 no automatic merge remain in effect. All temporary files stay under `$TMPDIR`.
+
+## HF27 HF04 — exact-plan settings protection across existing-plan updates (nonqualifying)
+
+Run `42682181271`, stage SHA `4b08d059c992a4b24bbd89d3e5f4cd2b0c873866`,
+compiled both APKs, passed both independent Android/Room regressions and completed the first
+real UI journey. The second journey persisted a topic but failed at
+`settings_after_topic` (`boundary_after_topic_missing`). All four exact-plan probes
+agreed on the plan identity; the first three reported `matched`, and the final
+reported `row_missing`. The settings row was observed before and immediately after
+the save action, then missing after topic UI confirmation. The specific writer
+responsible is not yet proven; no claim about an actual cascade operation is made.
+
+HF04 hardens **existing-plan writes** against any future parent-replacement FK
+cascade. The four `RoomStudyPlanRepository` editing/status/trash/restore code
+paths now call the Room `@Update`-only DAO method instead of `@Upsert`.
+Within the pre-existing Room transaction, the exact personalized settings entity
+is checked before and after the mutation, with a strict row-count assertion.
+Any missing or changed settings fails and rolls back; no default preferences,
+auto-heal or replacement is allowed. A new hosted Android/Room assertion
+performs a parent UPDATE with the real child settings and subject/topic FKs,
+then cold-reopens and verifies all records are intact. Both original Room tests,
+all existing full-gate checks, five real UI journeys, seven screenshots and
+strict hosted signing/provenance requirements remain enforced.
+
+This is a **source-bound preventative fix and unproven root-cause hypothesis**,
+not a claim that HF04 has fixed the live topic-save problem. Continue only after
+exact-SHA hosted Android-36 regression and three real UI journeys confirm it.
+If the focused run still loses settings, the evidence points to another writer;
+do not restore defaults or merge PR #15. The full five-journey qualification
+remains required. No local Gradle, no release signing, no auto merge.

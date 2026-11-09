@@ -7,6 +7,7 @@ import androidx.room.withTransaction
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.StudyPlanGraphDuplicator
 import com.mikeyphw.studyflow.core.database.entity.DatabaseMetadataEntity
+import com.mikeyphw.studyflow.core.database.entity.StudyPlanEntity
 import com.mikeyphw.studyflow.core.database.mapper.asEntity
 import com.mikeyphw.studyflow.core.database.mapper.asExternalModel
 import com.mikeyphw.studyflow.core.domain.StudyPlanRepository
@@ -31,6 +32,22 @@ internal class RoomStudyPlanRepository(
     private val studySupportDao = database.studySupportDao()
     private val libraryDao = database.studyLibraryDao()
     private val physicalResources = PlanPhysicalResourceDuplicator(appContext.filesDir, database)
+
+    /** Only existing-plan UPDATE is permitted here: a new INSERT OR REPLACE of
+     * study_plans would cascade-delete personalized study_plan_settings.
+     * Never manufacture defaults; rollback on any unexpected settings change.
+     * This guard is inside the caller's existing Room transaction. */
+    private suspend fun updateExistingPlanPreservingSettings(entity: StudyPlanEntity) {
+        val original = requireNotNull(studySupportDao.findPlanSettings(entity.id)) {
+            "PLAN_SETTINGS_MISSING_BEFORE_EXISTING_PLAN_UPDATE"
+        }
+        check(studyPlanDao.updateExisting(entity) == 1) {
+            "STUDY_PLAN_EXISTING_UPDATE_MISSING"
+        }
+        check(studySupportDao.findPlanSettings(entity.id) == original) {
+            "PLAN_SETTINGS_CHANGED_DURING_EXISTING_PLAN_UPDATE"
+        }
+    }
 
     override val plans: Flow<List<StudyPlan>> =
         studyPlanDao.observeAll().map { entities -> entities.map { it.asExternalModel() } }
@@ -69,7 +86,7 @@ internal class RoomStudyPlanRepository(
                 "Archived or trashed Study Plans must be restored before editing."
             }
             val now = clock()
-            studyPlanDao.upsert(
+            updateExistingPlanPreservingSettings(
                 plan.copy(
                     createdAtEpochMillis = existing.createdAtEpochMillis,
                     updatedAtEpochMillis = now,
@@ -145,7 +162,7 @@ internal class RoomStudyPlanRepository(
             }
             if (status == StudyPlanStatus.ARCHIVED) requireNoActiveSession(planId)
             val now = clock()
-            studyPlanDao.upsert(
+            updateExistingPlanPreservingSettings(
                 existing.copy(
                     status = status,
                     updatedAtEpochMillis = now,
@@ -162,7 +179,7 @@ internal class RoomStudyPlanRepository(
             }.asExternalModel()
             requireNoActiveSession(planId)
             val now = clock()
-            studyPlanDao.upsert(
+            updateExistingPlanPreservingSettings(
                 existing.copy(
                     status = StudyPlanStatus.TRASHED,
                     updatedAtEpochMillis = now,
@@ -179,7 +196,7 @@ internal class RoomStudyPlanRepository(
             }.asExternalModel()
             require(existing.status == StudyPlanStatus.TRASHED) { "Study Plan is not in trash." }
             val now = clock()
-            studyPlanDao.upsert(
+            updateExistingPlanPreservingSettings(
                 existing.copy(
                     status = StudyPlanStatus.PAUSED,
                     updatedAtEpochMillis = now,

@@ -137,7 +137,7 @@ SFDT27_ROOM_TESTS = (
     'failedTopicTransactionRollsBackWithoutChangingPersonalizedSettings',
 )
 SFDT27_ROOM_STAGES = frozenset({
-    'PLAN_SETUP', 'SUBJECT_TOPIC', 'COLD_REOPEN',
+    'PLAN_SETUP', 'SUBJECT_TOPIC', 'PLAN_UPDATE', 'COLD_REOPEN',
     'ROLLBACK_SETUP', 'ROLLBACK_WRITE', 'ROLLBACK_VERIFY',
 })
 SFDT27_ROOM_CODES = frozenset({

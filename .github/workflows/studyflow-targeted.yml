@@ -1,0 +1,225 @@
+# StudyFlow — Aurora-style exact-SHA targeted CI. Additional and nonqualifying:
+# mandatory SFDT22 PR/full gates, SFDT21, and Devtool CI remain separate.
+name: StudyFlow — Targeted CI
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'sfdt22-hotfix/**'
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: '40-character exact checkout SHA; required for manual dispatch'
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: studyflow-targeted-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  scope:
+    name: Source-change classification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    outputs:
+      base_sha: ${{ steps.policy.outputs.base_sha }}
+      head_sha: ${{ steps.policy.outputs.head_sha }}
+      needs_android: ${{ steps.policy.outputs.needs_android }}
+      needs_tv: ${{ steps.policy.outputs.needs_tv }}
+      needs_web: ${{ steps.policy.outputs.needs_web }}
+      needs_desktop: ${{ steps.policy.outputs.needs_desktop }}
+      ci_sensitive: ${{ steps.policy.outputs.ci_sensitive }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve exact two-commit comparison (fail closed)
+        id: policy
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          REQUIRED_MANUAL_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_SHA" = "$(git rev-parse HEAD)"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            test "$REQUIRED_MANUAL_SHA" = "$EXPECTED_SHA"
+          fi
+          base="${PR_BASE:-${PUSH_BEFORE:-}}"
+          if [[ ! "$base" =~ ^[0-9a-f]{40}$ || "$base" =~ ^0+$ ]]; then
+            base="$(git rev-parse HEAD^ 2>/dev/null)"
+          fi
+          test "$base" != "$EXPECTED_SHA"
+          git cat-file -e "${base}^{commit}"
+          python3 -B scripts/ci/studyflow_ci_policy.py classify \
+            --base "$base" --head "$EXPECTED_SHA" --github-output "$GITHUB_OUTPUT"
+  source:
+    name: Targeted source contracts
+    needs: scope
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ needs.scope.outputs.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Run exact-range scoped tests, including mandatory privacy/Room contracts
+        shell: bash
+        env:
+          BASE_SHA: ${{ needs.scope.outputs.base_sha }}
+          EXPECTED_SHA: ${{ needs.scope.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_SHA" = "$(git rev-parse HEAD)"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          python3 -B scripts/ci/studyflow_ci_policy.py run-targeted \
+            --base "$BASE_SHA" --head "$EXPECTED_SHA"
+  android:
+    name: Targeted Android APK and instrumentation compilation
+    needs: [scope, source]
+    if: needs.scope.outputs.needs_android == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      CI: 'true'
+      PYTHONDONTWRITEBYTECODE: '1'
+      STUDYFLOW_SFDT21_HOSTED_EMULATOR: 'true'
+      STUDYFLOW_SFDT22_HOSTED_JOURNEYS: 'true'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ needs.scope.outputs.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865'
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          cache-read-only: true
+          gradle-version: '9.7.1'
+      - name: Compile Android debug and AndroidTest APKs, no emulator/release
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_SHA" = "$(git rev-parse HEAD)"
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          test ! -e app/build/outputs/apk/release/app-release.apk
+  tv:
+    name: Targeted TV build
+    needs: [scope, source]
+    if: needs.scope.outputs.needs_tv == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ needs.scope.outputs.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865'
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          cache-read-only: true
+          gradle-version: '9.7.1'
+      - name: Compile TV debug only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '${{ needs.scope.outputs.head_sha }}'
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 --console=plain :app-tv:assembleDebug
+  desktop:
+    name: Targeted desktop tests
+    needs: [scope, source]
+    if: needs.scope.outputs.needs_desktop == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ needs.scope.outputs.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          cache-read-only: true
+          gradle-version: '9.7.1'
+      - name: Compile and test desktop
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '${{ needs.scope.outputs.head_sha }}'
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 --console=plain :desktopApp:classes :desktopApp:test
+  web:
+    name: Targeted web tests
+    needs: [scope, source]
+    if: needs.scope.outputs.needs_web == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ needs.scope.outputs.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build and test web
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '${{ needs.scope.outputs.head_sha }}'
+          npm ci
+          npm test
+          npm run lint
+          npm run build
+  required:
+    name: Targeted required-result gate
+    needs: [scope, source, android, tv, desktop, web]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every selected lane to pass, no release qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          test '${{ needs.scope.result }}' = success
+          test '${{ needs.source.result }}' = success
+          if [[ '${{ needs.scope.outputs.needs_android }}' == true ]]; then test '${{ needs.android.result }}' = success; fi
+          if [[ '${{ needs.scope.outputs.needs_tv }}' == true ]]; then test '${{ needs.tv.result }}' = success; fi
+          if [[ '${{ needs.scope.outputs.needs_desktop }}' == true ]]; then test '${{ needs.desktop.result }}' = success; fi
+          if [[ '${{ needs.scope.outputs.needs_web }}' == true ]]; then test '${{ needs.web.result }}' = success; fi
+          echo 'STUDYFLOW_TARGETED_PASS_NONQUALIFYING: full hosted gates remain mandatory'

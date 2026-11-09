@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
+import androidx.room.Update
 import com.mikeyphw.studyflow.core.database.entity.StudyPlanEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -62,6 +63,10 @@ interface StudyPlanDao {
 
     @Upsert
     suspend fun upsert(plan: StudyPlanEntity)
+
+    /** UPDATE only: never delete/reinsert an existing FK parent. */
+    @Update
+    suspend fun updateExisting(plan: StudyPlanEntity): Int
 
     @Query(
         """

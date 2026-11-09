@@ -103,6 +103,15 @@ class Sfdt27RoomSettingsRegressionTest {
         assertNotNull(persisted)
         assertEquals(id, persisted?.studyPlanId)
         assertEquals("hf27-subject", persisted?.subjectId)
+        // Exercise the real Room @Update on the parent with a child settings
+        // row and real FK triggers enabled. This must never cascade the child.
+        hf27RoomStage = "PLAN_UPDATE"
+        assertEquals(1, database.studyPlanDao().updateExisting(
+            plan(id).copy(progressPercent = 31, updatedAtEpochMillis = 5L),
+        ))
+        assertEquals(prefs, database.studySupportDao().findPlanSettings(id))
+        assertEquals(id, database.studyStructureDao().findSubject(id, "hf27-subject")?.studyPlanId)
+        assertEquals(id, database.studyStructureDao().findTopic(id, "hf27-topic")?.studyPlanId)
         hf27RoomStage = "COLD_REOPEN"
         database.close()
         database = open()
