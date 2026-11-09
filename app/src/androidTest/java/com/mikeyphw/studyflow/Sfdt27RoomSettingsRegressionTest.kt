@@ -81,12 +81,15 @@ class Sfdt27RoomSettingsRegressionTest {
     )
 
     @Test fun customizedSettingsAndOwnershipSurviveSubjectTopicAndColdRoomReopen() = runBlocking {
+        var hf27RoomStage = "PLAN_SETUP"
+        try {
         val id = "hf27-plan-a"
         val prefs = settings(id)
         database.studyPlanDao().insert(plan(id))
         database.studySupportDao().upsertPlanSettings(prefs)
         assertEquals(prefs, database.studySupportDao().findPlanSettings(id))
 
+        hf27RoomStage = "SUBJECT_TOPIC"
         database.withTransaction {
             database.studyStructureDao().upsertSubject(subject(id))
             database.studyPlanDao().updateProgress(id, 17, 2L)
@@ -100,20 +103,27 @@ class Sfdt27RoomSettingsRegressionTest {
         assertNotNull(persisted)
         assertEquals(id, persisted?.studyPlanId)
         assertEquals("hf27-subject", persisted?.subjectId)
+        hf27RoomStage = "COLD_REOPEN"
         database.close()
         database = open()
         assertEquals(prefs, database.studySupportDao().findPlanSettings(id))
         assertEquals(id, database.studyStructureDao().findSubject(id, "hf27-subject")?.studyPlanId)
         assertEquals(id, database.studyStructureDao().findTopic(id, "hf27-topic")?.studyPlanId)
         assertEquals("hf27-subject", database.studyStructureDao().findTopic(id, "hf27-topic")?.subjectId)
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT27_ROOM_STAGE_$hf27RoomStage", failure)
+        }
     }
 
     @Test fun failedTopicTransactionRollsBackWithoutChangingPersonalizedSettings() = runBlocking {
+        var hf27RoomStage = "ROLLBACK_SETUP"
+        try {
         val id = "hf27-plan-a"
         val prefs = settings(id)
         database.studyPlanDao().insert(plan(id))
         database.studySupportDao().upsertPlanSettings(prefs)
         database.studyStructureDao().upsertSubject(subject(id))
+        hf27RoomStage = "ROLLBACK_WRITE"
         val outcome = runCatching {
             database.withTransaction {
                 database.studyStructureDao().upsertTopic(topic(id))
@@ -121,10 +131,14 @@ class Sfdt27RoomSettingsRegressionTest {
                 error("HF27_INJECTED_ROLLBACK")
             }
         }
+        hf27RoomStage = "ROLLBACK_VERIFY"
         assertTrue(outcome.isFailure)
         assertEquals(prefs, database.studySupportDao().findPlanSettings(id))
         assertNull(database.studyStructureDao().findTopic(id, "hf27-topic"))
         assertEquals(0, database.studyPlanDao().findById(id)?.progressPercent)
         assertEquals(id, database.studyStructureDao().findSubject(id, "hf27-subject")?.studyPlanId)
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT27_ROOM_STAGE_$hf27RoomStage", failure)
+        }
     }
 }

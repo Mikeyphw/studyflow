@@ -23,3 +23,30 @@ Only after focused diagnostics/real Android journeys pass should a separately re
 ## Implementation logistics
 
 Native Devtool source-pinned overlay manifest covers every changed and new path, `source_sha256=null` for added paths, exact base tree guard, plus offline source and recovery tests. The apply kit needs a clean on-base checkout or a rigorously recognized retry state; normal push only to existing staging, no force-push/reset/stash or automatic promotion. All disposable extraction, worktrees and ZIP generation use explicitly exported absolute writable `$TMPDIR`. Gradle runs only in GitHub Actions, never in Termux.
+
+## HF27 HF03 — hosted Room failure triage and single-kit watcher (nonqualifying)
+
+Hosted staging SHA `f8eabe8462478939607554f34d88f80af87b5f37` compiled both APKs,
+passed source gates and APK provenance, but stopped at `room_regression` before any
+production UI journeys. The combined `am instrument` runner and generic
+`OK (2 tests)` check concealed the individual result; the cause of the
+independent Room-test failure has not yet been established. Do not infer that
+production settings were removed or modify production storage on this evidence.
+
+HF03 preserves the same two real Room tests, actual database triggers, full UI
+acceptance and all original CI gates. It executes each regression as a separate
+`am instrument -w -r` test, requiring an explicit start, finish, and successful
+runner exit. The two Android tests include fixed error stage codes for plan setup,
+subject/topic writes, cold reopen, rollback setup, write and verification. A
+failed Room regression is recorded but does NOT stop the separate real UI
+diagnostic from running; final acceptance is still strictly failed unless BOTH
+Room regressions and all required real UI journeys pass. Only
+preapproved failure codes and an exact static test name may enter bounded evidence;
+raw Android output, exception messages, plan IDs, user data, and logs are never
+persisted or uploaded. Any unexpected or incomplete result remains a hard failure.
+
+The consolidated HF03 installer starts from the **already-applied** HF02 staging
+commit, keeps all nine earlier HF27 owned changes intact, and includes the repaired
+self-contained source-pinned CI watcher; no separate watcher download is necessary.
+Native Devtool/Gradle policies, clean staging, no force-push, no PR #15 mutation and
+no automatic merge remain in effect. All temporary files stay under `$TMPDIR`.

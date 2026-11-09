@@ -132,14 +132,70 @@ def sfdt27_expected_probes() -> list[dict]:
     return [{'point': p, 'state': 'matched'} for p in SFDT27_POINTS]
 
 
+SFDT27_ROOM_TESTS = (
+    'customizedSettingsAndOwnershipSurviveSubjectTopicAndColdRoomReopen',
+    'failedTopicTransactionRollsBackWithoutChangingPersonalizedSettings',
+)
+SFDT27_ROOM_STAGES = frozenset({
+    'PLAN_SETUP', 'SUBJECT_TOPIC', 'COLD_REOPEN',
+    'ROLLBACK_SETUP', 'ROLLBACK_WRITE', 'ROLLBACK_VERIFY',
+})
+SFDT27_ROOM_CODES = frozenset({
+    'runner_nonzero', 'runner_timeout', 'runner_no_test_status',
+    'runner_bad_status', 'runner_output_oversize', 'test_failed',
+    *('stage_' + stage.lower() for stage in SFDT27_ROOM_STAGES),
+})
+
+
+class Sfdt27RoomFailure(ValueError):
+    def __init__(self, test: str, reason: str) -> None:
+        require(test in SFDT27_ROOM_TESTS and reason in SFDT27_ROOM_CODES,
+                'Unreviewed HF27 Room failure category')
+        self.test = test
+        self.reason = reason
+        super().__init__('HF27_ROOM_FAILED')
+
+
+def sfdt27_room_result(raw: bytes, test: str, return_code: int) -> str:
+    # Allowlist-only result; raw Android output is never persisted or printed.
+    require(test in SFDT27_ROOM_TESTS, 'Unknown HF27 Room test')
+    if len(raw) > 65536:
+        return 'runner_output_oversize'
+    output = raw.decode('utf-8', 'replace')
+    tests = re.findall(r'(?m)^INSTRUMENTATION_STATUS: test=([^\r\n]+)\r?$', output)
+    codes = re.findall(r'(?m)^INSTRUMENTATION_STATUS_CODE: ([^\r\n]+)\r?$', output)
+    result = re.findall(r'(?m)^INSTRUMENTATION_CODE: ([^\r\n]+)\r?$', output)
+    if (return_code == 0 and set(tests) == {test} and codes.count('1') == 1 and codes.count('0') == 1
+            and len(codes) == 2 and result == ['-1'] and 'INSTRUMENTATION_FAILED' not in output
+            and 'FAILURES!!!' not in output):
+        return 'passed'
+    markers = set(re.findall(r'SFDT27_ROOM_STAGE_([A-Z_]+)', output))
+    if len(markers) == 1 and next(iter(markers)) in SFDT27_ROOM_STAGES:
+        return 'stage_' + next(iter(markers)).lower()
+    if return_code != 0:
+        return 'runner_nonzero'
+    if not tests:
+        return 'runner_no_test_status'
+    if set(tests) != {test} or codes.count('1') != 1 or codes.count('0') != 1 or len(codes) != 2 or result != ['-1']:
+        return 'runner_bad_status'
+    return 'test_failed'
+
+
 def sfdt27_hosted_room_regression() -> None:
-    # Executed on the SAME hosted Android 36 emulator after app/test APK
-    # installation, before the five UI journeys. Stdout remains in RAM only.
-    result = base.adb('shell', 'am', 'instrument', '-w', '-e', 'class',
-                      PACKAGE + '.Sfdt27RoomSettingsRegressionTest', RUNNER,
-                      timeout=180)
-    require(b'INSTRUMENTATION_CODE: -1' in result and b'OK (2 tests)' in result,
-            'HF27 real Room regression failed (no raw Android log retained)')
+    # Separate true Android/JUnit instrumentation invocations: each case must
+    # explicitly report 1 start, 1 finish, and success. No raw logs/artifacts.
+    for test in SFDT27_ROOM_TESTS:
+        try:
+            process = subprocess.run(
+                ['adb', '-s', SERIAL, 'shell', 'am', 'instrument', '-w', '-r',
+                 '-e', 'class', PACKAGE + '.Sfdt27RoomSettingsRegressionTest#' + test,
+                 RUNNER], capture_output=True, timeout=180, check=False,
+            )
+        except subprocess.TimeoutExpired:
+            raise Sfdt27RoomFailure(test, 'runner_timeout') from None
+        reason = sfdt27_room_result(process.stdout, test, process.returncode)
+        if reason != 'passed':
+            raise Sfdt27RoomFailure(test, reason)
 
 DIAGNOSTIC_THROUGH = {'plan': 1, 'subjects': 2, 'session': 3, 'practice': 4}
 DIAGNOSTIC_PASS = 'DIAGNOSTIC_PASS_NOT_RELEASE_QUALIFIED'
@@ -453,8 +509,18 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
         installed_hash = base.adb('shell', 'sha256sum', path.removeprefix('package:')).decode().split()[0]
         require(installed_hash == app_hash['sha256'], 'Installed APK provenance mismatch')
         phase = 'room_regression'
-        sfdt27_hosted_room_regression()
-        evidence['hf27_room_regression'] = 'passed'
+        room_error = None
+        try:
+            sfdt27_hosted_room_regression()
+        except Sfdt27RoomFailure as failure:
+            room_error = failure
+            evidence['hf27_room_regression'] = 'not_passed'
+            evidence['hf27_room_failure_test'] = failure.test
+            evidence['hf27_room_failure_reason_code'] = failure.reason
+            print('SFDT27_ROOM_REGRESSION_REFUSED test=' + failure.test +
+                  ' reason=' + failure.reason, flush=True)
+        else:
+            evidence['hf27_room_regression'] = 'passed'
         results = []
         diagnostic_limit = DIAGNOSTIC_THROUGH.get(diagnostic_through) if diagnostic_through else 4
         for index, name in enumerate(TESTS[:diagnostic_limit]):
@@ -501,10 +567,22 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
                     'HF27 exact-plan diagnostics incomplete or inconsistent')
             require(evidence['boundaries'] == expected_boundaries(5),
                     'Incomplete full-gate boundary evidence')
+        # Both the independent Room regression and real UI journeys are
+        # mandatory. Continue diagnosis after a Room failure, but never
+        # qualify or preserve a positive overall status in its presence.
+        if room_error is not None:
+            evidence['overall'] = 'FAILED_OR_NOT_RUN'
+            phase = 'room_regression'
+            raise room_error
         phase = 'complete'
     except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
         evidence['failure_phase'] = phase if phase in PHASES else 'host'
         evidence['failure_class'] = type(exc).__name__
+        if isinstance(exc, Sfdt27RoomFailure):
+            evidence['hf27_room_failure_test'] = exc.test
+            evidence['hf27_room_failure_reason_code'] = exc.reason
+            print('SFDT27_ROOM_REGRESSION_REFUSED test=' + exc.test +
+                  ' reason=' + exc.reason, flush=True)
         if isinstance(exc, JourneyFailure):
             evidence['failure_test'] = exc.test
             evidence['failure_step'] = exc.stage

@@ -27,7 +27,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=normal)"
-          echo "a36874382f7036a15633f8947d79e4ce86ca0733d90b070426bce5169ac32f8c  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
+          echo "079af99387b983181a129367503a438cc5ade25d78ba6c6f036dd9233b0a64b4  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
           echo "506ac2a2e71afe7d32fc7a8200cf13ba90caba3232a2b55e517c38bb2062109e  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
           echo "a974704faf0972111477483bc695df0a99bbdf38397fec0d94947dae1663ba48  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
           echo "53d32c91ac814074501ddebbcfc368812aad4d664282a7a6ca975fbc2622321f  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentDialogs.kt" | sha256sum --check --status
@@ -109,9 +109,9 @@ jobs:
           echo "0a97630b4455f02aab534a1d08504b425f1bf33122b1a5529ecb2aff2839bc64  app/build.gradle.kts" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf26_fast_contract.py
           echo "ae217aa888d1fac8396c9a64047896c4536223d613b53cd87539c2dd73f227d2  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt27RoomSettingsProbe.kt" | sha256sum --check --status
-          echo "f0c4f6253095ac6b6055f652fa9983d9ef3a1afd82e54d0c138c89146c19f28c  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt27RoomSettingsRegressionTest.kt" | sha256sum --check --status
-          echo "f603526ccc5344cee7fce8291da55015c2ab3dccb122c90284c7c1dd6c0807e2  scripts/test_sfdt22_hf27_contract.py" | sha256sum --check --status
-          echo "ddf6d8181c513d3b5fe3d7dc729884400481a81d12cce1489ff5b3d2a04a7e81  docs/actions/SFDT22_HF27_SAME_PLAN_DIAGNOSTICS.md" | sha256sum --check --status
+          echo "213ae7f606d7d707c7045e10940d614e94aca59ac7f19c0d85a4db2d0b5b8c51  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt27RoomSettingsRegressionTest.kt" | sha256sum --check --status
+          echo "ed465b7a1fd19c044188515a31c37714cb8bea3160347d8555c86d08f453cc99  scripts/test_sfdt22_hf27_contract.py" | sha256sum --check --status
+          echo "cf9770afde980eb7311cc1300576120dd830a11021e4710221ba23ceb2b9ed31  docs/actions/SFDT22_HF27_SAME_PLAN_DIAGNOSTICS.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf27_contract.py
           python3 -B scripts/test_sfdt22_hf01_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check

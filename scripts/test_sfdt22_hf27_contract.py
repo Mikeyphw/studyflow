@@ -93,6 +93,35 @@ class HF27(unittest.TestCase):
         self.assertNotIn('@Test fun ',self.probe)
         self.assertNotIn('upsertPlanSettings(',self.probe)
         self.assertNotIn('StudyPlanSettings.defaults(',self.probe)
+    def test_08_two_real_room_instrumentations_and_bounded_failure(self):
+        self.assertEqual(len(mod.SFDT27_ROOM_TESTS), 2)
+        self.assertEqual(self.room.count('@Test fun '), 2)
+        self.assertEqual(self.room.count('SFDT27_ROOM_STAGE_$hf27RoomStage'), 2)
+        self.assertIn("'am', 'instrument', '-w', '-r'", self.ver)
+        self.assertNotIn('OK (2 tests)', self.ver)
+        self.assertIn("evidence['hf27_room_failure_reason_code']", self.ver)
+        self.assertIn("evidence['hf27_room_failure_test']", self.ver)
+        self.assertIn("evidence['overall'] = 'FAILED_OR_NOT_RUN'", self.ver)
+        self.assertIn('raw_logs_retained=False', self.ver)
+        self.assertIn('StudyFlowIntegrity.install(', self.room)
+        for test in mod.SFDT27_ROOM_TESTS:
+            ok = ('INSTRUMENTATION_STATUS: test=' + test + '\n'
+                  'INSTRUMENTATION_STATUS_CODE: 1\n'
+                  'INSTRUMENTATION_STATUS: test=' + test + '\n'
+                  'INSTRUMENTATION_STATUS_CODE: 0\n'
+                  'INSTRUMENTATION_CODE: -1\n').encode('ascii')
+            self.assertEqual(mod.sfdt27_room_result(ok, test, 0), 'passed')
+            self.assertEqual(mod.sfdt27_room_result(ok, test, 1), 'runner_nonzero')
+            self.assertEqual(mod.sfdt27_room_result(ok + b'PRIVATENAME=SECRET', test, 0), 'passed')
+            self.assertEqual(mod.sfdt27_room_result(b'SFDT27_ROOM_STAGE_COLD_REOPEN', test, 0),
+                             'stage_cold_reopen')
+            self.assertEqual(mod.sfdt27_room_result(b'SFDT27_ROOM_STAGE_PRIVATE_IDENTIFIER', test, 0),
+                             'runner_no_test_status')
+            self.assertEqual(mod.sfdt27_room_result(b'x' * 65537, test, 0),
+                             'runner_output_oversize')
+        self.assertEqual(mod.sfdt27_room_result(b'private=SECRET', mod.SFDT27_ROOM_TESTS[0], 0),
+                         'runner_no_test_status')
+
     def test_07_no_production_mutation_or_release_qualification(self):
         self.assertIn('nonqualifying',(ROOT/DOC).read_text().lower())
         self.assertNotIn('StudyPlanSettings.defaults(',self.ui)
