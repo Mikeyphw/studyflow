@@ -37,6 +37,17 @@ interface StudyPlanDao {
     @Query("SELECT COUNT(*) FROM study_plans WHERE id = :planId")
     suspend fun countById(planId: String): Int
 
+    /** Indexed, transaction-scoped identity query; returns only plans without settings. */
+    @Query(
+        """
+        SELECT plans.id FROM study_plans AS plans
+        LEFT JOIN study_plan_settings AS settings ON settings.studyPlanId = plans.id
+        WHERE settings.studyPlanId IS NULL
+        """,
+    )
+    suspend fun findPlanIdsMissingSettings(): List<String>
+
+
     @Query("SELECT COUNT(*) FROM study_plans")
     suspend fun countAll(): Int
 

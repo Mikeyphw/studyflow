@@ -79,6 +79,12 @@ jobs:
           echo "c686796f8d2496ad9fd6a851e9019f790f8a046221d7a4947077cac042cb26cf  scripts/test_sfdt22_hf20_contract.py" | sha256sum --check --status
           echo "bb723a8e32ae4b61306ed0c3aeeaab03f02c17c4275c076fb6c2fb8347b26796  docs/actions/SFDT22_HF20_TOPIC_ROW_VISIBLE_SEARCH_RECOVERY.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf20_contract.py
+          echo "eb9a0a06ec82ba1573d7c39047d181bccd9f6fcf924c063e52282cd57635d118  core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudyPlanDao.kt" | sha256sum --check --status
+          echo "5b00ccef1735847e2b7b35ac01185d4a8b6aee6abdebc73b0a85864dcdb3e326  core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudySupportDao.kt" | sha256sum --check --status
+          echo "d1c67e3fccfff176172062d5bb3bb09b9ba11e15d0a1f71860752b7c9bf81eff  core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyPlanRepository.kt" | sha256sum --check --status
+          echo "36091be66dd3c33bfd9c0d5cb5931a24dce6b8fbbec350bdf767e57ed0917084  scripts/test_sfdt22_hf21_contract.py" | sha256sum --check --status
+          echo "650a88c38f8586e675a0711831da9f3ff5240e784c55ccda69799475f08dd05e  docs/actions/SFDT22_HF21_LEGACY_PLAN_SETTINGS_REPAIR.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf21_contract.py
           python3 -B scripts/test_sfdt22_hf01_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
           python3 -B scripts/test_sfdt21_emulator_contract.py

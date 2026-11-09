@@ -283,6 +283,17 @@ internal class RoomStudyPlanRepository(
                 }
                 metadataDao.upsert(DatabaseMetadataEntity(FOUNDATION_SEED_KEY, "1"))
             }
+            // A one-time foundation seed marker cannot prove that older or
+            // restored plans still have their required settings row. Repair
+            // only missing rows, on EVERY initialization, inside the SAME
+            // Room transaction. Never overwrite personalized settings.
+            // The owning Study Plan is present because these ids come from
+            // study_plans itself; session creation still validates ownership.
+            studyPlanDao.findPlanIdsMissingSettings().forEach { missingId ->
+                studySupportDao.insertMissingPlanSettings(
+                    StudyPlanSettings.defaults(StudyPlanId(missingId)).asEntity(),
+                )
+            }
         }
     }
 
