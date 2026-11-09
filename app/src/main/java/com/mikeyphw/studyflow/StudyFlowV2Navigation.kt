@@ -938,8 +938,13 @@ private fun StudySession.focusRoute(): FocusSessionRoute = FocusSessionRoute(
 internal inline fun <reified T : Any> LegacyWorkspaceRedirect(
     navController: NavHostController,
     target: T,
+    clearSavedWorkspaceStacks: Boolean = false,
 ) {
-    LaunchedEffect(target) {
+    LaunchedEffect(target, clearSavedWorkspaceStacks) {
+        // A newly selected/created plan must not restore a previous plan's
+        // saved root-tab NavBackStackEntry (which carries its old planId).
+        // Clear before redirecting, not in a second asynchronous side effect.
+        if (clearSavedWorkspaceStacks) navController.clearWorkspaceSavedStacks()
         val legacyDestinationId = navController.currentDestination?.id
         navController.navigate(target) {
             legacyDestinationId?.let { destinationId ->

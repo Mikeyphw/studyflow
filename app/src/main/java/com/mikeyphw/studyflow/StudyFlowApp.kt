@@ -679,7 +679,13 @@ internal fun StudyFlowNavHost(
         }
         composable<DashboardRoute> { entry ->
             val route = entry.toRoute<DashboardRoute>()
-            LegacyWorkspaceRedirect(navController, TodayRoute(route.planId))
+            // A DashboardRoute selects a specific plan (create, picker, import,
+            // legacy navigation). Old saved root-tabs must not replace its id.
+            LegacyWorkspaceRedirect(
+                navController,
+                TodayRoute(route.planId),
+                clearSavedWorkspaceStacks = true,
+            )
         }
         composable<AnalyticsRoute> { entry ->
             val route = entry.toRoute<AnalyticsRoute>()

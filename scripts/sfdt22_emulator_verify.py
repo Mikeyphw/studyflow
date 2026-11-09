@@ -46,7 +46,8 @@ STAGES = frozenset({
     'plan_save', 'plan_confirm', 'plan_capture',
     'subject_open_root', 'subject_open_content', 'subject_open_manager',
     'subject_open_dialog', 'subject_fill_name', 'subject_save',
-    'subject_confirm', 'subject_capture', 'topic_open_dialog',
+    'subject_confirm', 'subject_plan_identity', 'subject_owner_confirm',
+    'subject_capture', 'topic_open_dialog',
     'topic_fill_name', 'topic_save', 'topic_save_feedback', 'topic_expand',
     'topic_confirm', 'topic_capture',
     'session_open_root', 'session_open_overview', 'session_open_sessions', 'session_quick_dialog', 'session_title', 'session_start', 'session_running', 'session_pause', 'session_paused', 'session_resume', 'session_resumed', 'session_finish_open', 'session_finish_dialog', 'session_finish_notes', 'session_finish_confirm', 'session_finished', 'session_capture',
@@ -56,6 +57,7 @@ STAGES = frozenset({
 TOPIC_CAUSE_CODES = frozenset({'settings_before_topic', 'settings_before_progress', 'settings_changed_progress', 'settings_changed_topic', 'sqlite_constraint', 'sqlite_locked', 'sqlite_other', 'invalid_input', 'unexpected'})
 REASON_CODES = frozenset({
     'subject_card_missing',
+    'workspace_plan_mismatch', 'subject_owner_mismatch', 'subject_owner_lookup_failed',
     'subject_editor_still_open',
     'topic_add_button_ambiguous',
     'topic_editor_tag_missing',
@@ -155,6 +157,12 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'topic_save_' + topic_cause.group(1).lower()
     elif 'SFDT22_BOUNDARY_SESSION_ROUTE_MISMATCHED' in raw:
         reason = 'boundary_session_route_mismatched'
+    elif 'SFDT22_WORKSPACE_PLAN_MISMATCH' in raw and test == TESTS[1]:
+        reason = 'workspace_plan_mismatch'
+    elif 'SFDT22_SUBJECT_OWNER_LOOKUP_FAILED' in raw and test == TESTS[1]:
+        reason = 'subject_owner_lookup_failed'
+    elif 'SFDT22_SUBJECT_OWNER_MISMATCH' in raw and test == TESTS[1]:
+        reason = 'subject_owner_mismatch'
     elif 'SFDT22_SUBJECT_CARD_MISSING' in raw:
         reason = 'subject_card_missing'
     elif 'SFDT22_SUBJECT_EDITOR_STILL_OPEN' in raw:

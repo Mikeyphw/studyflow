@@ -2,6 +2,11 @@ name: StudyFlow SFDT22 Focused Session Diagnosis (nonqualifying)
 on:
   pull_request:
     types: [labeled]
+  workflow_call:
+    inputs:
+      expected_sha:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       expected_sha:
@@ -15,7 +20,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   source:
-    if: ${{ (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'sfdt22-hotfix-session' && github.event.pull_request.head.repo.full_name == 'Mikeyphw/studyflow') || github.event_name == 'workflow_dispatch' }}
+    if: ${{ (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'sfdt22-hotfix-session' && github.event.pull_request.head.repo.full_name == 'Mikeyphw/studyflow') || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.repository == 'Mikeyphw/studyflow' && startsWith(github.ref, 'refs/heads/sfdt22-hotfix/')) }}
     name: Exact source and nonqualifying hotfix contract
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -31,7 +36,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$GITHUB_REPOSITORY" = Mikeyphw/studyflow
-          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] || [ "$GITHUB_EVENT_NAME" = push ]; then
             [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
             test "$EXPECTED_SHA" = "$GITHUB_SHA"
           fi
@@ -41,7 +46,7 @@ jobs:
   # PR-label opt-in or manual exact-SHA dispatch; never release qualifying.
   # Runs ONLY the first three real hosted journeys, ending with Quick Session.
   session-diagnostic:
-    if: ${{ (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'sfdt22-hotfix-session' && github.event.pull_request.head.repo.full_name == 'Mikeyphw/studyflow') || github.event_name == 'workflow_dispatch' }}
+    if: ${{ (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'sfdt22-hotfix-session' && github.event.pull_request.head.repo.full_name == 'Mikeyphw/studyflow') || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.repository == 'Mikeyphw/studyflow' && startsWith(github.ref, 'refs/heads/sfdt22-hotfix/')) }}
     name: SFDT22 focused hotfix diagnosis (NOT full qualification)
     needs: source
     runs-on: ubuntu-24.04
@@ -65,9 +70,13 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] || [ "$GITHUB_EVENT_NAME" = push ]; then
             [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
             test "$EXPECTED_SHA" = "$GITHUB_SHA"
+            if [ "$GITHUB_EVENT_NAME" = push ]; then
+              test "$GITHUB_REPOSITORY" = Mikeyphw/studyflow
+              case "$GITHUB_REF" in refs/heads/sfdt22-hotfix/*) ;; *) exit 2 ;; esac
+            fi
           else
             test "$GITHUB_EVENT_NAME" = pull_request
             test "$GITHUB_EVENT_ACTION" = labeled

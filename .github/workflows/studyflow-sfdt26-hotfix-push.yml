@@ -1,0 +1,19 @@
+# HF26: isolated, source-bound hotfix staging. This is NOT the PR merge gate.
+# A staging branch has no open PR; the original PR/full workflows stay untouched.
+name: StudyFlow SFDT26 Fast Hotfix Staging (nonqualifying)
+on:
+  push:
+    branches:
+      - 'sfdt22-hotfix/**'
+permissions:
+  contents: read
+concurrency:
+  group: sfdt26-staging-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  focused-real-ui:
+    if: ${{ github.repository == 'Mikeyphw/studyflow' && startsWith(github.ref, 'refs/heads/sfdt22-hotfix/') }}
+    name: Stage reviewed SHA through three real UI journeys (not full acceptance)
+    uses: ./.github/workflows/studyflow-sfdt22-hotfix-session.yml
+    with:
+      expected_sha: ${{ github.sha }}

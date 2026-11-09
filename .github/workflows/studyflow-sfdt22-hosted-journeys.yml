@@ -27,9 +27,9 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=normal)"
-          echo "80f15a7f0a8d981502a7396e886078a8036c50594d7c9bb9506e46975ba28dab  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
+          echo "856b577759271b3b4dc490deaeb893a8ce72481cc00dba797f1dd922d4fa6f90  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
           echo "506ac2a2e71afe7d32fc7a8200cf13ba90caba3232a2b55e517c38bb2062109e  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
-          echo "704b44ded89f0020fc0379a58067355f9cbb930a0b2bf9c7c0102d824d5ad40a  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "dd4423fa818ca7b7cd32d1b6d7d189665325325c9f6edd4b0cdad01da32e9877  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
           echo "53d32c91ac814074501ddebbcfc368812aad4d664282a7a6ca975fbc2622321f  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentDialogs.kt" | sha256sum --check --status
           echo "82a314c22c2b5bf86e942b0186d0a3603c9ee4d0d99e52f1bb73d54c4545dcd1  feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceUtilityScreens.kt" | sha256sum --check --status
           echo "b22486e751156118b7a8c09824fd609a1c28eb89c515be4b081ea4c31cdb189c  feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanListScreen.kt" | sha256sum --check --status
@@ -88,7 +88,7 @@ jobs:
           echo "7e79e0cebb9aed8524abf2714d8335517b23def56929442f60e644d8694dfe2c  scripts/test_sfdt22_hf22_contract.py" | sha256sum --check --status
           echo "90915ecdf5c1222f3fbed8f42ac77b0c305bdfb374bdec2945df9be1c09a06b0  docs/actions/SFDT22_HF22_FAILURE_DIAGNOSTICS_AND_HOTFIX_LANE.md" | sha256sum --check --status
           echo "7f328f91d6fc2a22cfc1e504f654bf88b05b7baae0b5d99a084055695601f94f  scripts/sfdt22_failure_triage.py" | sha256sum --check --status
-          echo "7911652755f1ce6b8fce69c0b7045018ca56f3557aaaa4188e66e12f93617ab7  .github/workflows/studyflow-sfdt22-hotfix-session.yml" | sha256sum --check --status
+          echo "3e1b3ed594cc0db25804944cce4101ce3615d66d741b277d1ef2215de96f1438  .github/workflows/studyflow-sfdt22-hotfix-session.yml" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf22_contract.py
           echo "0a1b51990d7e72e28831434549b946fd080370ba16e1baf723d50036f97d4807  core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyContentRepository.kt" | sha256sum --check --status
           echo "c6b01b5e246e5767d1faec8a37861d5e1e8fdc2d95ac5a857ed81ddb0bff2490  scripts/test_sfdt22_hf23_contract.py" | sha256sum --check --status
@@ -97,6 +97,16 @@ jobs:
           echo "01f51e33eb8187d2bc47b0bc379fbd9ef58174a93be1a398e5d7c3ac16e5a274  scripts/test_sfdt22_hf24_contract.py" | sha256sum --check --status
           echo "1ed321109491da79de3866e5c2068600f23ec3f04b28bfcb1599484d036c9f9a  docs/actions/SFDT22_HF24_SANITIZED_TOPIC_SAVE_FAILURES.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf24_contract.py
+          echo "acd282770a1b055d0794ed8334a6439c98c09e560aca78243f24962fd543a45e  app/src/main/java/com/mikeyphw/studyflow/StudyFlowApp.kt" | sha256sum --check --status
+          echo "9b29f9391786723f1217f8d7938d41a5971375effb9b4a8a7ef2cbd0e63e5c57  app/src/main/java/com/mikeyphw/studyflow/StudyFlowV2Navigation.kt" | sha256sum --check --status
+          echo "f81baf8b17863e69d2fb4f874a7331732343b35d2a38b4490513c097470dd7cd  scripts/test_sfdt22_hf25_contract.py" | sha256sum --check --status
+          echo "979160b2b056406099bdecf6a98c9a6dd5f5ca688604e7fe7afe1c48dd66ea25  docs/actions/SFDT22_HF25_WORKSPACE_PLAN_OWNERSHIP.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf25_contract.py
+          echo "3e1b3ed594cc0db25804944cce4101ce3615d66d741b277d1ef2215de96f1438  .github/workflows/studyflow-sfdt22-hotfix-session.yml" | sha256sum --check --status
+          echo "d387a28eae5d64b69263f2804d9a98f0ba4999614931a30b31b18e5ff4dcdac4  .github/workflows/studyflow-sfdt26-hotfix-push.yml" | sha256sum --check --status
+          echo "13f368666eb86ed2401c8601d4e0a2165294883b827eb2417676b1f8fb9dc183  scripts/test_sfdt22_hf26_fast_contract.py" | sha256sum --check --status
+          echo "624883052f463833694232f2a48716097580984e8ab79a4842e838af64f0425e  docs/actions/SFDT22_HF26_FAST_HOTFIX_LOOP.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf26_fast_contract.py
           python3 -B scripts/test_sfdt22_hf01_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
           python3 -B scripts/test_sfdt21_emulator_contract.py

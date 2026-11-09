@@ -189,6 +189,40 @@ class Sfdt22HostedStudyJourneyTest {
         }
     }
 
+    /** Prove the visible Plan root belongs to the user-created plan, not a restored tab. */
+    private fun assertCreatedPlanWorkspaceVisible() {
+        val names = rule.onAllNodes(hasText(planName, substring = false), useUnmergedTree = true)
+        val correct = runCatching {
+            rule.waitUntil(15_000L) { names.fetchSemanticsNodes().isNotEmpty() }
+            names.onFirst().assertIsDisplayed()
+            true
+        }.getOrDefault(false)
+        if (!correct) throw AssertionError("SFDT22_WORKSPACE_PLAN_MISMATCH")
+    }
+
+    /** Read-only identity join: never export plan IDs, names or raw database rows. */
+    private fun assertCreatedPlanOwnsSavedSubject() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val file = context.getDatabasePath("studyflow.db")
+        if (!file.isFile) throw AssertionError("SFDT22_SUBJECT_OWNER_LOOKUP_FAILED")
+        val count = try {
+            SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+                db.rawQuery(
+                    "SELECT COUNT(*) FROM subjects AS content " +
+                        "JOIN study_plans AS owner ON owner.id = content.studyPlanId " +
+                        "WHERE owner.name = ? AND content.name = ?",
+                    arrayOf(planName, subjectName),
+                ).use { cursor ->
+                    if (!cursor.moveToFirst()) null else cursor.getLong(0)
+                }
+            }
+        } catch (_: Exception) {
+            null
+        }
+        if (count == null) throw AssertionError("SFDT22_SUBJECT_OWNER_LOOKUP_FAILED")
+        if (count != 1L) throw AssertionError("SFDT22_SUBJECT_OWNER_MISMATCH")
+    }
+
     private fun openRoot(name: String) {
         shell()
         tab(name).performClick()
@@ -747,6 +781,7 @@ class Sfdt22HostedStudyJourneyTest {
         // Dialog name fields have distinct semantics tags to prevent multiple
         // "Name" nodes from being accidentally selected by label substring.
         stage("subject_open_root") { openRoot("plan") }
+        stage("subject_plan_identity") { assertCreatedPlanWorkspaceVisible() }
         stage("subject_open_content") { openPlanContentTab() }
         stage("subject_open_manager") { click(WorkspaceR.string.manage_content) }
         stage("subject_open_dialog") {
@@ -758,6 +793,7 @@ class Sfdt22HostedStudyJourneyTest {
         }
         stage("subject_save") { clickDialog(SubjectsR.string.save) }
         stage("subject_confirm") { awaitSubjectSaved() }
+        stage("subject_owner_confirm") { assertCreatedPlanOwnsSavedSubject() }
         stage("settings_after_subject") { persistedSettingsBoundary("after_subject") }
         stage("subject_capture") { screenshot("subject") }
         stage("topic_open_dialog") { openTopicEditorFromSubject() }
