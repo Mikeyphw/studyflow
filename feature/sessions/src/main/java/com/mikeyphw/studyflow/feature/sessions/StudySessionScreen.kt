@@ -153,6 +153,10 @@ fun StudySessionScreen(
                     "studyflow.session.start.failure.validation"
                 QuickSessionStartFailureCategory.PLAN_SETTINGS ->
                     "studyflow.session.start.failure.plan_settings"
+                QuickSessionStartFailureCategory.PLAN_SETTINGS_MISSING ->
+                    "studyflow.session.start.failure.plan_settings_missing"
+                QuickSessionStartFailureCategory.PLAN_SETTINGS_LOOKUP_FAILED ->
+                    "studyflow.session.start.failure.plan_settings_lookup_failed"
                 QuickSessionStartFailureCategory.ACTIVE_SESSION ->
                     "studyflow.session.start.failure.active_session"
                 QuickSessionStartFailureCategory.ACTIVE_LOOKUP ->

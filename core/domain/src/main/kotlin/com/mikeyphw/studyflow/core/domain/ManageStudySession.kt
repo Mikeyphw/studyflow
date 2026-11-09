@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.map
 enum class QuickSessionStartFailureCategory {
     VALIDATION,
     PLAN_SETTINGS,
+    PLAN_SETTINGS_MISSING,
+    PLAN_SETTINGS_LOOKUP_FAILED,
     ACTIVE_SESSION,
     ACTIVE_LOOKUP,
     PERSISTENCE,
@@ -56,6 +58,8 @@ class ManageStudySession(
         cycleBinding: StudyCycleSessionBinding? = null,
         onFailureCategory: (QuickSessionStartFailureCategory) -> Unit = {},
     ): StudySession {
+        // Report only stable enum categories; preserve original exceptions.
+        var planSettingsSpecificFailure = false
         // Only a fixed enum is reported. Preserve original exception types,
         // validation rules and Room mutations for all existing callers.
         suspend fun <T> classify(
@@ -66,7 +70,10 @@ class ManageStudySession(
         } catch (cancelled: java.util.concurrent.CancellationException) {
             throw cancelled
         } catch (failure: Exception) {
-            onFailureCategory(category)
+            if (category != QuickSessionStartFailureCategory.PLAN_SETTINGS ||
+                !planSettingsSpecificFailure) {
+                onFailureCategory(category)
+            }
             throw failure
         }
 
@@ -76,7 +83,20 @@ class ManageStudySession(
         }
         val resolvedTargetDurationMinutes = classify(QuickSessionStartFailureCategory.PLAN_SETTINGS) {
             targetDurationMinutes ?: studyPlanRepository?.let { plans ->
-                requireNotNull(plans.observeStoredPlanSettings(studyPlanId).first()) {
+                val storedSettings = try {
+                    plans.observeStoredPlanSettings(studyPlanId).first()
+                } catch (cancelled: java.util.concurrent.CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    planSettingsSpecificFailure = true
+                    onFailureCategory(QuickSessionStartFailureCategory.PLAN_SETTINGS_LOOKUP_FAILED)
+                    throw failure
+                }
+                if (storedSettings == null) {
+                    planSettingsSpecificFailure = true
+                    onFailureCategory(QuickSessionStartFailureCategory.PLAN_SETTINGS_MISSING)
+                }
+                requireNotNull(storedSettings) {
                     "Study Plan settings must be persisted before starting a quick Study Session."
                 }.preferredSessionMinutes
             }

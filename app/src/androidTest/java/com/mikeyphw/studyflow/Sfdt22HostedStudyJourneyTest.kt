@@ -708,6 +708,10 @@ class Sfdt22HostedStudyJourneyTest {
                     "SFDT22_SESSION_START_VALIDATION_FAILED",
                 "studyflow.session.start.failure.plan_settings" to
                     "SFDT22_SESSION_START_PLAN_SETTINGS_FAILED",
+                "studyflow.session.start.failure.plan_settings_missing" to
+                    "SFDT22_SESSION_START_PLAN_SETTINGS_MISSING",
+                "studyflow.session.start.failure.plan_settings_lookup_failed" to
+                    "SFDT22_SESSION_START_PLAN_SETTINGS_LOOKUP_FAILED",
                 "studyflow.session.start.failure.active_session" to
                     "SFDT22_SESSION_START_ALREADY_ACTIVE",
                 "studyflow.session.start.failure.active_lookup" to
