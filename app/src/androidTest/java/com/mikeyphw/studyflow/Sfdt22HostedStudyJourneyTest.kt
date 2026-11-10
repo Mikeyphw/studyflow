@@ -907,8 +907,34 @@ class Sfdt22HostedStudyJourneyTest {
         stage("subject_plan_identity") { assertCreatedPlanWorkspaceVisible() }
         stage("subject_open_content") { openPlanContentTab() }
         stage("subject_open_manager") { click(WorkspaceR.string.manage_content) }
+        // A content description can describe more than one Compose semantics node.
+        // Select the *production* FAB by its unique tag and actionable semantics.
+        stage("subject_fab_ready") {
+            val fab = rule.onAllNodes(
+                hasTestTag("studyflow.syllabus.add_subject_fab") and hasClickAction(),
+                useUnmergedTree = true,
+            )
+            rule.waitUntil(25_000L) {
+                fab.fetchSemanticsNodes().size == 1 &&
+                    runCatching { fab.onFirst().assertIsDisplayed().assertIsEnabled() }.isSuccess
+            }
+        }
         stage("subject_open_dialog") {
-            rule.onNodeWithContentDescription(text(SubjectsR.string.add_subject)).performClick()
+            rule.onAllNodes(
+                hasTestTag("studyflow.syllabus.add_subject_fab") and hasClickAction(),
+                useUnmergedTree = true,
+            ).onFirst().performTouchInput { click() }
+            rule.waitForIdle()
+        }
+        stage("subject_editor_ready") {
+            val editor = rule.onAllNodes(
+                hasTestTag("studyflow.subject_editor.name") and hasSetTextAction(),
+                useUnmergedTree = true,
+            )
+            rule.waitUntil(25_000L) {
+                editor.fetchSemanticsNodes().size == 1 &&
+                    runCatching { editor.onFirst().assertIsDisplayed() }.isSuccess
+            }
         }
         stage("subject_fill_name") {
             rule.onNodeWithTag("studyflow.subject_editor.name").performTextReplacement(subjectName)

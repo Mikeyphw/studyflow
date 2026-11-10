@@ -46,7 +46,7 @@ STAGES = frozenset({
     'plan_editor_ready', 'plan_name', 'plan_target', 'plan_preferences',
     'plan_save', 'plan_confirm', 'plan_capture',
     'subject_open_root', 'subject_open_content', 'subject_open_manager',
-    'subject_open_dialog', 'subject_fill_name', 'subject_save',
+    'subject_open_dialog', 'subject_fab_ready', 'subject_editor_ready', 'subject_fill_name', 'subject_save',
     'subject_confirm', 'subject_plan_identity', 'subject_owner_confirm',
     'subject_capture', 'topic_open_dialog',
     'topic_fill_name', 'topic_save', 'topic_save_feedback', 'topic_expand',

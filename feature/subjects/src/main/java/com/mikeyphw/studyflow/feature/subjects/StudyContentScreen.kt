@@ -319,7 +319,10 @@ fun StudyContentScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { addingSubject = true }) {
+            FloatingActionButton(
+                onClick = { addingSubject = true },
+                modifier = Modifier.testTag("studyflow.syllabus.add_subject_fab"),
+            ) {
                 Icon(Icons.Outlined.Add, contentDescription = stringResource(R.string.add_subject))
             }
         },
