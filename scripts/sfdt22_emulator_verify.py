@@ -231,9 +231,15 @@ SFDT27_ROOM_TESTS = (
     'customizedSettingsAndOwnershipSurviveSubjectTopicAndColdRoomReopen',
     'failedTopicTransactionRollsBackWithoutChangingPersonalizedSettings',
 )
+SFDT27_SFLP_TESTS = (
+    'existingPlanReplayPreservesSettingsAndOwnedContentAfterColdReopen',
+    'noncanonicalPeerKeysAndValuesFailWithoutMutation',
+    'newPlanReplayInsertsAndExplicitDeleteStillWorks',
+)
 SFDT27_ROOM_STAGES = frozenset({
     'PLAN_SETUP', 'SUBJECT_TOPIC', 'PLAN_UPDATE', 'COLD_REOPEN',
     'ROLLBACK_SETUP', 'ROLLBACK_WRITE', 'ROLLBACK_VERIFY',
+    'SFLP_EXISTING', 'SFLP_SAVE', 'SFLP_REOPEN', 'SFLP_TAMPER', 'SFLP_NEW', 'SFLP_DELETE',
 })
 SFDT27_ROOM_CODES = frozenset({
     'runner_nonzero', 'runner_timeout', 'runner_no_test_status',
@@ -244,8 +250,8 @@ SFDT27_ROOM_CODES = frozenset({
 
 class Sfdt27RoomFailure(ValueError):
     def __init__(self, test: str, reason: str) -> None:
-        require(test in SFDT27_ROOM_TESTS and reason in SFDT27_ROOM_CODES,
-                'Unreviewed HF27 Room failure category')
+        require((test in SFDT27_ROOM_TESTS or test in SFDT27_SFLP_TESTS) and reason in SFDT27_ROOM_CODES,
+                'Unreviewed HF27 Room/SFLP failure category')
         self.test = test
         self.reason = reason
         super().__init__('HF27_ROOM_FAILED')
@@ -253,7 +259,7 @@ class Sfdt27RoomFailure(ValueError):
 
 def sfdt27_room_result(raw: bytes, test: str, return_code: int) -> str:
     # Allowlist-only result; raw Android output is never persisted or printed.
-    require(test in SFDT27_ROOM_TESTS, 'Unknown HF27 Room test')
+    require(test in SFDT27_ROOM_TESTS or test in SFDT27_SFLP_TESTS, 'Unknown HF27 Room/SFLP test')
     if len(raw) > 65536:
         return 'runner_output_oversize'
     output = raw.decode('utf-8', 'replace')
@@ -284,6 +290,23 @@ def sfdt27_hosted_room_regression() -> None:
             process = subprocess.run(
                 ['adb', '-s', SERIAL, 'shell', 'am', 'instrument', '-w', '-r',
                  '-e', 'class', PACKAGE + '.Sfdt27RoomSettingsRegressionTest#' + test,
+                 RUNNER], capture_output=True, timeout=180, check=False,
+            )
+        except subprocess.TimeoutExpired:
+            raise Sfdt27RoomFailure(test, 'runner_timeout') from None
+        reason = sfdt27_room_result(process.stdout, test, process.returncode)
+        if reason != 'passed':
+            raise Sfdt27RoomFailure(test, reason)
+
+def sfdt27_hosted_sflp_regression() -> None:
+    # True app/instrumentation tests, not SQL string matches or synthetic output.
+    # Every test has a private fixture identity and must emit exactly one start,
+    # one finish, and an Android instrumentation success status.
+    for test in SFDT27_SFLP_TESTS:
+        try:
+            process = subprocess.run(
+                ['adb', '-s', SERIAL, 'shell', 'am', 'instrument', '-w', '-r',
+                 '-e', 'class', PACKAGE + '.Sfdt27SflpReplayRegressionTest#' + test,
                  RUNNER], capture_output=True, timeout=180, check=False,
             )
         except subprocess.TimeoutExpired:
@@ -616,6 +639,18 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
                   ' reason=' + failure.reason, flush=True)
         else:
             evidence['hf27_room_regression'] = 'passed'
+        sflp_error = None
+        try:
+            sfdt27_hosted_sflp_regression()
+        except Sfdt27RoomFailure as failure:
+            sflp_error = failure
+            evidence['hf27_sflp_regression'] = 'not_passed'
+            evidence['hf27_sflp_failure_test'] = failure.test
+            evidence['hf27_sflp_failure_reason_code'] = failure.reason
+            print('SFDT27_SFLP_REGRESSION_REFUSED test=' + failure.test +
+                  ' reason=' + failure.reason, flush=True)
+        else:
+            evidence['hf27_sflp_regression'] = 'passed'
         results = []
         diagnostic_limit = DIAGNOSTIC_THROUGH.get(diagnostic_through) if diagnostic_through else 4
         for index, name in enumerate(TESTS[:diagnostic_limit]):
@@ -680,14 +715,19 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
             evidence['overall'] = 'FAILED_OR_NOT_RUN'
             phase = 'room_regression'
             raise room_error
+        if sflp_error is not None:
+            evidence['overall'] = 'FAILED_OR_NOT_RUN'
+            phase = 'room_regression'
+            raise sflp_error
         phase = 'complete'
     except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
         evidence['failure_phase'] = phase if phase in PHASES else 'host'
         evidence['failure_class'] = type(exc).__name__
         if isinstance(exc, Sfdt27RoomFailure):
-            evidence['hf27_room_failure_test'] = exc.test
-            evidence['hf27_room_failure_reason_code'] = exc.reason
-            print('SFDT27_ROOM_REGRESSION_REFUSED test=' + exc.test +
+            tag = 'sflp' if exc.test in SFDT27_SFLP_TESTS else 'room'
+            evidence['hf27_' + tag + '_failure_test'] = exc.test
+            evidence['hf27_' + tag + '_failure_reason_code'] = exc.reason
+            print('SFDT27_' + tag.upper() + '_REGRESSION_REFUSED test=' + exc.test +
                   ' reason=' + exc.reason, flush=True)
         if isinstance(exc, JourneyFailure):
             evidence['failure_test'] = exc.test
@@ -740,6 +780,7 @@ def verify(output: Path, source: str, run_id: str, attempt: str, repo: Path) -> 
     require(data.get('tests') == [dict(test=x, status='passed', started=1, finished=1) for x in TESTS],
             'Test count/order/outcome mismatch')
     require(data.get('hf27_room_regression') == 'passed' and
+            data.get('hf27_sflp_regression') == 'passed' and
             data.get('sfdt27_probes') == sfdt27_expected_probes(),
             'HF27 hosted Room/probe evidence incomplete')
     require(data.get('boundaries') == expected_boundaries(5),
@@ -787,6 +828,7 @@ def verify_diagnostic(output: Path, source: str, run_id: str, attempt: str,
     require(data.get('test_count') == count and data.get('boundaries') == expected_boundaries(count),
             'Diagnostic state checkpoints incomplete')
     require(data.get('hf27_room_regression') == 'passed' and
+            data.get('hf27_sflp_regression') == 'passed' and
             data.get('sfdt27_probes') == (sfdt27_expected_probes() if count >= 2 else []),
             'HF27 hosted Room/probe evidence incomplete')
     require(data.get('diagnostic_only') is True and data.get('sfdt27_diag_capture') == 'captured' and

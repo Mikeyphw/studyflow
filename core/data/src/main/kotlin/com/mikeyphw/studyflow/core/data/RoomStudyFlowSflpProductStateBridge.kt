@@ -76,22 +76,72 @@ internal class RoomStudyFlowSflpProductStateBridge(
         val table = payload.getValue("table").jsonPrimitive.content
         require(SafeIdentifier.matches(table) && table in tableNames(db)) { "SFLP product mutation targets an unknown table" }
         val primaryKey = payload.getValue("primaryKey").jsonObject
-        require(primaryKey.isNotEmpty()) { "SFLP product mutation has no primary key" }
+        val primaryColumns = primaryKeyColumns(db, table)
+        // The payload is untrusted peer input. Never let a forged/noncanonical
+        // primaryKey broaden a DELETE or redirect an UPSERT to another row.
+        require(primaryColumns.isNotEmpty() && primaryKey.keys.toSet() == primaryColumns.toSet()) {
+            "SFLP product mutation has a noncanonical primary key"
+        }
+        val schemaColumns = tableColumns(db, table)
+        val keyArgs = primaryColumns.map { decodeValue(primaryKey.getValue(it)) }
+        require(keyArgs.all { it != null }) { "SFLP product mutation has a null primary key" }
+        val where = primaryColumns.joinToString(" AND ") { "${quote(it)} = ?" }
         if (operation.kind == StudyFlowOperationKind.TOMBSTONE || operation.operationType == StudyFlowProductStateContract.RowDelete) {
-            val args = primaryKey.values.map(::decodeValue).toTypedArray()
-            val where = primaryKey.keys.joinToString(" AND ") { "${quote(it)} = ?" }
-            db.execSQL("DELETE FROM ${quote(table)} WHERE $where", args)
+            db.execSQL("DELETE FROM ${quote(table)} WHERE $where", keyArgs.toTypedArray())
             return
         }
         val values = payload.getValue("values").jsonObject
-        require(values.isNotEmpty()) { "SFLP product upsert has no values" }
-        val columns = values.keys.toList()
-        val placeholders = List(columns.size) { "?" }.joinToString(", ")
-        db.execSQL(
-            "INSERT OR REPLACE INTO ${quote(table)} (${columns.joinToString(", ") { quote(it) }}) VALUES ($placeholders)",
-            columns.map { decodeValue(values.getValue(it)) }.toTypedArray(),
-        )
+        require(values.isNotEmpty() && values.keys.all { it in schemaColumns }) {
+            "SFLP product upsert contains unknown or empty columns"
+        }
+        require(primaryColumns.all { column -> values[column] == primaryKey[column] }) {
+            "SFLP product upsert primary key differs from its values"
+        }
+        val exists = db.query(
+            "SELECT 1 FROM ${quote(table)} WHERE $where LIMIT 1", keyArgs.toTypedArray(),
+        ).use { it.moveToFirst() }
+        // The exact old settings row, if any, must remain unchanged when
+        // replay updates an existing FK parent. No defaults, no data export.
+        val originalSettings = if (table == "study_plans" && exists) {
+            settingsSnapshot(db, keyArgs.single())
+        } else null
+        if (exists) {
+            val updateColumns = values.keys.filterNot { it in primaryColumns }
+            if (updateColumns.isNotEmpty()) {
+                val assigns = updateColumns.joinToString(", ") { "${quote(it)} = ?" }
+                val args = updateColumns.map { decodeValue(values.getValue(it)) } + keyArgs
+                db.execSQL("UPDATE ${quote(table)} SET $assigns WHERE $where", args.toTypedArray())
+            }
+        } else {
+            // ABORT on collision, NEVER REPLACE. REPLACE deletes the existing
+            // study_plans parent and cascades personalized settings and content.
+            val columns = values.keys.toList()
+            val placeholders = List(columns.size) { "?" }.joinToString(", ")
+            db.execSQL(
+                "INSERT INTO ${quote(table)} (${columns.joinToString(", ") { quote(it) }}) VALUES ($placeholders)",
+                columns.map { decodeValue(values.getValue(it)) }.toTypedArray(),
+            )
+        }
+        if (table == "study_plans" && exists) {
+            check(originalSettings == settingsSnapshot(db, keyArgs.single())) {
+                "SFLP existing Study Plan replay modified personalized settings"
+            }
+        }
     }
+
+    private fun tableColumns(db: SupportSQLiteDatabase, table: String): Set<String> =
+        db.query("PRAGMA table_info(${quote(table)})").use { cursor -> buildSet {
+            val name = cursor.getColumnIndexOrThrow("name")
+            while (cursor.moveToNext()) add(cursor.getString(name))
+        } }
+
+    /** Never serialize, hash, log or export the source of personal settings. */
+    private fun settingsSnapshot(db: SupportSQLiteDatabase, planId: Any): Map<String, JsonObject>? =
+        db.query("SELECT * FROM study_plan_settings WHERE studyPlanId = ?", arrayOf(planId)).use { cursor ->
+            if (!cursor.moveToFirst()) null else cursor.columnNames.mapIndexed { index, column ->
+                column to encodeValue(cursor, index)
+            }.toMap()
+        }
 
     private fun captureRows(db: SupportSQLiteDatabase): Map<RowKey, RowSnapshot> = buildMap {
         tableNames(db).forEach { table ->
