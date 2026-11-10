@@ -1,6 +1,8 @@
 package com.mikeyphw.studyflow.core.database
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import java.util.concurrent.Executor
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -140,12 +142,27 @@ abstract class StudyFlowDatabase : RoomDatabase() {
         const val SCHEMA_VERSION = 15
         const val DATABASE_NAME = "studyflow.db"
 
-        fun create(context: Context): StudyFlowDatabase =
+        fun create(context: Context): StudyFlowDatabase = create(context, null, null)
+
+        // DIAG-02 callbacks only activate in a debuggable build and never
+        // expose SQL text/bind arguments outside this process.
+        fun create(
+            context: Context,
+            onDebugSql: ((String) -> Unit)?,
+            onDebugOpen: (() -> Unit)?,
+        ): StudyFlowDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
                 StudyFlowDatabase::class.java,
                 DATABASE_NAME,
             )
+                .apply {
+                    if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0 &&
+                        onDebugSql != null) {
+                        setQueryCallback({ query, _ -> onDebugSql(query) },
+                            Executor { task -> task.run() })
+                    }
+                }
                 .addMigrations(*StudyFlowMigrations.All)
                 .addCallback(
                     object : RoomDatabase.Callback() {
@@ -155,6 +172,9 @@ abstract class StudyFlowDatabase : RoomDatabase() {
 
                         override fun onOpen(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                             StudyFlowIntegrity.install(db)
+                            if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
+                                onDebugOpen?.invoke()
+                            }
                         }
                     },
                 )

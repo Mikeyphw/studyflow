@@ -99,7 +99,7 @@ REASON_CODES = frozenset({
 BOUNDARY_POINTS = ('after_create', 'after_subject', 'after_topic', 'session_route', 'before_session_start')
 BOUNDARY_STATES = frozenset({'present', 'missing', 'lookup_failed', 'ambiguous', 'mismatched', 'matched'})
 # DIAG-01: device-private ASCII is parsed and RE-EMITTED, never uploaded raw.
-SFDT27_TRACE_AREAS = frozenset({'ui','android_test','content_repository','plan_repository','seed'})
+SFDT27_TRACE_AREAS = frozenset({'ui','android_test','content_repository','plan_repository','seed','database_sql','database_lifecycle','portability','sync_restore','sample_provision'})
 SFDT27_TRACE_POINTS = frozenset({
     'PLAN_CREATED','PLAN_UPDATED','SUBJECT_TRANSACTION_START','SUBJECT_COMMIT',
     'TOPIC_UI_CLICK','TOPIC_COROUTINE_START','TOPIC_TRANSACTION_START','TOPIC_PRECHECK',
@@ -107,12 +107,18 @@ SFDT27_TRACE_POINTS = frozenset({
     'TOPIC_TRANSACTION_COMMIT','TOPIC_TRANSACTION_ROLLBACK','TOPIC_POSTCOMMIT_READ_ERROR','TOPIC_POSTCOMMIT_VERIFY','DATABASE_OPEN',
     'TOPIC_REPOSITORY_RETURN','TOPIC_UI_FEEDBACK_REQUESTED',
     'TOPIC_EXTERNAL_PROBE_ACTION','TOPIC_EXTERNAL_PROBE_SAVED','PLAN_DELETE',
-    'SEED_PASS','SETTINGS_WRITTEN','SETTINGS_OVERWRITE','TRACE_RESET',
+     'SEED_PASS','SETTINGS_WRITTEN','SETTINGS_OVERWRITE','TRACE_RESET',
+    'SQL_PLAN_MUTATION','SQL_SETTINGS_MUTATION','DATABASE_HANDLE_OPEN',
+    'PRODUCTION_AFTER_SUBJECT','PRODUCTION_BEFORE_TOPIC','PRODUCTION_AFTER_TOPIC_ACTION',
+    'PRODUCTION_AFTER_TOPIC_SAVED','PRODUCTION_BEFORE_FEEDBACK','PRODUCTION_AFTER_FEEDBACK',
+    'PORTABILITY_IMPORT_START','PORTABILITY_SNAPSHOT_RESTORE_START',
+    'SYNC_SNAPSHOT_RESTORE_START','SYNC_SNAPSHOT_RESTORE_COMMIT',
+    'SYNC_SNAPSHOT_RESTORE_ROLLBACK','SYNC_RESTORE_REQUESTED','SAMPLE_PLAN_INSERTED',
 })
 SFDT27_TRACE_OPERATIONS = frozenset({'none','create_plan','update_plan','delete_plan',
-    'upsert_subject','upsert_topic','update_progress','insert_settings','replace_settings','seed','read_settings'})
+    'upsert_subject','upsert_topic','update_progress','insert_settings','replace_settings','seed','read_settings','sql_insert','sql_update','sql_replace','sql_delete','restore_graph','restore_snapshot','sync_restore','provision_sample'})
 SFDT27_TRACE_TRANSACTIONS = frozenset({'not_started','begun','write_seen','committed','rolled_back','unknown'})
-SFDT27_TRACE_OBSERVERS = frozenset({'none','ui','production_room','independent_pair'})
+SFDT27_TRACE_OBSERVERS = frozenset({'none','ui','production_room','independent_pair','sql_callback'})
 SFDT27_TRACE_STATES = frozenset({'present','missing','changed','unknown','unavailable'})
 SFDT27_TRACE_ERRORS = frozenset({'none','constraint','busy','locked','io','corruption',
     'unexpected','probe_error','cancelled','writer_unresolved',

@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.core.data
 
 import androidx.room.withTransaction
+import com.mikeyphw.studyflow.core.diagnostics.Sfdt27DiagnosticTrace
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.entity.DatabaseMetadataEntity
 import com.mikeyphw.studyflow.core.database.mapper.asEntity
@@ -28,6 +29,9 @@ internal class RoomSamplePlanProvisioningRepository(
         val now = clock()
         database.studyPlanDao().insert(request.plan.asEntity(nowEpochMillis = now))
         database.studySupportDao().upsertPlanSettings(request.settings.asEntity())
+        Sfdt27DiagnosticTrace.record("sample_provision", "SAMPLE_PLAN_INSERTED",
+            operation = "provision_sample", transaction = "write_seen", observer = "production_room",
+            plan = "present", settings = "present")
         request.target?.let { target -> database.studyStructureDao().upsertTarget(target.asEntity()) }
         if (request.examStages.isNotEmpty()) {
             database.studyStructureDao().upsertExamStages(request.examStages.map { stage -> stage.asEntity() })

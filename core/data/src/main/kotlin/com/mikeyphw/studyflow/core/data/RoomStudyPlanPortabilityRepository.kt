@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
+import com.mikeyphw.studyflow.core.diagnostics.Sfdt27DiagnosticTrace
 import com.mikeyphw.studyflow.core.database.StudyPlanGraphPortabilityStore
 import com.mikeyphw.studyflow.core.database.entity.PlanSnapshotEntity
 import com.mikeyphw.studyflow.core.domain.StudyPlanPortabilityRepository
@@ -267,6 +268,8 @@ internal class RoomStudyPlanPortabilityRepository(
             } else {
                 createDurableSafetySnapshot(destinationId, PlanSnapshotKind.PRE_IMPORT, PlanSnapshotLabels.PRE_IMPORT)
             }
+            Sfdt27DiagnosticTrace.record("portability", "PORTABILITY_IMPORT_START",
+                operation = "restore_graph", transaction = "begun", observer = "production_room")
             val importedRows = graphStore.importPayload(
                 payload = archive.payload,
                 strategy = strategy,
@@ -352,6 +355,8 @@ internal class RoomStudyPlanPortabilityRepository(
                         kind = PlanSnapshotKind.AUTOMATIC,
                         label = PlanSnapshotLabels.PRE_RESTORE,
                     )
+                    Sfdt27DiagnosticTrace.record("portability", "PORTABILITY_SNAPSHOT_RESTORE_START",
+                        operation = "restore_graph", transaction = "begun", observer = "production_room")
                     val importedRows = graphStore.importPayload(
                         payload = archive.payload,
                         strategy = StudyPlanImportStrategy.REPLACE_EXISTING,

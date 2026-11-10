@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.core.data
 
 import androidx.room.withTransaction
+import com.mikeyphw.studyflow.core.diagnostics.Sfdt27DiagnosticTrace
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.StudyFlowIntegrity
@@ -36,7 +37,10 @@ internal object StudyFlowDatabaseSnapshotRestorer {
         annexBindings: List<ManualSyncAnnexRestoreBinding>,
     ) {
         val snapshot = read(snapshotFile)
-        database.withTransaction {
+        Sfdt27DiagnosticTrace.record("sync_restore", "SYNC_SNAPSHOT_RESTORE_START",
+            operation = "restore_snapshot", transaction = "begun", observer = "production_room")
+        try {
+            database.withTransaction {
             val db = database.openHelper.writableDatabase
             validateInventory(db, snapshot)
             db.execSQL("PRAGMA defer_foreign_keys = ON")
@@ -82,6 +86,13 @@ internal object StudyFlowDatabaseSnapshotRestorer {
             require(StudyFlowIntegrity.logicalIntegrityViolationCount(db) == 0) {
                 "Restored sync checkpoint violates StudyFlow ownership or value invariants."
             }
+            }
+            Sfdt27DiagnosticTrace.record("sync_restore", "SYNC_SNAPSHOT_RESTORE_COMMIT",
+                operation = "restore_snapshot", transaction = "committed", observer = "production_room")
+        } catch (failure: Throwable) {
+            Sfdt27DiagnosticTrace.record("sync_restore", "SYNC_SNAPSHOT_RESTORE_ROLLBACK",
+                operation = "restore_snapshot", transaction = "rolled_back", observer = "production_room")
+            throw failure
         }
     }
 

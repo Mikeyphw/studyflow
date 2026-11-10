@@ -256,7 +256,13 @@ fun StudyContentScreen(
                         Sfdt27DiagnosticTrace.record("ui", "TOPIC_UI_FEEDBACK_REQUESTED",
                             operation = "upsert_topic", transaction = "committed", observer = "ui")
                     }
+                    if (success == topicSaved) {
+                        Sfdt27DiagnosticTrace.probeProduction(plan.id.value, "PRODUCTION_BEFORE_FEEDBACK")
+                    }
                     snackbar.showSnackbar(success)
+                    if (success == topicSaved) {
+                        Sfdt27DiagnosticTrace.probeProduction(plan.id.value, "PRODUCTION_AFTER_FEEDBACK")
+                    }
                 }
                 .onFailure { failure ->
                     if (success == topicSaved) {

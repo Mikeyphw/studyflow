@@ -140,6 +140,9 @@ class Sfdt22HostedStudyJourneyTest {
                     .digest(exactId.toByteArray(Charsets.UTF_8))
                     .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
                 if (digest != recorded) return@runCatching "different_plan_id"
+                // Test-only helper queries the production Room HANDLE, not a
+                // second builder, before the existing independent SQL/Room pair.
+                Sfdt27ProductionSettingsProbe.record(exactId, point)
                 fun count(query: String, args: Array<String>): Long =
                     sql.rawQuery(query, args).use { cursor ->
                         check(cursor.moveToFirst())

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.withTransaction
+import com.mikeyphw.studyflow.core.diagnostics.Sfdt27DiagnosticTrace
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.StudyFlowIntegrity
 import com.mikeyphw.studyflow.core.domain.StudyCloudSyncRepository
@@ -442,6 +443,8 @@ internal class LocalStudyCloudSyncRepository(
             val prepared = ManualSyncRestoreStager(appContext).prepare(staged)
             previousSnapshot.writeBytes(database.withTransaction { StudyFlowDatabaseSnapshotWriter.capture(database) })
 
+            Sfdt27DiagnosticTrace.record("sync_restore", "SYNC_RESTORE_REQUESTED",
+                operation = "sync_restore", transaction = "not_started", observer = "production_room")
             PhysicalStorageMutationCoordinator.mutex.withLock {
                 prepared.commitFiles()
                 try {

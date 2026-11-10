@@ -2,6 +2,7 @@ package com.mikeyphw.studyflow.core.data
 
 import android.content.Context
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
+import com.mikeyphw.studyflow.core.diagnostics.Sfdt27DiagnosticTrace
 import com.mikeyphw.studyflow.core.diagnostics.DatabaseHealthLabReport
 import com.mikeyphw.studyflow.core.diagnostics.DiagnosticRecorder
 import com.mikeyphw.studyflow.core.diagnostics.NoOpDiagnosticRecorder
@@ -66,8 +67,15 @@ fun createStudyFlowDataLayer(
     clock: () -> Long = System::currentTimeMillis,
     diagnosticRecorder: DiagnosticRecorder = NoOpDiagnosticRecorder,
 ): StudyFlowDataLayer {
-    val database = StudyFlowDatabase.create(context)
-    Sfdt27AndroidTraceSink.install(context)
+    val database = StudyFlowDatabase.create(
+        context,
+        onDebugSql = Sfdt27DiagnosticTrace::observeSql,
+        onDebugOpen = {
+            Sfdt27DiagnosticTrace.record("database_lifecycle", "DATABASE_HANDLE_OPEN",
+                transaction = "unknown", observer = "production_room")
+        },
+    )
+    Sfdt27AndroidTraceSink.install(context, database)
     val dataSharingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val studyPlanRepository = RoomStudyPlanRepository(
         context = context.applicationContext,
