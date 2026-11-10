@@ -1098,25 +1098,37 @@ class Sfdt22HostedStudyJourneyTest {
     }
 
     @Test fun realUserAnswersQuestionAndOpensReviewQueue() {
-        openRoot("practice")
+        stage("practice_open_root") { openRoot("practice") }
         stage("practice_open_questions") {
             openInnerTabReady(WorkspaceR.string.practice_questions, WorkspaceR.string.open_question_bank)
         }
-        click(WorkspaceR.string.open_question_bank)
-        rule.onNodeWithContentDescription(text(PracticeR.string.add_question)).performClick()
-        clickLabel("true false") // Production QuestionType.TRUE_FALSE option.
-        fill(PracticeR.string.statement, questionStatement)
-        click(PracticeR.string.save_question)
-        visible(questionStatement)
-        click(PracticeR.string.create_practice_test)
-        click(PracticeR.string.start_or_resume)
-        clickLabel("True")
-        // Wait for the real async answer write; merely tapping is not enough.
-        visible(text(PracticeR.string.answer_saved))
-        click(PracticeR.string.finish_attempt)
-        visible(text(PracticeR.string.attempt_finished))
-        screenshot("question")
-        rule.onNodeWithContentDescription(text(PracticeR.string.go_back)).performClick()
+        stage("practice_enter_question_bank") { click(WorkspaceR.string.open_question_bank) }
+        stage("practice_open_question_editor") {
+            rule.onNodeWithContentDescription(text(PracticeR.string.add_question)).performClick()
+        }
+        stage("practice_choose_true_false") {
+            clickLabel("true false") // Real production QuestionType.TRUE_FALSE selector
+        }
+        stage("practice_fill_statement") { fill(PracticeR.string.statement, questionStatement) }
+        stage("practice_save_question") { click(PracticeR.string.save_question) }
+        stage("practice_question_visible") { visible(questionStatement) }
+        stage("practice_create_test") { click(PracticeR.string.create_practice_test) }
+        // The new StudyTest is saved asynchronously. Require its actual, actionable
+        // production button BEFORE selecting it; no sleeps, seeded rows or shortcuts.
+        stage("practice_test_ready") {
+            visible(text(PracticeR.string.start_or_resume))
+        }
+        stage("practice_start_test") { click(PracticeR.string.start_or_resume) }
+        stage("practice_runner_question") { visible(questionStatement) }
+        stage("practice_answer_true") { clickLabel("True") }
+        // This snackbar is shown only after the real answer operation completes.
+        stage("practice_answer_acknowledged") { visible(text(PracticeR.string.answer_saved)) }
+        stage("practice_finish_test") { click(PracticeR.string.finish_attempt) }
+        stage("practice_test_finished") { visible(text(PracticeR.string.attempt_finished)) }
+        stage("practice_capture_question") { screenshot("question") }
+        stage("practice_back_to_workspace") {
+            rule.onNodeWithContentDescription(text(PracticeR.string.go_back)).performClick()
+        }
         stage("practice_open_reviews") {
             openInnerTabReady(
                 WorkspaceR.string.practice_reviews,
@@ -1124,12 +1136,12 @@ class Sfdt22HostedStudyJourneyTest {
                 WorkspaceR.string.review_now,
             )
         }
-        clickReviewCenterEntry()
-        fill(ReviewsR.string.flashcard_front, flashcardFront)
-        fill(ReviewsR.string.flashcard_back, flashcardBack)
-        click(ReviewsR.string.create_flashcard)
-        visible(flashcardFront)
-        screenshot("review")
+        stage("practice_review_center") { clickReviewCenterEntry() }
+        stage("practice_card_front") { fill(ReviewsR.string.flashcard_front, flashcardFront) }
+        stage("practice_card_back") { fill(ReviewsR.string.flashcard_back, flashcardBack) }
+        stage("practice_save_card") { click(ReviewsR.string.create_flashcard) }
+        stage("practice_card_visible") { visible(flashcardFront) }
+        stage("practice_capture_review") { screenshot("review") }
     }
 
     @Test fun realUserSeesPersistedProgressAfterColdRestart() {
