@@ -67,6 +67,7 @@ fun createStudyFlowDataLayer(
     diagnosticRecorder: DiagnosticRecorder = NoOpDiagnosticRecorder,
 ): StudyFlowDataLayer {
     val database = StudyFlowDatabase.create(context)
+    Sfdt27AndroidTraceSink.install(context)
     val dataSharingScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val studyPlanRepository = RoomStudyPlanRepository(
         context = context.applicationContext,

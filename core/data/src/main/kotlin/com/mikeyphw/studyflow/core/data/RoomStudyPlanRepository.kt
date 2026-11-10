@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.room.withTransaction
+import com.mikeyphw.studyflow.core.diagnostics.Sfdt27DiagnosticTrace
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.StudyPlanGraphDuplicator
 import com.mikeyphw.studyflow.core.database.entity.DatabaseMetadataEntity
@@ -47,6 +48,9 @@ internal class RoomStudyPlanRepository(
         check(studySupportDao.findPlanSettings(entity.id) == original) {
             "PLAN_SETTINGS_CHANGED_DURING_EXISTING_PLAN_UPDATE"
         }
+        Sfdt27DiagnosticTrace.record("plan_repository", "PLAN_UPDATED",
+            operation = "update_plan", transaction = "write_seen", observer = "production_room",
+            plan = "present", settings = "present")
     }
 
     override val plans: Flow<List<StudyPlan>> =
@@ -74,7 +78,13 @@ internal class RoomStudyPlanRepository(
             }
             studyPlanDao.insert(plan.asEntity(nowEpochMillis = clock()))
             studySupportDao.upsertPlanSettings(settings.asEntity())
+            Sfdt27DiagnosticTrace.record("plan_repository", "SETTINGS_WRITTEN",
+                operation = "insert_settings", transaction = "write_seen", observer = "production_room",
+                plan = "present", settings = "present")
         }
+        Sfdt27DiagnosticTrace.record("plan_repository", "PLAN_CREATED",
+            operation = "create_plan", transaction = "committed", observer = "production_room",
+            plan = "present", settings = "present")
     }
 
     override suspend fun replace(plan: StudyPlan) {
@@ -218,6 +228,9 @@ internal class RoomStudyPlanRepository(
                 "Archived or trashed Study Plans must be restored before editing settings."
             }
             studySupportDao.upsertPlanSettings(settings.asEntity())
+            Sfdt27DiagnosticTrace.record("plan_repository", "SETTINGS_OVERWRITE",
+                operation = "replace_settings", transaction = "write_seen", observer = "production_room",
+                plan = "present", settings = "present")
         }
 
     }
@@ -242,6 +255,8 @@ internal class RoomStudyPlanRepository(
             require(studyPlanDao.deleteById(planId.value) == 1) {
                 "Study Plan ${planId.value} could not be deleted."
             }
+            Sfdt27DiagnosticTrace.record("plan_repository", "PLAN_DELETE",
+                operation = "delete_plan", transaction = "write_seen", observer = "production_room")
         }
         // Database ownership is committed first. Only after the cascade is durable may StudyFlow
         // release an app-wide SAF grant or remove app-owned bytes. Shared linked-document grants are
@@ -266,6 +281,8 @@ internal class RoomStudyPlanRepository(
         val ownership = database.withTransaction {
             capturePhysicalOwnership().also {
                 studyPlanDao.deleteAll()
+                Sfdt27DiagnosticTrace.record("plan_repository", "PLAN_DELETE",
+                    operation = "delete_plan", transaction = "write_seen", observer = "production_room")
             }
         }
         cleanupPhysicalOwnership(ownership)
@@ -275,6 +292,8 @@ internal class RoomStudyPlanRepository(
         val ownership = database.withTransaction {
             val captured = capturePhysicalOwnership()
             studyPlanDao.deleteAll()
+            Sfdt27DiagnosticTrace.record("plan_repository", "PLAN_DELETE",
+                operation = "delete_plan", transaction = "write_seen", observer = "production_room")
             val now = clock()
             val samples = FoundationStudyPlans.create()
             studyPlanDao.insertAll(samples.map { plan -> plan.asEntity(nowEpochMillis = now) })
@@ -306,6 +325,8 @@ internal class RoomStudyPlanRepository(
             // Room transaction. Never overwrite personalized settings.
             // The owning Study Plan is present because these ids come from
             // study_plans itself; session creation still validates ownership.
+            Sfdt27DiagnosticTrace.record("seed", "SEED_PASS",
+                operation = "seed", transaction = "begun", observer = "production_room")
             studyPlanDao.findPlanIdsMissingSettings().forEach { missingId ->
                 studySupportDao.insertMissingPlanSettings(
                     StudyPlanSettings.defaults(StudyPlanId(missingId)).asEntity(),

@@ -42,6 +42,7 @@ jobs:
           fi
           test -z "$(git status --porcelain --untracked-files=normal)"
           python3 -B scripts/test_sfdt22_hf22_contract.py
+          python3 -B scripts/test_sfdt27_diag_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
   # PR-label opt-in or manual exact-SHA dispatch; never release qualifying.
   # Runs ONLY the first three real hosted journeys, ending with Quick Session.

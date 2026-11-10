@@ -50,10 +50,19 @@ class HF23(unittest.TestCase):
         self.assertNotIn('StudyPlanSettings.defaults(',body)
 
     def test_04_both_subject_and_topic_recalculate_inside_existing_transactions(self):
-        for marker in ('override suspend fun upsertSubject(subject: Subject): Subject = database.withTransaction {',
-                       'override suspend fun upsertTopic(topic: Topic): Topic = database.withTransaction {',
-                       'recalculateProgress(subject.studyPlanId)',
-                       'recalculateProgress(topic.studyPlanId)'):
+        # The DIAG-01 wrappers still use the same Room transaction for every
+        # subject/topic write. Their after-transaction checkpoints do not
+        # substitute an in-transaction settings guard or early-return commit.
+        for method, following in (
+                ('upsertSubject(subject: Subject)', 'override suspend fun upsertTopic('),
+                ('upsertTopic(topic: Topic)', 'override suspend fun deleteSubject(')):
+            body=self.source.split(method,1)[1].split(following,1)[0]
+            self.assertEqual(body.count('database.withTransaction {'),1)
+            self.assertIn('recalculateProgress(',body)
+            self.assertIn('requirePlan(',body)
+            self.assertIn('requireNotNull(',body)
+        for marker in ('SUBJECT_COMMIT', 'TOPIC_TRANSACTION_COMMIT',
+                       'TOPIC_TRANSACTION_ROLLBACK', 'TOPIC_POSTCOMMIT_VERIFY'):
             self.assertIn(marker,self.source)
         dao=(ROOT/'core/database/src/main/java/com/mikeyphw/studyflow/core/database/dao/StudySupportDao.kt').read_text()
         self.assertIn('@Insert(onConflict = OnConflictStrategy.IGNORE)',dao)

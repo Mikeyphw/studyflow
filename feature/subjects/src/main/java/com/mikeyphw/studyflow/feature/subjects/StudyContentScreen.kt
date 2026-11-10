@@ -95,6 +95,7 @@ import com.mikeyphw.studyflow.core.model.TopicId
 import com.mikeyphw.studyflow.core.model.TopicNode
 import java.util.UUID
 import kotlinx.coroutines.launch
+import com.mikeyphw.studyflow.core.diagnostics.Sfdt27DiagnosticTrace
 
 /** Only these constants may leave a debuggable process; never persist exception text. */
 internal val topicSaveDiagnosticCodes = setOf(
@@ -244,14 +245,34 @@ fun StudyContentScreen(
         // Prevent a failed or interrupted prior attempt from being misattributed.
         if (success == topicSaved) writeTopicSaveDiagnostic(diagnosticsContext, null)
         scope.launch {
+            if (success == topicSaved) Sfdt27DiagnosticTrace.record("ui", "TOPIC_COROUTINE_START",
+                operation = "upsert_topic", transaction = "not_started", observer = "ui")
             runRecoverableOperation { action() }
                 .onSuccess {
-                    if (success == topicSaved) writeTopicSaveDiagnostic(diagnosticsContext, null)
+                    if (success == topicSaved) {
+                        writeTopicSaveDiagnostic(diagnosticsContext, null)
+                        Sfdt27DiagnosticTrace.record("ui", "TOPIC_REPOSITORY_RETURN",
+                            operation = "upsert_topic", transaction = "committed", observer = "ui")
+                        Sfdt27DiagnosticTrace.record("ui", "TOPIC_UI_FEEDBACK_REQUESTED",
+                            operation = "upsert_topic", transaction = "committed", observer = "ui")
+                    }
                     snackbar.showSnackbar(success)
                 }
                 .onFailure { failure ->
                     if (success == topicSaved) {
                         writeTopicSaveDiagnostic(diagnosticsContext, classifyTopicSaveFailure(failure))
+                        Sfdt27DiagnosticTrace.record("ui", "TOPIC_UI_FEEDBACK_REQUESTED",
+                            operation = "upsert_topic", transaction = "unknown", observer = "ui",
+                            error = when (classifyTopicSaveFailure(failure)) {
+                                "settings_before_topic" -> "settings_before_topic"
+                                "settings_before_progress" -> "settings_before_progress"
+                                "settings_changed_progress" -> "settings_changed_progress"
+                                "settings_changed_topic" -> "settings_changed_topic"
+                                "sqlite_constraint" -> "constraint"
+                                "sqlite_locked" -> "locked"
+                                "invalid_input" -> "invalid_input"
+                                else -> "unexpected"
+                            })
                     }
                     // Keep the same localized production error and retry semantics.
                     snackbar.showSnackbar(operationFailed)
@@ -579,6 +600,8 @@ fun StudyContentScreen(
                     archived = value.status == ContentProgressStatus.ARCHIVED,
                     examStageId = value.examStageId,
                 )
+                Sfdt27DiagnosticTrace.record("ui", "TOPIC_UI_CLICK",
+                    operation = "upsert_topic", transaction = "not_started", observer = "ui")
                 closeTopicEditor()
                 writeSfdt27UiPlanDigest(diagnosticsContext, "topic", topic.studyPlanId.value)
                 launchAction(topicSaved) { content.saveTopic(topic) }

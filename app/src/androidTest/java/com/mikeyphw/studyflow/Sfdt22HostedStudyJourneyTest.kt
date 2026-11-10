@@ -34,6 +34,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertTrue
 import android.database.sqlite.SQLiteDatabase
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
+import com.mikeyphw.studyflow.core.diagnostics.Sfdt27DiagnosticTrace
 import com.mikeyphw.studyflow.core.database.entity.StudyPlanSettingsEntity
 import java.security.MessageDigest
 import org.junit.Rule
@@ -209,6 +210,20 @@ class Sfdt22HostedStudyJourneyTest {
             "row_changed", "baseline_missing"))
         context.openFileOutput("sfdt27-probes.txt", Context.MODE_APPEND).use { output ->
             output.write("$point|$state\n".toByteArray(Charsets.US_ASCII))
+        }
+        if (point == "after_topic_action" || point == "after_topic_saved") {
+            Sfdt27DiagnosticTrace.record("android_test",
+                if (point == "after_topic_action") "TOPIC_EXTERNAL_PROBE_ACTION" else "TOPIC_EXTERNAL_PROBE_SAVED",
+                operation = "read_settings", transaction = "unknown", observer = "independent_pair",
+                plan = if (state == "plan_ambiguous" || state == "lookup_failed") "unknown" else "present",
+                settings = when (state) {
+                    "matched" -> "present"
+                    "row_missing" -> "missing"
+                    "row_changed" -> "changed"
+                    else -> "unknown"
+                },
+                error = if (state == "lookup_failed" || state == "read_only_snapshot_mismatch")
+                    "probe_error" else "none")
         }
     }
 
@@ -856,6 +871,7 @@ class Sfdt22HostedStudyJourneyTest {
     }
 
     @Test fun realUserCreatesAStudyPlan() {
+        Sfdt27DiagnosticTrace.resetForHostedJourney()
         // Real UI, fresh emulator and production plan persistence. The stage
         // wrappers do not catch/suppress failures; they rethrow for a red CI.
         // Separate readiness, actual touch, and editor load in the receipt:
@@ -880,6 +896,7 @@ class Sfdt22HostedStudyJourneyTest {
     }
 
     @Test fun realUserAddsSubjectAndTopic() {
+        Sfdt27DiagnosticTrace.resetForHostedJourney()
         // Every action operates on the production UI, not injected domain data.
         // Dialog name fields have distinct semantics tags to prevent multiple
         // "Name" nodes from being accidentally selected by label substring.

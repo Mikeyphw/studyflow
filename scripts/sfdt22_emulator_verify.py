@@ -98,6 +98,95 @@ REASON_CODES = frozenset({
 # Only these exact categories may be emitted; names, ids and raw Android output are forbidden.
 BOUNDARY_POINTS = ('after_create', 'after_subject', 'after_topic', 'session_route', 'before_session_start')
 BOUNDARY_STATES = frozenset({'present', 'missing', 'lookup_failed', 'ambiguous', 'mismatched', 'matched'})
+# DIAG-01: device-private ASCII is parsed and RE-EMITTED, never uploaded raw.
+SFDT27_TRACE_AREAS = frozenset({'ui','android_test','content_repository','plan_repository','seed'})
+SFDT27_TRACE_POINTS = frozenset({
+    'PLAN_CREATED','PLAN_UPDATED','SUBJECT_TRANSACTION_START','SUBJECT_COMMIT',
+    'TOPIC_UI_CLICK','TOPIC_COROUTINE_START','TOPIC_TRANSACTION_START','TOPIC_PRECHECK',
+    'TOPIC_UPSERT_DONE','PROGRESS_PRECHECK','PROGRESS_UPDATED',
+    'TOPIC_TRANSACTION_COMMIT','TOPIC_TRANSACTION_ROLLBACK','TOPIC_POSTCOMMIT_READ_ERROR','TOPIC_POSTCOMMIT_VERIFY','DATABASE_OPEN',
+    'TOPIC_REPOSITORY_RETURN','TOPIC_UI_FEEDBACK_REQUESTED',
+    'TOPIC_EXTERNAL_PROBE_ACTION','TOPIC_EXTERNAL_PROBE_SAVED','PLAN_DELETE',
+    'SEED_PASS','SETTINGS_WRITTEN','SETTINGS_OVERWRITE','TRACE_RESET',
+})
+SFDT27_TRACE_OPERATIONS = frozenset({'none','create_plan','update_plan','delete_plan',
+    'upsert_subject','upsert_topic','update_progress','insert_settings','replace_settings','seed','read_settings'})
+SFDT27_TRACE_TRANSACTIONS = frozenset({'not_started','begun','write_seen','committed','rolled_back','unknown'})
+SFDT27_TRACE_OBSERVERS = frozenset({'none','ui','production_room','independent_pair'})
+SFDT27_TRACE_STATES = frozenset({'present','missing','changed','unknown','unavailable'})
+SFDT27_TRACE_ERRORS = frozenset({'none','constraint','busy','locked','io','corruption',
+    'unexpected','probe_error','cancelled','writer_unresolved',
+    'settings_before_topic','settings_before_progress','settings_changed_progress',
+    'settings_changed_topic','invalid_input'})
+
+def sfdt27_diag_parse(raw: bytes) -> list[dict]:
+    require(3 <= len(raw) <= 16384 and raw.startswith(b'V2\n') and raw.endswith(b'\n'),
+            'DIAG-01 missing/invalid atomic trace')
+    # Strict ASCII catches Unicode and non-printing payloads. No ignored keys.
+    require(all(byte == 10 or 32 <= byte <= 126 for byte in raw),
+            'DIAG-01 noncanonical ASCII/control bytes')
+    rows = raw.decode('ascii', 'strict').splitlines()
+    require(rows[0] == 'V2' and 1 <= len(rows)-1 <= 64, 'DIAG-01 event count')
+    events = []
+    previous = None
+    enums = (SFDT27_TRACE_AREAS,SFDT27_TRACE_POINTS,SFDT27_TRACE_OPERATIONS,
+             SFDT27_TRACE_TRANSACTIONS,SFDT27_TRACE_OBSERVERS,SFDT27_TRACE_STATES,
+             SFDT27_TRACE_STATES,SFDT27_TRACE_ERRORS)
+    keys = ('area','checkpoint','operation','transaction','observer','plan','settings','error')
+    for row in rows[1:]:
+        parts = row.split('|')
+        require(len(parts) == 9 and parts[0].isascii() and parts[0].isdigit() and
+                (parts[0] == '0' or not parts[0].startswith('0')),
+                'DIAG-01 event field count/sequence')
+        seq = int(parts[0])
+        require(seq > 0 and (previous is None or seq == previous + 1),
+                'DIAG-01 duplicate/out-of-order/gap')
+        previous = seq
+        require(all(value in allowed for value,allowed in zip(parts[1:],enums)),
+                'DIAG-01 unreviewed enum/PII')
+        events.append({'seq':seq, **dict(zip(keys,parts[1:]))})
+    # The partial record may start mid-journey after ring rollover. But two
+    # observed ordered transaction checkpoints must never appear reversed.
+    positions = {e['checkpoint']: i for i,e in enumerate(events)}
+    require('TRACE_RESET' not in positions or positions['TRACE_RESET'] == 0,
+            'DIAG-01 noninitial reset')
+    for before,after in (
+        ('TOPIC_UI_CLICK','TOPIC_COROUTINE_START'),
+        ('TOPIC_TRANSACTION_START','TOPIC_PRECHECK'),
+        ('TOPIC_PRECHECK','TOPIC_UPSERT_DONE'),
+        ('TOPIC_PRECHECK','TOPIC_TRANSACTION_COMMIT'),
+        ('TOPIC_UPSERT_DONE','TOPIC_TRANSACTION_COMMIT'),
+        ('TOPIC_TRANSACTION_COMMIT','TOPIC_POSTCOMMIT_VERIFY'),
+        ('TOPIC_EXTERNAL_PROBE_ACTION','TOPIC_EXTERNAL_PROBE_SAVED'),
+    ):
+        require(before not in positions or after not in positions or positions[before] < positions[after],
+                'DIAG-01 reordered checkpoints')
+    return events
+
+def sfdt27_diag_read() -> tuple[str, list[dict]]:
+    try:
+        p = subprocess.run(['adb','-s',SERIAL,'exec-out','run-as',PACKAGE,
+                            'cat','files/sfdt27-diag-trace.txt'],
+                           capture_output=True,timeout=20,check=False)
+        if p.returncode: return ('capture_unavailable',[])
+        try:
+            return ('captured',sfdt27_diag_parse(p.stdout))
+        except (ValueError,UnicodeError):
+            return ('capture_invalid',[])
+    except (OSError,subprocess.TimeoutExpired):
+        return ('capture_unavailable',[])
+
+def sfdt27_diag_attach(evidence: dict) -> None:
+    status, events = sfdt27_diag_read()
+    evidence['sfdt27_diag_capture'] = status
+    evidence['sfdt27_diag_trace_schema'] = 2
+    evidence['sfdt27_diag_events'] = events
+    missing = next((e for e in events if e['settings'] == 'missing'),None)
+    evidence['sfdt27_diag_first_missing'] = (missing['checkpoint'] if missing else 'not_observed')
+    # A missing row is NOT enough to prove a deleting writer. Do not fabricate causality.
+    evidence['sfdt27_diag_cause'] = ('writer_unresolved' if missing else 'not_established')
+    evidence['diagnostic_only'] = True
+
 SFDT27_POINTS = ('after_subject', 'before_topic', 'after_topic_action', 'after_topic_saved')
 SFDT27_STATES = frozenset({
     'matched', 'ui_marker_missing', 'lookup_failed', 'plan_ambiguous',
@@ -526,6 +615,8 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
         for index, name in enumerate(TESTS[:diagnostic_limit]):
             phase = ('plan', 'subjects', 'session', 'practice')[index]
             results.append(run_test(name))
+            if diagnostic_through and index == 1:
+                sfdt27_diag_attach(evidence)
         if diagnostic_through:
             evidence.update(overall=DIAGNOSTIC_PASS, tests=results,
                             test_count=len(results), diagnostic_through=diagnostic_through,
@@ -567,6 +658,15 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
                     'HF27 exact-plan diagnostics incomplete or inconsistent')
             require(evidence['boundaries'] == expected_boundaries(5),
                     'Incomplete full-gate boundary evidence')
+        if diagnostic_through:
+            # Keep the subject-journey capture: session instrumentation may
+            # create a new process and must not erase source timing evidence.
+            if 'sfdt27_diag_capture' not in evidence:
+                sfdt27_diag_attach(evidence)
+            require(evidence['sfdt27_diag_capture'] == 'captured' and
+                any(e['checkpoint'] == 'TRACE_RESET' for e in evidence['sfdt27_diag_events']) and
+                any(e['checkpoint'] == 'TOPIC_TRANSACTION_COMMIT' for e in evidence['sfdt27_diag_events']),
+                'DIAG-01 missing reset or committed topic transaction')
         # Both the independent Room regression and real UI journeys are
         # mandatory. Continue diagnosis after a Room failure, but never
         # qualify or preserve a positive overall status in its presence.
@@ -589,6 +689,8 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
             evidence['failure_reason_code'] = exc.reason
         evidence['completed_before_failure'] = len(results) if 'results' in locals() else 0
         evidence['hf27_room_regression'] = evidence.get('hf27_room_regression', 'not_passed')
+        if diagnostic_through and 'sfdt27_diag_capture' not in evidence:
+            sfdt27_diag_attach(evidence)
         try:
             evidence['sfdt27_probes'] = sfdt27_read_probes()
         except (OSError, ValueError, subprocess.TimeoutExpired):
@@ -599,7 +701,16 @@ def run(output: Path, source: str, run_id: str, attempt: str, repo: Path, diagno
             evidence['boundary_capture'] = 'unavailable'
         for name in SCREENS:
             (output / ('sfdt22-ui-' + name + '.png')).unlink(missing_ok=True)
-    receipt.write_text(json.dumps(evidence, sort_keys=True, indent=2) + '\n')
+    # Atomic host-side receipt: a crash cannot publish a torn success JSON.
+    from tempfile import NamedTemporaryFile
+    data = (json.dumps(evidence, sort_keys=True, indent=2) + '\n').encode('ascii')
+    require(len(data) <= 20_000, 'DIAG-01 receipt exceeds bound')
+    with NamedTemporaryFile(dir=output, prefix='.diag01-', delete=False) as temp_receipt:
+        tmp_path = Path(temp_receipt.name)
+        temp_receipt.write(data)
+        temp_receipt.flush()
+        os.fsync(temp_receipt.fileno())
+    os.replace(tmp_path, receipt)
     ok = evidence['overall'] in (EXPECTED, DIAGNOSTIC_PASS)
     status = ('DIAGNOSTIC_PASS_ONLY' if evidence['overall'] == DIAGNOSTIC_PASS else
               'REAL_JOURNEY_PASS' if evidence['overall'] == EXPECTED else 'REAL_JOURNEY_REFUSED')
@@ -672,6 +783,10 @@ def verify_diagnostic(output: Path, source: str, run_id: str, attempt: str,
     require(data.get('hf27_room_regression') == 'passed' and
             data.get('sfdt27_probes') == (sfdt27_expected_probes() if count >= 2 else []),
             'HF27 hosted Room/probe evidence incomplete')
+    require(data.get('diagnostic_only') is True and data.get('sfdt27_diag_capture') == 'captured' and
+            data.get('sfdt27_diag_trace_schema') == 2 and
+            any(e.get('checkpoint') == 'TOPIC_TRANSACTION_COMMIT' for e in data.get('sfdt27_diag_events', [])),
+            'DIAG-01 causal diagnostics missing')
     app_hash, test_hash, certs = apk_facts(repo)
     require(data.get('app_apk') == app_hash and data.get('test_apk') == test_hash and
             data.get('debug_signing_certificates') == certs and

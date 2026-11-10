@@ -1,6 +1,7 @@
 package com.mikeyphw.studyflow.core.data
 
 import androidx.room.withTransaction
+import com.mikeyphw.studyflow.core.diagnostics.Sfdt27DiagnosticTrace
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.mapper.asEntity
 import com.mikeyphw.studyflow.core.database.mapper.asExternalModel
@@ -74,36 +75,74 @@ internal class RoomStudyContentRepository(
         requireNotNull(structureDao.findExamStage(stage.studyPlanId.value, stage.id.value)).asExternalModel()
     }
 
-    override suspend fun upsertSubject(subject: Subject): Subject = database.withTransaction {
-        requirePlan(subject.studyPlanId)
-        validateExamStage(subject.studyPlanId, subject.examStageId?.value)
-        val normalized = normalizeSubject(subject)
-        structureDao.upsertSubject(normalized.asEntity())
-        recalculateProgress(subject.studyPlanId)
-        requireNotNull(structureDao.findSubject(subject.studyPlanId.value, subject.id.value)).asExternalModel()
+    override suspend fun upsertSubject(subject: Subject): Subject {
+        Sfdt27DiagnosticTrace.record("content_repository", "SUBJECT_TRANSACTION_START",
+            operation = "upsert_subject", transaction = "begun", observer = "production_room")
+        val saved = database.withTransaction {
+            requirePlan(subject.studyPlanId)
+            validateExamStage(subject.studyPlanId, subject.examStageId?.value)
+            val normalized = normalizeSubject(subject)
+            structureDao.upsertSubject(normalized.asEntity())
+            recalculateProgress(subject.studyPlanId)
+            requireNotNull(structureDao.findSubject(subject.studyPlanId.value, subject.id.value)).asExternalModel()
+        }
+        Sfdt27DiagnosticTrace.record("content_repository", "SUBJECT_COMMIT",
+            operation = "upsert_subject", transaction = "committed", observer = "production_room")
+        return saved
     }
 
-    override suspend fun upsertTopic(topic: Topic): Topic = database.withTransaction {
-        requirePlan(topic.studyPlanId)
-        val settingsBeforeTopic = requireNotNull(database.studySupportDao().findPlanSettings(topic.studyPlanId.value)) {
-            "PLAN_SETTINGS_MISSING_BEFORE_TOPIC_SAVE"
+    override suspend fun upsertTopic(topic: Topic): Topic {
+        Sfdt27DiagnosticTrace.record("content_repository", "TOPIC_TRANSACTION_START",
+            operation = "upsert_topic", transaction = "begun", observer = "production_room")
+        var committed = false
+        try {
+            val saved = database.withTransaction {
+                requirePlan(topic.studyPlanId)
+                val settingsBeforeTopic = requireNotNull(database.studySupportDao().findPlanSettings(topic.studyPlanId.value)) {
+                    "PLAN_SETTINGS_MISSING_BEFORE_TOPIC_SAVE"
+                }
+                Sfdt27DiagnosticTrace.record("content_repository", "TOPIC_PRECHECK",
+                    operation = "read_settings", transaction = "begun", observer = "production_room",
+                    plan = "present", settings = "present")
+                val subject = requireNotNull(structureDao.findSubject(topic.studyPlanId.value, topic.subjectId.value)) {
+                    "The selected subject does not belong to this Study Plan."
+                }
+                validateExamStage(topic.studyPlanId, topic.examStageId?.value)
+                validateParent(topic, structureDao.findTopics(topic.studyPlanId.value).map { it.asExternalModel() })
+                val normalized = normalizeTopic(topic.copy(subjectId = SubjectId(subject.id)))
+                structureDao.upsertTopic(normalized.asEntity())
+                Sfdt27DiagnosticTrace.record("content_repository", "TOPIC_UPSERT_DONE",
+                    operation = "upsert_topic", transaction = "write_seen", observer = "production_room",
+                    plan = "present", settings = if (database.studySupportDao().findPlanSettings(topic.studyPlanId.value) == null) "missing" else "present")
+                // HF23/HF04 protection remains unchanged: restore only the exact row.
+                if (database.studySupportDao().findPlanSettings(topic.studyPlanId.value) == null) {
+                    database.studySupportDao().insertMissingPlanSettings(settingsBeforeTopic)
+                }
+                recalculateProgress(topic.studyPlanId)
+                check(database.studySupportDao().findPlanSettings(topic.studyPlanId.value) == settingsBeforeTopic) {
+                    "PLAN_SETTINGS_CHANGED_DURING_TOPIC_SAVE"
+                }
+                requireNotNull(structureDao.findTopic(topic.studyPlanId.value, topic.id.value)).asExternalModel()
+            }
+            // Room.withTransaction only returns normally after a successful commit.
+            committed = true
+            Sfdt27DiagnosticTrace.record("content_repository", "TOPIC_TRANSACTION_COMMIT",
+                operation = "upsert_topic", transaction = "committed", observer = "production_room")
+            // An independent postcommit Room read is not the in-txn snapshot.
+            val committedSettings = database.studySupportDao().findPlanSettings(topic.studyPlanId.value)
+            Sfdt27DiagnosticTrace.record("content_repository", "TOPIC_POSTCOMMIT_VERIFY",
+                operation = "read_settings", transaction = "committed", observer = "production_room",
+                plan = if (planDao.countById(topic.studyPlanId.value) == 1) "present" else "missing",
+                settings = if (committedSettings == null) "missing" else "present")
+            return saved
+        } catch (failure: Throwable) {
+            // A thrown transaction is not a verified postcommit deletion.
+            Sfdt27DiagnosticTrace.record("content_repository",
+                if (committed) "TOPIC_POSTCOMMIT_READ_ERROR" else "TOPIC_TRANSACTION_ROLLBACK",
+                operation = "upsert_topic", transaction = if (committed) "committed" else "rolled_back",
+                observer = "production_room", error = sfdt27ErrorCode(failure))
+            throw failure
         }
-        val subject = requireNotNull(structureDao.findSubject(topic.studyPlanId.value, topic.subjectId.value)) {
-            "The selected subject does not belong to this Study Plan."
-        }
-        validateExamStage(topic.studyPlanId, topic.examStageId?.value)
-        validateParent(topic, structureDao.findTopics(topic.studyPlanId.value).map { it.asExternalModel() })
-        val normalized = normalizeTopic(topic.copy(subjectId = SubjectId(subject.id)))
-        structureDao.upsertTopic(normalized.asEntity())
-        // Rehydrate the exact prior row if topic insertion deleted its FK child.
-        if (database.studySupportDao().findPlanSettings(topic.studyPlanId.value) == null) {
-            database.studySupportDao().insertMissingPlanSettings(settingsBeforeTopic)
-        }
-        recalculateProgress(topic.studyPlanId)
-        check(database.studySupportDao().findPlanSettings(topic.studyPlanId.value) == settingsBeforeTopic) {
-            "PLAN_SETTINGS_CHANGED_DURING_TOPIC_SAVE"
-        }
-        requireNotNull(structureDao.findTopic(topic.studyPlanId.value, topic.id.value)).asExternalModel()
     }
 
     override suspend fun deleteSubject(planId: StudyPlanId, subjectId: SubjectId) {
@@ -333,6 +372,9 @@ internal class RoomStudyContentRepository(
         val settingsBefore = requireNotNull(settingsDao.findPlanSettings(planId.value)) {
             "PLAN_SETTINGS_MISSING_BEFORE_CONTENT_PROGRESS"
         }
+        Sfdt27DiagnosticTrace.record("content_repository", "PROGRESS_PRECHECK",
+            operation = "read_settings", transaction = "begun", observer = "production_room",
+            plan = "present", settings = "present")
         val subjects = structureDao.findSubjects(planId.value).map { it.asExternalModel() }
         val topics = structureDao.findTopics(planId.value).map { it.asExternalModel() }
         val updated = subjects.map { subject ->
@@ -349,6 +391,9 @@ internal class RoomStudyContentRepository(
         }
         if (updated.isNotEmpty()) structureDao.upsertSubjects(updated.map(Subject::asEntity))
         planDao.updateProgress(planId.value, StudyProgressCalculator.planProgress(updated), clock())
+        Sfdt27DiagnosticTrace.record("content_repository", "PROGRESS_UPDATED",
+            operation = "update_progress", transaction = "write_seen", observer = "production_room",
+            plan = "present", settings = if (settingsDao.findPlanSettings(planId.value) == null) "missing" else "present")
         // Defensive rollback-safe repair against destructive legacy writes:
         // insert ONLY if the exact original row vanished, never replace an
         // existing row or overwrite personalized settings.
@@ -358,6 +403,33 @@ internal class RoomStudyContentRepository(
         check(settingsDao.findPlanSettings(planId.value) == settingsBefore) {
             "PLAN_SETTINGS_CHANGED_DURING_CONTENT_PROGRESS"
         }
+    }
+
+    private fun sfdt27ErrorCode(error: Throwable): String {
+        var cause: Throwable? = error
+        repeat(4) {
+            val current = cause ?: return "unexpected"
+            val invariant = when (current.message) {
+                "PLAN_SETTINGS_MISSING_BEFORE_TOPIC_SAVE" -> "settings_before_topic"
+                "PLAN_SETTINGS_MISSING_BEFORE_CONTENT_PROGRESS" -> "settings_before_progress"
+                "PLAN_SETTINGS_CHANGED_DURING_CONTENT_PROGRESS" -> "settings_changed_progress"
+                "PLAN_SETTINGS_CHANGED_DURING_TOPIC_SAVE" -> "settings_changed_topic"
+                else -> null
+            }
+            if (invariant != null) return invariant
+            val category = when (current.javaClass.name) {
+                "android.database.sqlite.SQLiteConstraintException" -> "constraint"
+                "android.database.sqlite.SQLiteDatabaseLockedException" -> "locked"
+                "android.database.sqlite.SQLiteDatabaseCorruptException" -> "corruption"
+                "android.database.sqlite.SQLiteDiskIOException" -> "io"
+                "android.database.sqlite.SQLiteDatabaseBusyException" -> "busy"
+                "java.util.concurrent.CancellationException", "kotlinx.coroutines.JobCancellationException" -> "cancelled"
+                else -> null
+            }
+            if (category != null) return category
+            cause = current.cause
+        }
+        return "unexpected"
     }
 
     private suspend fun requirePlan(planId: StudyPlanId) {
