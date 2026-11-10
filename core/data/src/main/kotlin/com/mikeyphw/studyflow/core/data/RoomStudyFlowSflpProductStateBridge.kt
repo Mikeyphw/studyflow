@@ -83,8 +83,11 @@ internal class RoomStudyFlowSflpProductStateBridge(
             "SFLP product mutation has a noncanonical primary key"
         }
         val schemaColumns = tableColumns(db, table)
-        val keyArgs = primaryColumns.map { decodeValue(primaryKey.getValue(it)) }
-        require(keyArgs.all { it != null }) { "SFLP product mutation has a null primary key" }
+        val keyArgs: List<Any> = primaryColumns.map { column ->
+            requireNotNull(decodeValue(primaryKey.getValue(column))) {
+                "SFLP product mutation has a null primary key"
+            }
+        }
         val where = primaryColumns.joinToString(" AND ") { "${quote(it)} = ?" }
         if (operation.kind == StudyFlowOperationKind.TOMBSTONE || operation.operationType == StudyFlowProductStateContract.RowDelete) {
             db.execSQL("DELETE FROM ${quote(table)} WHERE $where", keyArgs.toTypedArray())

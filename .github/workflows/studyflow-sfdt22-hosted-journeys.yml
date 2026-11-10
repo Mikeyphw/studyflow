@@ -102,9 +102,9 @@ jobs:
           echo "d6b3b8ff1f9c473a9bad839ff76b6fe4fe082f775fec29d91a0121cfa5576d8a  scripts/test_sfdt27_diag02_contract.py" | sha256sum --check --status
           echo "78f7b9ac7ca5a7276868a5ce75e136ee8e8486828f5905c5f973456243d30923  docs/actions/SFDT22_HF27_DIAG02_WRITER_ATTRIBUTION.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt27_diag_contract.py
-          echo "d7dd474572b3645e4f5baaef5d77734179aa948b13239630bfb36746e89d1a6a  core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyFlowSflpProductStateBridge.kt" | sha256sum --check --status
+          echo "4eaa10e69e4aceb8f1f56545d13679507399caaa35fa1cc067853108d20e1096  core/data/src/main/kotlin/com/mikeyphw/studyflow/core/data/RoomStudyFlowSflpProductStateBridge.kt" | sha256sum --check --status
           echo "101bf15c9f5413c3f10059e74a1a1e8468e916aafba8bb9c90def996bb1395f7  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt27SflpReplayRegressionTest.kt" | sha256sum --check --status
-          echo "a008394df5568f1591d6d5b40fd25fd309d395a6bc30ee8dd12752f9fb63d442  scripts/test_sfdt27_fix03_contract.py" | sha256sum --check --status
+          echo "d7cdd59d737ce09404208eca3da6caeb94488993475a279cb3dc9782ca37f756  scripts/test_sfdt27_fix03_contract.py" | sha256sum --check --status
           echo "c5e7c61c516b53bdf482ecfb0cc3667b31adba5ad09b46304ce901fe46a2b7b9  docs/actions/SFDT22_HF27_FIX03_SFLP_PARENT_REPLAY.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt27_diag02_contract.py
           python3 -B scripts/test_sfdt27_fix03_contract.py

@@ -65,7 +65,13 @@ class Fix03Contracts(unittest.TestCase):
         src=self.get(BRIDGE)
         self.assertIn('SafeIdentifier.matches(table)',src)
         self.assertIn('require(SafeIdentifier.matches(value))',src)
-        self.assertIn('require(keyArgs.all { it != null })',src)
+        # Android/Kotlin requires List<Any>, not merely a runtime null check
+        # on List<Any?>, for settingsSnapshot(db, keyArgs.single()).
+        self.assertIn('val keyArgs: List<Any> = primaryColumns.map { column ->',src)
+        self.assertIn('requireNotNull(decodeValue(primaryKey.getValue(column)))',src)
+        self.assertNotIn('val keyArgs = primaryColumns.map { decodeValue(',src)
+        self.assertNotIn('require(keyArgs.all { it != null })',src)
+        self.assertIn('settingsSnapshot(db, keyArgs.single())',src)
         self.assertIn('require(primaryColumns.isNotEmpty()',src)
         self.assertIn('check(originalSettings == settingsSnapshot(',src)
         self.assertNotIn('runCatching { db.execSQL',src)
