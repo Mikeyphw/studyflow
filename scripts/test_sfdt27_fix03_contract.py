@@ -47,6 +47,15 @@ class Fix03Contracts(unittest.TestCase):
         self.assertIn('Sfdt27SflpReplayRegressionTest#',runner)
         self.assertIn("if sflp_error is not None:",runner)
         self.assertIn('raw_logs_retained=False',runner)
+        # HF02: setup, peer replay, and cold reopen must report distinct fixed
+        # failure categories rather than burying JUnit lifecycle failures.
+        for stage in ('SFLP_SETUP','SFLP_FIXTURE','SFLP_BRIDGE',
+                      'SFLP_CAPTURE','SFLP_REPLAY','SFLP_VERIFY',
+                      'SFLP_REOPEN','SFLP_CLEANUP','SFLP_CLOSE'):
+            self.assertIn(stage,code)
+            self.assertIn(stage,verify.SFDT27_ROOM_STAGES)
+        self.assertIn('runner_test_failed_unstaged',verify.SFDT27_ROOM_CODES)
+        self.assertIn('runner_instrumentation_failed',verify.SFDT27_ROOM_CODES)
         self.assertNotIn('assumeTrue(',code)
         self.assertNotIn('setContent(',code)
     def test_strict_privacy_and_full_gate(self):

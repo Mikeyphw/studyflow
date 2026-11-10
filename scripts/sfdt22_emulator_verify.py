@@ -239,11 +239,14 @@ SFDT27_SFLP_TESTS = (
 SFDT27_ROOM_STAGES = frozenset({
     'PLAN_SETUP', 'SUBJECT_TOPIC', 'PLAN_UPDATE', 'COLD_REOPEN',
     'ROLLBACK_SETUP', 'ROLLBACK_WRITE', 'ROLLBACK_VERIFY',
-    'SFLP_EXISTING', 'SFLP_SAVE', 'SFLP_REOPEN', 'SFLP_TAMPER', 'SFLP_NEW', 'SFLP_DELETE',
+    'SFLP_EXISTING', 'SFLP_SETUP', 'SFLP_FIXTURE', 'SFLP_BRIDGE', 'SFLP_CLEANUP', 'SFLP_CLOSE',
+    'SFLP_CAPTURE', 'SFLP_REPLAY', 'SFLP_VERIFY', 'SFLP_REOPEN',
+    'SFLP_TAMPER', 'SFLP_NEW', 'SFLP_INSERT', 'SFLP_DELETE', 'SFLP_SAVE',
 })
 SFDT27_ROOM_CODES = frozenset({
     'runner_nonzero', 'runner_timeout', 'runner_no_test_status',
     'runner_bad_status', 'runner_output_oversize', 'test_failed',
+    'runner_test_failed_unstaged', 'runner_instrumentation_failed',
     *('stage_' + stage.lower() for stage in SFDT27_ROOM_STAGES),
 })
 
@@ -273,6 +276,12 @@ def sfdt27_room_result(raw: bytes, test: str, return_code: int) -> str:
     markers = set(re.findall(r'SFDT27_ROOM_STAGE_([A-Z_]+)', output))
     if len(markers) == 1 and next(iter(markers)) in SFDT27_ROOM_STAGES:
         return 'stage_' + next(iter(markers)).lower()
+    # Classify real Android test failures even if they occur in @Before/@After
+    # and never reach the test body's stage guard. These are ALWAYS red.
+    if 'INSTRUMENTATION_FAILED' in output:
+        return 'runner_instrumentation_failed'
+    if tests and set(tests) == {test} and '-2' in codes:
+        return 'runner_test_failed_unstaged'
     if return_code != 0:
         return 'runner_nonzero'
     if not tests:
