@@ -25,8 +25,8 @@ class Fix03HF02Contracts(unittest.TestCase):
         self.assertEqual(src.count('@Test fun '), 3)
         for marker in ('@RunWith(AndroidJUnit4::class)', '@Before fun prepare()',
                        '@After fun cleanup()', 'SFDT27_ROOM_STAGE_$stage',
-                       'cleanFixture()', 'createStudyFlowDataLayer(context',
-                       'StudyFlowDatabase.create(context)',
+                       'cleanFixture()', 'createSfdt27DebugSflpReplayBridge(database)',
+                       'openIsolatedDatabase()',
                        'assertEquals(originalSettings, database.studySupportDao().findPlanSettings(existingId))',
                        'assertNotNull(database.studyStructureDao().findTopic('):
             self.assertIn(marker,src)
@@ -34,7 +34,7 @@ class Fix03HF02Contracts(unittest.TestCase):
                       'SFLP_REPLAY','SFLP_VERIFY','SFLP_REOPEN','SFLP_CLEANUP','SFLP_CLOSE'):
             self.assertIn(stage,src)
             self.assertIn(stage,host.SFDT27_ROOM_STAGES)
-        self.assertIn('if (!::database.isInitialized) return',src)
+        self.assertIn('if (!::context.isInitialized) return',src)
         # JUnit emits this fixed-category prefix by interpolating a stage
         # variable. The source never contains literal expanded stage strings.
         # Enforce the actual producer/consumer contract, not a stale spelling.

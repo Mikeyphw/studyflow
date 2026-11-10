@@ -227,6 +227,15 @@ def sfdt27_expected_probes() -> list[dict]:
     return [{'point': p, 'state': 'matched'} for p in SFDT27_POINTS]
 
 
+SFDT27_SFLP_STAGE_FILE = 'files/sfdt27-sflp-stage-v1.txt'
+SFDT27_SFLP_STAGES = frozenset({
+    'SFLP_SETUP', 'SFLP_FIXTURE', 'SFLP_BRIDGE', 'SFLP_EXISTING',
+    'SFLP_CAPTURE', 'SFLP_REPLAY', 'SFLP_VERIFY', 'SFLP_REOPEN',
+    'SFLP_TAMPER', 'SFLP_NEW', 'SFLP_INSERT', 'SFLP_DELETE',
+    'SFLP_SAVE', 'SFLP_CLEANUP', 'SFLP_CLOSE', 'SFLP_DELETE_DB',
+    'SFLP_COMPLETE',
+})
+
 SFDT27_ROOM_TESTS = (
     'customizedSettingsAndOwnershipSurviveSubjectTopicAndColdRoomReopen',
     'failedTopicTransactionRollsBackWithoutChangingPersonalizedSettings',
@@ -242,11 +251,14 @@ SFDT27_ROOM_STAGES = frozenset({
     'SFLP_EXISTING', 'SFLP_SETUP', 'SFLP_FIXTURE', 'SFLP_BRIDGE', 'SFLP_CLEANUP', 'SFLP_CLOSE',
     'SFLP_CAPTURE', 'SFLP_REPLAY', 'SFLP_VERIFY', 'SFLP_REOPEN',
     'SFLP_TAMPER', 'SFLP_NEW', 'SFLP_INSERT', 'SFLP_DELETE', 'SFLP_SAVE',
+    'SFLP_DELETE_DB', 'SFLP_COMPLETE',
 })
 SFDT27_ROOM_CODES = frozenset({
     'runner_nonzero', 'runner_timeout', 'runner_no_test_status',
     'runner_bad_status', 'runner_output_oversize', 'test_failed',
     'runner_test_failed_unstaged', 'runner_instrumentation_failed',
+    'runner_stage_receipt_unavailable', 'runner_stage_receipt_invalid',
+    'runner_stage_receipt_incomplete', 'runner_stage_receipt_reset_failed',
     *('stage_' + stage.lower() for stage in SFDT27_ROOM_STAGES),
 })
 
@@ -307,11 +319,72 @@ def sfdt27_hosted_room_regression() -> None:
         if reason != 'passed':
             raise Sfdt27RoomFailure(test, reason)
 
+def sfdt27_sflp_parse_stage(raw: bytes, test: str) -> tuple[str, str]:
+    """Fail-closed; only exact allowlisted method, stage and state, never private data."""
+    if not (0 < len(raw) <= 2048):
+        return ('invalid', 'unknown')
+    try:
+        decoded = raw.decode('ascii', 'strict')
+    except UnicodeError:
+        return ('invalid', 'unknown')
+    lines = decoded.splitlines()
+    if (not raw.endswith(b'\n') or not (2 <= len(lines) <= 36) or
+            lines[0] != 'SFLP_V1' or test not in SFDT27_SFLP_TESTS):
+        return ('invalid', 'unknown')
+    stages = []
+    for row in lines[1:]:
+        parts = row.split('|')
+        if (len(parts) != 3 or parts[0] != test or
+                parts[1] not in SFDT27_SFLP_STAGES or
+                parts[2] not in ('ENTER', 'FAIL', 'PASS')):
+            return ('invalid', 'unknown')
+        stages.append((parts[1], parts[2]))
+    if stages[0] != ('SFLP_SETUP', 'ENTER'):
+        return ('invalid', 'unknown')
+    failures = [stage for stage, state in stages if state == 'FAIL']
+    if failures:
+        return ('failed', failures[0] if len(failures) == 1 else 'unknown')
+    complete = sum(stage == 'SFLP_COMPLETE' and state == 'PASS' for stage,state in stages)
+    if complete == 1 and stages[-1] == ('SFLP_COMPLETE', 'PASS'):
+        return ('complete', 'SFLP_COMPLETE')
+    if complete > 1 or any(state == 'PASS' or stage == 'SFLP_COMPLETE' for stage,state in stages):
+        return ('invalid', 'unknown')
+    return ('incomplete', stages[-1][0])
+
+
+def sfdt27_sflp_read_stage(test: str) -> tuple[str, str]:
+    try:
+        result = subprocess.run(
+            ['adb', '-s', SERIAL, 'exec-out', 'run-as', PACKAGE,
+             'cat', SFDT27_SFLP_STAGE_FILE],
+            capture_output=True, timeout=15, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return ('unavailable', 'unknown')
+    if result.returncode:
+        return ('unavailable', 'unknown')
+    return sfdt27_sflp_parse_stage(result.stdout, test)
+
+
+def sfdt27_sflp_clear_stage() -> bool:
+    try:
+        result = subprocess.run(
+            ['adb', '-s', SERIAL, 'shell', 'run-as', PACKAGE,
+             'rm', '-f', SFDT27_SFLP_STAGE_FILE],
+            capture_output=True, timeout=15, check=False,
+        )
+        return result.returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
 def sfdt27_hosted_sflp_regression() -> None:
     # True app/instrumentation tests, not SQL string matches or synthetic output.
     # Every test has a private fixture identity and must emit exactly one start,
     # one finish, and an Android instrumentation success status.
     for test in SFDT27_SFLP_TESTS:
+        if not sfdt27_sflp_clear_stage():
+            raise Sfdt27RoomFailure(test, 'runner_stage_receipt_reset_failed')
         try:
             process = subprocess.run(
                 ['adb', '-s', SERIAL, 'shell', 'am', 'instrument', '-w', '-r',
@@ -321,7 +394,21 @@ def sfdt27_hosted_sflp_regression() -> None:
         except subprocess.TimeoutExpired:
             raise Sfdt27RoomFailure(test, 'runner_timeout') from None
         reason = sfdt27_room_result(process.stdout, test, process.returncode)
-        if reason != 'passed':
+        status, stage = sfdt27_sflp_read_stage(test)
+        # Real Android JUnit status and a NEW, test-bound, device-private
+        # completion seal are both mandatory. Neither can substitute for the other.
+        if reason == 'passed':
+            if status != 'complete':
+                code = ('runner_stage_receipt_invalid' if status == 'invalid' else
+                        'runner_stage_receipt_unavailable' if status == 'unavailable' else
+                        'runner_stage_receipt_incomplete')
+                raise Sfdt27RoomFailure(test, code)
+        else:
+            if reason in ('runner_test_failed_unstaged', 'test_failed', 'runner_bad_status'):
+                if status == 'failed' and stage in SFDT27_SFLP_STAGES:
+                    reason = 'stage_' + stage.lower()
+                elif status == 'incomplete' and stage in SFDT27_SFLP_STAGES:
+                    reason = 'stage_' + stage.lower()
             raise Sfdt27RoomFailure(test, reason)
 
 DIAGNOSTIC_THROUGH = {'plan': 1, 'subjects': 2, 'session': 3, 'practice': 4}

@@ -33,9 +33,9 @@ class Fix03Contracts(unittest.TestCase):
         for symbol in ('@RunWith(AndroidJUnit4::class)','@Test fun existingPlanReplayPreservesSettingsAndOwnedContentAfterColdReopen',
                        '@Test fun noncanonicalPeerKeysAndValuesFailWithoutMutation',
                        '@Test fun newPlanReplayInsertsAndExplicitDeleteStillWorks',
-                       'createStudyFlowDataLayer(context','sflpProductStateBridge',
+                       'createSfdt27DebugSflpReplayBridge(database)','sfdt27-sflp-stage-v1.txt',
                        'assertEquals(originalSettings, database.studySupportDao().findPlanSettings(existingId))',
-                       'StudyFlowDatabase.create(context)', 'database.close()',
+                       'openIsolatedDatabase()', 'database.close()',
                        'assertNotNull(database.studyStructureDao().findSubject('):
             self.assertIn(symbol,code)
         self.assertEqual(code.count('@Test fun '),3)

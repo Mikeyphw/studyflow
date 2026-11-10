@@ -1,9 +1,13 @@
 package com.mikeyphw.studyflow
 
 import android.content.Context
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.mikeyphw.studyflow.core.database.StudyFlowIntegrity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.mikeyphw.studyflow.core.data.createStudyFlowDataLayer
+import com.mikeyphw.studyflow.core.data.createSfdt27DebugSflpReplayBridge
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.entity.StudyPlanEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyPlanSettingsEntity
@@ -23,6 +27,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import org.junit.Rule
+import org.junit.rules.TestName
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -45,31 +51,79 @@ class Sfdt27SflpReplayRegressionTest {
     private val existingId = "sfdt27-sflp-existing"
     private val newId = "sfdt27-sflp-new"
     private val workspace = StudyFlowProductStateContract.WorkspaceId
+    private val isolatedDatabaseName = "sfdt27-sflp-regression.db"
+    @get:Rule val testName = TestName()
+
+    private val allowedTests = setOf(
+        "existingPlanReplayPreservesSettingsAndOwnedContentAfterColdReopen",
+        "noncanonicalPeerKeysAndValuesFailWithoutMutation",
+        "newPlanReplayInsertsAndExplicitDeleteStillWorks",
+    )
+    private val allowedStages = setOf(
+        "SFLP_SETUP", "SFLP_FIXTURE", "SFLP_BRIDGE", "SFLP_EXISTING",
+        "SFLP_CAPTURE", "SFLP_REPLAY", "SFLP_VERIFY", "SFLP_REOPEN",
+        "SFLP_TAMPER", "SFLP_NEW", "SFLP_INSERT", "SFLP_DELETE",
+        "SFLP_SAVE", "SFLP_CLEANUP", "SFLP_CLOSE", "SFLP_DELETE_DB",
+        "SFLP_COMPLETE",
+    )
+
+    // An instrumented test writes ONLY fixed categories to app-private storage.
+    // The host reads and validates this separately from JUnit's stack formatting.
+    private fun recordStage(stage: String, status: String = "ENTER") {
+        require(stage in allowedStages && status in setOf("ENTER", "FAIL", "PASS"))
+        val method = requireNotNull(testName.methodName)
+        require(method in allowedTests)
+        val reset = stage == "SFLP_SETUP" && status == "ENTER"
+        val mode = if (reset) Context.MODE_PRIVATE else Context.MODE_APPEND
+        context.openFileOutput("sfdt27-sflp-stage-v1.txt", mode).use { output ->
+            if (reset) output.write("SFLP_V1\n".toByteArray(Charsets.US_ASCII))
+            output.write("$method|$stage|$status\n".toByteArray(Charsets.US_ASCII))
+        }
+    }
+
+    private fun openIsolatedDatabase(): StudyFlowDatabase = Room.databaseBuilder(
+        context, StudyFlowDatabase::class.java, isolatedDatabaseName,
+    ).addCallback(object : RoomDatabase.Callback() {
+        override fun onCreate(db: SupportSQLiteDatabase) { StudyFlowIntegrity.install(db) }
+        override fun onOpen(db: SupportSQLiteDatabase) { StudyFlowIntegrity.install(db) }
+    }).build()
 
     @Before fun prepare() {
         var stage = "SFLP_SETUP"
         try {
             context = InstrumentationRegistry.getInstrumentation().targetContext
-            database = StudyFlowDatabase.create(context)
+            recordStage(stage)
             stage = "SFLP_FIXTURE"
+            recordStage(stage)
+            check(context.deleteDatabase(isolatedDatabaseName) ||
+                !context.getDatabasePath(isolatedDatabaseName).exists())
+            database = openIsolatedDatabase()
             cleanFixture()
             stage = "SFLP_BRIDGE"
-            bridge = createStudyFlowDataLayer(context, applicationVersion = "hf27-hosted").sflpProductStateBridge
+            recordStage(stage)
+            bridge = createSfdt27DebugSflpReplayBridge(database)
         } catch (failure: Throwable) {
-            // Before/After failures do not pass through the test body's catch.
-            // Export only this fixed category, never exception text or plan IDs.
+            if (::context.isInitialized) recordStage(stage, "FAIL")
             throw AssertionError("SFDT27_ROOM_STAGE_$stage", failure)
         }
     }
 
     @After fun cleanup() {
-        if (!::database.isInitialized) return
+        if (!::context.isInitialized) return
         var stage = "SFLP_CLEANUP"
         try {
-            cleanFixture()
+            recordStage(stage)
+            if (::database.isInitialized && database.isOpen) cleanFixture()
             stage = "SFLP_CLOSE"
-            database.close()
+            recordStage(stage)
+            if (::database.isInitialized) database.close()
+            stage = "SFLP_DELETE_DB"
+            recordStage(stage)
+            check(context.deleteDatabase(isolatedDatabaseName) ||
+                !context.getDatabasePath(isolatedDatabaseName).exists())
+            recordStage("SFLP_COMPLETE", "PASS")
         } catch (failure: Throwable) {
+            recordStage(stage, "FAIL")
             throw AssertionError("SFDT27_ROOM_STAGE_$stage", failure)
         }
     }
@@ -138,45 +192,55 @@ class Sfdt27SflpReplayRegressionTest {
 
     @Test fun existingPlanReplayPreservesSettingsAndOwnedContentAfterColdReopen() = runBlocking {
         var stage = "SFLP_EXISTING"
+        recordStage(stage)
         try {
             bridge.captureLocalMutations(workspace)
             stage = "SFLP_FIXTURE"
+            recordStage(stage)
             database.studyPlanDao().insert(plan(existingId))
             val originalSettings = settings(existingId)
             database.studySupportDao().upsertPlanSettings(originalSettings)
             database.studyStructureDao().upsertSubject(subject(existingId))
             database.studyStructureDao().upsertTopic(topic(existingId))
             stage = "SFLP_CAPTURE"
+            recordStage(stage)
             val mutation = mutationFor(existingId)
             stage = "SFLP_REPLAY"
+            recordStage(stage)
             val remote = replay(mutation, 1L)
             assertEquals(1, bridge.projectResolved(workspace, listOf(remote)))
             assertEquals(0, bridge.projectResolved(workspace, listOf(remote)))
             stage = "SFLP_VERIFY"
+            recordStage(stage)
             assertEquals(originalSettings, database.studySupportDao().findPlanSettings(existingId))
             assertNotNull(database.studyStructureDao().findSubject(existingId, "hf27-sflp-subject"))
             assertNotNull(database.studyStructureDao().findTopic(existingId, "hf27-sflp-topic"))
             stage = "SFLP_REOPEN"
+            recordStage(stage)
             database.close()
-            database = StudyFlowDatabase.create(context)
+            database = openIsolatedDatabase()
             assertEquals(originalSettings, database.studySupportDao().findPlanSettings(existingId))
             assertNotNull(database.studyStructureDao().findSubject(existingId, "hf27-sflp-subject"))
             assertNotNull(database.studyStructureDao().findTopic(existingId, "hf27-sflp-topic"))
         } catch (failure: Throwable) {
+            recordStage(stage, "FAIL")
             throw AssertionError("SFDT27_ROOM_STAGE_$stage", failure)
         }
     }
 
     @Test fun noncanonicalPeerKeysAndValuesFailWithoutMutation() = runBlocking {
         var stage = "SFLP_TAMPER"
+        recordStage(stage)
         try {
             bridge.captureLocalMutations(workspace)
             database.studyPlanDao().insert(plan(existingId))
             val originalSettings = settings(existingId)
             database.studySupportDao().upsertPlanSettings(originalSettings)
             stage = "SFLP_CAPTURE"
+            recordStage(stage)
             val mutation = mutationFor(existingId)
             stage = "SFLP_TAMPER"
+            recordStage(stage)
             val wrongId = buildJsonObject {
                 put("type", "string")
                 put("value", "sfdt27-not-the-original-id")
@@ -198,23 +262,28 @@ class Sfdt27SflpReplayRegressionTest {
             assertEquals(originalSettings, database.studySupportDao().findPlanSettings(existingId))
             assertEquals(1, database.studyPlanDao().countById(existingId))
         } catch (failure: Throwable) {
+            recordStage(stage, "FAIL")
             throw AssertionError("SFDT27_ROOM_STAGE_$stage", failure)
         }
     }
 
     @Test fun newPlanReplayInsertsAndExplicitDeleteStillWorks() = runBlocking {
         var stage = "SFLP_NEW"
+        recordStage(stage)
         try {
             bridge.captureLocalMutations(workspace)
             database.studyPlanDao().insert(plan(newId))
             stage = "SFLP_CAPTURE"
+            recordStage(stage)
             val mutation = mutationFor(newId)
             database.studyPlanDao().deleteById(newId)
             stage = "SFLP_INSERT"
+            recordStage(stage)
             val insert = replay(mutation, 4L)
             assertEquals(1, bridge.projectResolved(workspace, listOf(insert)))
             assertEquals(1, database.studyPlanDao().countById(newId))
             stage = "SFLP_DELETE"
+            recordStage(stage)
             // SFLP type is authoritative, not a payload-supplied operationType.
             val deleted = StudyFlowDomainOperation(
                 operationId = StudyFlowOperationId("sfdt27-sflp-test-5"),
@@ -232,6 +301,7 @@ class Sfdt27SflpReplayRegressionTest {
             assertEquals(1, bridge.projectResolved(workspace, listOf(deleted)))
             assertEquals(0, database.studyPlanDao().countById(newId))
         } catch (failure: Throwable) {
+            recordStage(stage, "FAIL")
             throw AssertionError("SFDT27_ROOM_STAGE_$stage", failure)
         }
     }
