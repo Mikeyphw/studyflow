@@ -51,9 +51,9 @@ STAGES = frozenset({
     'subject_capture', 'topic_open_dialog',
     'topic_fill_name', 'topic_save', 'topic_save_feedback', 'topic_expand',
     'topic_confirm', 'topic_capture',
-    'session_open_root', 'session_open_overview', 'session_open_sessions', 'session_quick_dialog', 'session_title', 'session_start', 'session_running', 'session_pause', 'session_paused', 'session_resume', 'session_resumed', 'session_finish_open', 'session_finish_dialog', 'session_finish_notes', 'session_finish_confirm', 'session_finished', 'session_capture',
+    'session_open_root', 'session_open_overview', 'session_open_sessions', 'session_quick_dialog', 'session_title', 'session_start', 'session_running', 'session_pause', 'session_paused', 'session_resume', 'session_resumed', 'session_finish_open', 'session_finish_dialog', 'session_finish_notes', 'session_finish_confirm', 'session_finished', 'session_capture', 'session_completion_ui', 'session_completion_persisted', 'session_return_to_workspace', 'session_workspace_ready',
     'practice_open_questions', 'practice_open_reviews',
-    'practice_open_root',
+    'practice_open_root', 'practice_session_closed', 'practice_shell_ready', 'practice_tab_selected',
     'practice_enter_question_bank',
     'practice_open_question_editor',
     'practice_choose_true_false',
@@ -110,6 +110,7 @@ REASON_CODES = frozenset({
     'topic_value_not_written',
     'no_matching_compose_node', 'ambiguous_compose_node',
     'compose_wait_timeout', 'compose_assertion', 'app_process_crashed',
+    'session_status_lookup_failed', 'session_status_not_completed', 'root_navigation_missing',
     'test_failed', 'unexpected_runner_status', 'runner_nonzero_exit',
     *('boundary_' + point + '_' + state for point in
       ('after_create', 'after_subject', 'after_topic', 'before_session_start') for state in
@@ -596,6 +597,12 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'topic_editable_missing'
     elif 'SFDT22_TOPIC_VALUE_NOT_WRITTEN' in raw:
         reason = 'topic_value_not_written'
+    elif 'SFDT22_SESSION_STATUS_LOOKUP_FAILED' in raw:
+        reason = 'session_status_lookup_failed'
+    elif 'SFDT22_SESSION_STATUS_NOT_COMPLETED' in raw:
+        reason = 'session_status_not_completed'
+    elif 'SFDT22_ROOT_NAVIGATION_MISSING' in raw:
+        reason = 'root_navigation_missing'
     elif 'No node found that satisfies' in raw or 'No matching node found' in raw:
         reason = 'no_matching_compose_node'
     elif 'Expected exactly' in raw or 'Found multiple nodes' in raw:

@@ -1,6 +1,5 @@
 package com.mikeyphw.studyflow
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -9,8 +8,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
@@ -142,11 +142,8 @@ internal fun StudyFlowShell(
             }
         } else {
             val bottomInset by animateDpAsState(
-                targetValue = if (activeSession != null) {
-                    StudyFlowPracticeTokens.SessionBarMinHeight + 20.dp
-                } else {
-                    StudyFlowShellDefaults.CompactDockHeight + 20.dp
-                },
+                targetValue = StudyFlowShellDefaults.CompactDockHeight + 20.dp +
+                    (if (activeSession != null) StudyFlowPracticeTokens.SessionBarMinHeight + 28.dp else 0.dp),
                 animationSpec = studyFlowAnimationSpec(motionEnabled, StudyFlowMotionTokens.StandardMillis),
                 label = "studyflow-shell-bottom-inset",
             )
@@ -154,32 +151,38 @@ internal fun StudyFlowShell(
                 Box(modifier = Modifier.fillMaxSize().padding(bottom = bottomInset)) {
                     content()
                 }
-                AnimatedContent(
-                    targetState = activeSession != null,
-                    transitionSpec = { sessionEnter togetherWith sessionExit },
+                // Always preserve access to Today/Plan/Practice/Progress, including
+                // while an active or paused session is present. The bar stacks
+                // ABOVE the dock; an active session may never trap navigation.
+                Column(
                     modifier = Modifier.align(Alignment.BottomCenter),
-                    label = "studyflow-session-dock-morph",
-                ) { sessionVisible ->
-                    val session = activeSession
-                    if (sessionVisible && session != null) {
-                        StudyFlowActiveSessionBar(
-                            title = session.notes.lineSequence().firstOrNull().orEmpty()
-                                .ifBlank { activeSessionStatusLabel },
-                            elapsed = activeSessionElapsed,
-                            statusLabel = activeSessionStatusLabel,
-                            toggleLabel = if (session.status == StudySessionStatus.PAUSED) {
-                                resumeLabel
-                            } else {
-                                pauseLabel
-                            },
-                            paused = session.status == StudySessionStatus.PAUSED,
-                            onOpen = onOpenActiveSession,
-                            onToggle = onToggleActiveSession,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        )
-                    } else {
-                        StudyFlowCompactDock(destinations = destinations)
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    AnimatedVisibility(
+                        visible = activeSession != null,
+                        enter = sessionEnter,
+                        exit = sessionExit,
+                    ) {
+                        activeSession?.let { session ->
+                            StudyFlowActiveSessionBar(
+                                title = session.notes.lineSequence().firstOrNull().orEmpty()
+                                    .ifBlank { activeSessionStatusLabel },
+                                elapsed = activeSessionElapsed,
+                                statusLabel = activeSessionStatusLabel,
+                                toggleLabel = if (session.status == StudySessionStatus.PAUSED) {
+                                    resumeLabel
+                                } else {
+                                    pauseLabel
+                                },
+                                paused = session.status == StudySessionStatus.PAUSED,
+                                onOpen = onOpenActiveSession,
+                                onToggle = onToggleActiveSession,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            )
+                        }
                     }
+                    StudyFlowCompactDock(destinations = destinations)
                 }
             }
         }

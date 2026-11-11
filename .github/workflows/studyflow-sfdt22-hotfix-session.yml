@@ -48,9 +48,10 @@ jobs:
           python3 -B scripts/test_sfdt27_fix03_hf02_contract.py
           python3 -B scripts/test_sfdt27_fix03_hf03_contract.py
           python3 -B scripts/test_sfdt22_hf29_subject_fab_contract.py
+          python3 -B scripts/test_sfdt22_hf30_session_navigation_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
   # PR-label opt-in or manual exact-SHA dispatch; never release qualifying.
-  # Runs ONLY the first three real hosted journeys, ending with Quick Session.
+  # Runs the first FOUR real hosted journeys, including Practice/review; NOT full qualification.
   session-diagnostic:
     if: ${{ (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'sfdt22-hotfix-session' && github.event.pull_request.head.repo.full_name == 'Mikeyphw/studyflow') || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.repository == 'Mikeyphw/studyflow' && startsWith(github.ref, 'refs/heads/sfdt22-hotfix/')) }}
     name: SFDT22 focused hotfix diagnosis (NOT full qualification)
@@ -144,12 +145,12 @@ jobs:
           disk-size: 3072M
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
-          script: python3 -B scripts/sfdt22_emulator_verify.py --run --diagnostic-through session --output-dir "$RUNNER_TEMP/sfdt22-emulator" --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+          script: python3 -B scripts/sfdt22_emulator_verify.py --run --diagnostic-through practice --output-dir "$RUNNER_TEMP/sfdt22-emulator" --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
       - name: Require real test receipts and identity checkpoints, NO full gate
         shell: bash
         run: |
           set -euo pipefail
-          python3 -B scripts/sfdt22_emulator_verify.py --verify-diagnostic --diagnostic-through session \
+          python3 -B scripts/sfdt22_emulator_verify.py --verify-diagnostic --diagnostic-through practice \
             --output-dir "$RUNNER_TEMP/sfdt22-emulator" \
             --source-sha "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
       - name: Upload bounded and sanitized hotfix diagnostics even on failure

@@ -230,6 +230,37 @@ class Sfdt22HostedStudyJourneyTest {
         }
     }
 
+    /** On-device, read-only SQLite proof independent of Compose/snackbar state.
+     * Only fixed AssertionError categories are exported by the host parser. */
+    private fun assertSessionClosedInDatabase() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val file = context.getDatabasePath("studyflow.db")
+        if (!file.isFile) throw AssertionError("SFDT22_SESSION_STATUS_LOOKUP_FAILED")
+        val counts = try {
+            SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+                db.rawQuery(
+                    "SELECT COUNT(*), " +
+                        "COALESCE(SUM(CASE WHEN s.status = 'COMPLETED' " +
+                        "AND s.endedAtEpochMillis IS NOT NULL AND s.notes = ? THEN 1 ELSE 0 END), 0), " +
+                        "COALESCE(SUM(CASE WHEN s.status IN ('RUNNING','PAUSED') THEN 1 ELSE 0 END), 0) " +
+                        "FROM study_sessions AS s " +
+                        "JOIN study_plans AS p ON p.id = s.studyPlanId WHERE p.name = ?",
+                    arrayOf(sessionName, planName),
+                ).use { cursor ->
+                    if (!cursor.moveToFirst()) null else Triple(
+                        cursor.getLong(0), cursor.getLong(1), cursor.getLong(2),
+                    )
+                }
+            }
+        } catch (_: Exception) {
+            null
+        }
+        if (counts == null) throw AssertionError("SFDT22_SESSION_STATUS_LOOKUP_FAILED")
+        if (counts != Triple(1L, 1L, 0L)) {
+            throw AssertionError("SFDT22_SESSION_STATUS_NOT_COMPLETED")
+        }
+    }
+
     private fun sessionRouteBoundary() {
         val expected = rule.activity.getString(SessionsR.string.sessions_subtitle, planName)
         val matched = runCatching {
@@ -248,13 +279,9 @@ class Sfdt22HostedStudyJourneyTest {
     private fun text(resId: Int): String = rule.activity.getString(resId)
 
     private fun tab(name: String) = rule.onNode(
-        hasText(text(when (name) {
-            "today" -> WorkspaceR.string.today_title
-            "plan" -> WorkspaceR.string.plan_title
-            "practice" -> WorkspaceR.string.practice_title
-            "progress" -> WorkspaceR.string.progress_title
-            else -> error("Unknown SFDT22 root")
-        })) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab),
+        hasTestTag("studyflow.shell.root.$name") and
+            SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab) and hasClickAction(),
+        useUnmergedTree = true,
     )
 
     private fun innerTab(resId: Int) = rule.onAllNodes(
@@ -303,10 +330,20 @@ class Sfdt22HostedStudyJourneyTest {
     }
 
     private fun shell() {
-        rule.waitUntil(30_000L) {
-            listOf("today", "plan", "practice", "progress").all { name ->
-                runCatching { tab(name).fetchSemanticsNode() }.isSuccess
+        val roots = listOf("today", "plan", "practice", "progress")
+        try {
+            rule.waitUntil(30_000L) {
+                roots.all { name ->
+                    rule.onAllNodes(
+                        hasTestTag("studyflow.shell.root.$name") and
+                            SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab) and
+                            hasClickAction(),
+                        useUnmergedTree = true,
+                    ).fetchSemanticsNodes().size == 1
+                }
             }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_ROOT_NAVIGATION_MISSING", failure)
         }
     }
 
@@ -346,9 +383,11 @@ class Sfdt22HostedStudyJourneyTest {
 
     private fun openRoot(name: String) {
         shell()
-        tab(name).performClick()
-        rule.waitForIdle()
-        tab(name).assertIsDisplayed().assertIsSelected()
+        val root = tab(name)
+        root.assertIsDisplayed().assertIsEnabled().performTouchInput { click() }
+        rule.waitUntil(25_000L) {
+            runCatching { tab(name).assertIsDisplayed().assertIsSelected() }.isSuccess
+        }
     }
 
     /** Await a genuine workspace tab, its selection, and actionable pane content. */
@@ -1119,12 +1158,36 @@ class Sfdt22HostedStudyJourneyTest {
             writeSessionEditor("studyflow.session.finish.notes", sessionName)
         }
         stage("session_finish_confirm") { clickSessionAction("studyflow.session.finish.confirm") }
+        stage("session_completion_ui") {
+            // A title alone is not completion: require the production no-active state.
+            val noActive = hasText(text(SessionsR.string.no_active_session))
+            rule.waitUntil(35_000L) {
+                rule.onAllNodes(noActive).fetchSemanticsNodes().isNotEmpty() &&
+                    listOf("studyflow.session.active.pause", "studyflow.session.active.resume",
+                           "studyflow.session.active.finish").all { tag ->
+                        rule.onAllNodes(hasTestTag(tag), useUnmergedTree = true)
+                            .fetchSemanticsNodes().isEmpty()
+                    }
+            }
+        }
+        stage("session_completion_persisted") { assertSessionClosedInDatabase() }
         stage("session_finished") { visible(sessionName) }
         stage("session_capture") { screenshot("session") }
+        stage("session_return_to_workspace") {
+            // Real in-app Back control, never injected NavController/deep-link routing.
+            rule.onNodeWithContentDescription(text(SessionsR.string.go_back))
+                .assertIsDisplayed().performClick()
+            rule.waitForIdle()
+        }
+        stage("session_workspace_ready") { shell() }
     }
 
     @Test fun realUserAnswersQuestionAndOpensReviewQueue() {
+        // Independent test invocation: recheck actual persisted session state.
+        stage("practice_session_closed") { assertSessionClosedInDatabase() }
+        stage("practice_shell_ready") { shell() }
         stage("practice_open_root") { openRoot("practice") }
+        stage("practice_tab_selected") { tab("practice").assertIsDisplayed().assertIsSelected() }
         stage("practice_open_questions") {
             openInnerTabReady(WorkspaceR.string.practice_questions, WorkspaceR.string.open_question_bank)
         }
