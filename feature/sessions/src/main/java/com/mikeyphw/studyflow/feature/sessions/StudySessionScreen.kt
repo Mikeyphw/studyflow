@@ -388,6 +388,7 @@ private fun ActiveSessionCard(
         if (session == null) {
             Text(
                 text = stringResource(R.string.no_active_session),
+                modifier = Modifier.testTag("studyflow.session.active.empty"),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Button(onClick = onStartQuick, enabled = controlsEnabled) {

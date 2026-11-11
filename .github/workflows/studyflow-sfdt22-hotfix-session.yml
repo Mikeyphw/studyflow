@@ -49,6 +49,7 @@ jobs:
           python3 -B scripts/test_sfdt27_fix03_hf03_contract.py
           python3 -B scripts/test_sfdt22_hf29_subject_fab_contract.py
           python3 -B scripts/test_sfdt22_hf30_session_navigation_contract.py
+          python3 -B scripts/test_sfdt22_hf30_hf05_completion_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
   # PR-label opt-in or manual exact-SHA dispatch; never release qualifying.
   # Runs the first FOUR real hosted journeys, including Practice/review; NOT full qualification.

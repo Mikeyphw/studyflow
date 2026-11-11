@@ -1158,19 +1158,53 @@ class Sfdt22HostedStudyJourneyTest {
             writeSessionEditor("studyflow.session.finish.notes", sessionName)
         }
         stage("session_finish_confirm") { clickSessionAction("studyflow.session.finish.confirm") }
-        stage("session_completion_ui") {
-            // A title alone is not completion: require the production no-active state.
-            val noActive = hasText(text(SessionsR.string.no_active_session))
-            rule.waitUntil(35_000L) {
-                rule.onAllNodes(noActive).fetchSemanticsNodes().isNotEmpty() &&
-                    listOf("studyflow.session.active.pause", "studyflow.session.active.resume",
-                           "studyflow.session.active.finish").all { tag ->
-                        rule.onAllNodes(hasTestTag(tag), useUnmergedTree = true)
-                            .fetchSemanticsNodes().isEmpty()
-                    }
+        stage("session_completion_persisted") {
+            // The production save is asynchronous. Distinguish a rejected save
+            // from a successful DB mutation whose UI did not refresh. Never
+            // treat a snackbar or timeout as positive completion evidence.
+            val failures = rule.onAllNodes(hasText(text(SessionsR.string.operation_failed)))
+            var errorSeen = false
+            try {
+                rule.waitUntil(35_000L) {
+                    errorSeen = errorSeen || failures.fetchSemanticsNodes().isNotEmpty()
+                    errorSeen || runCatching {
+                        assertSessionClosedInDatabase()
+                        true
+                    }.getOrDefault(false)
+                }
+            } catch (_: Exception) {
+                // Fail below with a fixed non-sensitive status category.
             }
+            if (errorSeen || failures.fetchSemanticsNodes().isNotEmpty()) {
+                throw AssertionError("SFDT22_SESSION_FINISH_OPERATION_FAILED")
+            }
+            // Re-read SQLite, independently of Compose or snackbar semantics.
+            assertSessionClosedInDatabase()
         }
-        stage("session_completion_persisted") { assertSessionClosedInDatabase() }
+        stage("session_completion_ui") {
+            // Real production empty-session card, not merely a snackbar/title.
+            val empty = rule.onAllNodes(
+                hasTestTag("studyflow.session.active.empty"), useUnmergedTree = true,
+            )
+            val noActive = hasText(text(SessionsR.string.no_active_session))
+            val controlTags = listOf(
+                "studyflow.session.active.pause", "studyflow.session.active.resume",
+                "studyflow.session.active.finish",
+            )
+            val ready = runCatching {
+                rule.waitUntil(20_000L) {
+                    empty.fetchSemanticsNodes().size == 1 &&
+                        runCatching { empty.onFirst().assertIsDisplayed() }.isSuccess &&
+                        rule.onAllNodes(noActive).fetchSemanticsNodes().isNotEmpty() &&
+                        controlTags.all { tag ->
+                            rule.onAllNodes(hasTestTag(tag), useUnmergedTree = true)
+                                .fetchSemanticsNodes().isEmpty()
+                        }
+                }
+                true
+            }.getOrDefault(false)
+            if (!ready) throw AssertionError("SFDT22_SESSION_UI_NOT_SETTLED")
+        }
         stage("session_finished") { visible(sessionName) }
         stage("session_capture") { screenshot("session") }
         stage("session_return_to_workspace") {

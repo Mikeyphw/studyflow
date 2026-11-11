@@ -110,7 +110,8 @@ REASON_CODES = frozenset({
     'topic_value_not_written',
     'no_matching_compose_node', 'ambiguous_compose_node',
     'compose_wait_timeout', 'compose_assertion', 'app_process_crashed',
-    'session_status_lookup_failed', 'session_status_not_completed', 'root_navigation_missing',
+    'session_status_lookup_failed', 'session_status_not_completed',
+    'session_finish_operation_failed', 'session_ui_not_settled', 'root_navigation_missing',
     'test_failed', 'unexpected_runner_status', 'runner_nonzero_exit',
     *('boundary_' + point + '_' + state for point in
       ('after_create', 'after_subject', 'after_topic', 'before_session_start') for state in
@@ -597,6 +598,10 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'topic_editable_missing'
     elif 'SFDT22_TOPIC_VALUE_NOT_WRITTEN' in raw:
         reason = 'topic_value_not_written'
+    elif 'SFDT22_SESSION_FINISH_OPERATION_FAILED' in raw:
+        reason = 'session_finish_operation_failed'
+    elif 'SFDT22_SESSION_UI_NOT_SETTLED' in raw:
+        reason = 'session_ui_not_settled'
     elif 'SFDT22_SESSION_STATUS_LOOKUP_FAILED' in raw:
         reason = 'session_status_lookup_failed'
     elif 'SFDT22_SESSION_STATUS_NOT_COMPLETED' in raw:
