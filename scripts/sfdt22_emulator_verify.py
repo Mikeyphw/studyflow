@@ -110,6 +110,8 @@ REASON_CODES = frozenset({
     'topic_value_not_written',
     'no_matching_compose_node', 'ambiguous_compose_node',
     'compose_wait_timeout', 'compose_assertion', 'app_process_crashed',
+    'practice_test_create_operation_failed', 'practice_test_not_persisted',
+    'practice_test_action_not_visible',
     'session_status_lookup_failed', 'session_status_not_completed',
     'session_finish_operation_failed', 'session_ui_not_settled', 'root_navigation_missing',
     'test_failed', 'unexpected_runner_status', 'runner_nonzero_exit',
@@ -598,6 +600,12 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'topic_editable_missing'
     elif 'SFDT22_TOPIC_VALUE_NOT_WRITTEN' in raw:
         reason = 'topic_value_not_written'
+    elif 'SFDT22_PRACTICE_TEST_CREATE_OPERATION_FAILED' in raw and test == TESTS[3] and stage == 'practice_test_ready':
+        reason = 'practice_test_create_operation_failed'
+    elif 'SFDT22_PRACTICE_TEST_NOT_PERSISTED' in raw and test == TESTS[3] and stage == 'practice_test_ready':
+        reason = 'practice_test_not_persisted'
+    elif 'SFDT22_PRACTICE_TEST_ACTION_NOT_VISIBLE' in raw and test == TESTS[3] and stage == 'practice_test_ready':
+        reason = 'practice_test_action_not_visible'
     elif 'SFDT22_SESSION_FINISH_OPERATION_FAILED' in raw:
         reason = 'session_finish_operation_failed'
     elif 'SFDT22_SESSION_UI_NOT_SETTLED' in raw:

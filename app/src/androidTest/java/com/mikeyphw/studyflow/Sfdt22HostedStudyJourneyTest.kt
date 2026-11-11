@@ -846,6 +846,72 @@ class Sfdt22HostedStudyJourneyTest {
         }
     }
 
+    /** HF09: inspect the actual committed study-test row, never a test fixture.
+     * Data values are used ONLY as bound parameters on the emulator and never
+     * exported in hosted diagnostics or test assertions. */
+    private fun persistedPracticeTestCount(): Long? {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return null
+        return runCatching {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT COUNT(*) FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? " +
+                        "AND tests.submittedAtEpochMillis IS NULL",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows -> if (rows.moveToFirst()) rows.getLong(0) else null }
+            }
+        }.getOrNull()
+    }
+
+    /** Create is asynchronous; a LazyColumn cannot compose off-screen rows
+     * until the actual production list is scrolled. Prove DB -> rendered action.
+     * Re-try a real scroll while Room Flow delivers the committed row; never
+     * accept snackbar-only success or invoke a domain method directly. */
+    private fun awaitRealPracticeTestReady() {
+        val operationFailure = hasText(text(PracticeR.string.operation_failed))
+        try {
+            rule.waitUntil(35_000L) {
+                if (rule.onAllNodes(operationFailure).fetchSemanticsNodes().isNotEmpty()) {
+                    throw AssertionError("SFDT22_PRACTICE_TEST_CREATE_OPERATION_FAILED")
+                }
+                persistedPracticeTestCount() == 1L
+            }
+        } catch (failure: Throwable) {
+            if (failure is AssertionError &&
+                failure.message == "SFDT22_PRACTICE_TEST_CREATE_OPERATION_FAILED") throw failure
+            throw AssertionError("SFDT22_PRACTICE_TEST_NOT_PERSISTED", failure)
+        }
+        val panel = hasText(text(PracticeR.string.recent_tests))
+        val actionable = hasText(text(PracticeR.string.start_or_resume)) and hasClickAction()
+        try {
+            rule.waitUntil(30_000L) {
+                val buttons = rule.onAllNodes(actionable)
+                if (buttons.fetchSemanticsNodes().isNotEmpty()) {
+                    val visible = runCatching {
+                        buttons.onFirst().performScrollTo()
+                        buttons.onFirst().assertIsDisplayed().assertIsEnabled()
+                    }.isSuccess
+                    if (visible) return@waitUntil true
+                }
+                // One scroll attempt before the Room emission can miss the row.
+                // Here every iteration can scroll the real LazyColumn again.
+                val lists = rule.onAllNodes(hasScrollToIndexAction())
+                if (lists.fetchSemanticsNodes().isNotEmpty()) {
+                    runCatching { lists.onFirst().performScrollToNode(panel) }
+                    runCatching { lists.onFirst().performScrollToNode(actionable) }
+                }
+                buttons.fetchSemanticsNodes().isNotEmpty() && runCatching {
+                    buttons.onFirst().assertIsDisplayed().assertIsEnabled()
+                }.isSuccess
+            }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_PRACTICE_TEST_ACTION_NOT_VISIBLE", failure)
+        }
+    }
+
     private fun click(resId: Int) = clickLabel(text(resId))
 
     private fun clickLabel(label: String) {
@@ -1239,6 +1305,7 @@ class Sfdt22HostedStudyJourneyTest {
         // The new StudyTest is saved asynchronously. Require its actual, actionable
         // production button BEFORE selecting it; no sleeps, seeded rows or shortcuts.
         stage("practice_test_ready") {
+            awaitRealPracticeTestReady()
             visible(text(PracticeR.string.start_or_resume))
         }
         stage("practice_start_test") { click(PracticeR.string.start_or_resume) }
