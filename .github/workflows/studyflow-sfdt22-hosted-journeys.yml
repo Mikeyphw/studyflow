@@ -145,6 +145,11 @@ jobs:
           echo "86f0eb351d0ceaf5c742683c9add6cce2b5239de19132cb46a92d12aece9e3dc  scripts/test_sfdt22_hf30_hf07_diagnostics_contract.py" | sha256sum --check --status
           echo "696030f479596d332063d5f43e2e212c234f3f17d04d367678035e5a0be0a8a9  docs/actions/SFDT22_HF30_HF07_ANDROID_DIAGNOSTIC_REBUILD.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf30_hf07_diagnostics_contract.py
+          echo "8f553d739ad5e23ad9e6d4278e4922deedb06f2b60a05049db7674e7343347e9  gradle/libs.versions.toml" | sha256sum --check --status
+          echo "351f7d1401fb363d731d47517b184a06be7de754896843fad30b30bfc5774728  core/data/build.gradle.kts" | sha256sum --check --status
+          echo "0c71a1d223516fd1e3fcbd498c5bbf157a09aa1bb8b9164ecf604961f8e0394a  scripts/test_sfdt22_hf30_hf08_runner_contract.py" | sha256sum --check --status
+          echo "655bec0f16c32cb6bd26aa9aaa35d12a807b208576ca038a59dae056546f3afa  docs/actions/SFDT22_HF30_HF08_ANDROIDX_RUNNER_DEPENDENCY.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf30_hf08_runner_contract.py
           echo "9cf50e48470c29f36fc1c2877cade35622c843312a2c1ccbd2cbaf80d417d4a3  scripts/test_sfdt22_hf30_opt01_contract.py" | sha256sum --check --status
           echo "0d26d4def1f8d3455773d294e3c04b723cf7b86e3a03687dbaa1db09fde49eca  docs/actions/STUDYFLOW_OPT01_WORKFLOW_TRIGGER_DEDUP.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf30_opt01_contract.py

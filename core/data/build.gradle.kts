@@ -23,5 +23,7 @@ dependencies {
 
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.test.ext.junit)
+    // Required by the core:data AndroidJUnitRunner instrumentation APK.
+    androidTestImplementation(libs.androidx.test.runner)
 }
 
