@@ -22,7 +22,8 @@ class FastLoop(unittest.TestCase):
         cls.legacy=(ROOT/'.github/workflows/studyflow-ci.yml').read_text()
     def test_01_staging_is_owner_scoped_and_not_a_pr_gate(self):
         s=self.stage
-        self.assertIn("'sfdt22-hotfix/**'",s)
+        self.assertIn("'sfdt22-hotfix/*-staging-*'",s)
+        self.assertNotIn("'sfdt22-hotfix/**'",s)
         self.assertIn("github.repository == 'Mikeyphw/studyflow'",s)
         self.assertIn("startsWith(github.ref, 'refs/heads/sfdt22-hotfix/')",s)
         self.assertIn('uses: ./.github/workflows/studyflow-sfdt22-hotfix-session.yml',s)
@@ -87,11 +88,11 @@ class FastLoop(unittest.TestCase):
         self.assertIn('scripts/sfdt22_emulator_verify.py --verify-diagnostic --diagnostic-through practice',f)
     def test_07_policy_resists_mutations(self):
         s=self.stage
-        for mutated in (s.replace("'sfdt22-hotfix/**'","'**'"),
+        for mutated in (s.replace("'sfdt22-hotfix/*-staging-*'","'**'"),
                         s.replace('expected_sha: ${{ github.sha }}','expected_sha: anything'),
                         s.replace("github.repository == 'Mikeyphw/studyflow'","true")):
             self.assertFalse(all(x in mutated for x in (
-                "'sfdt22-hotfix/**'","expected_sha: ${{ github.sha }}",
+                "'sfdt22-hotfix/*-staging-*'","expected_sha: ${{ github.sha }}",
                 "github.repository == 'Mikeyphw/studyflow'")))
     def test_08_archive_source_constraints(self):
         d=(ROOT/DOC).read_text()

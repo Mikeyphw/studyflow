@@ -4,7 +4,7 @@ name: StudyFlow SFDT26 Fast Hotfix Staging (nonqualifying)
 on:
   push:
     branches:
-      - 'sfdt22-hotfix/**'
+      - 'sfdt22-hotfix/*-staging-*'
 permissions:
   contents: read
 concurrency:

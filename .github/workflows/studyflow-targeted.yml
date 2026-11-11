@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - main
-      - 'sfdt22-hotfix/**'
+      - 'sfdt22-hotfix/*-staging-*'
   workflow_dispatch:
     inputs:
       expected_sha:
