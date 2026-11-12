@@ -79,6 +79,7 @@ STAGES = frozenset({
     'restart_open_content', 'restart_open_overview', 'restart_open_questions', 'restart_open_reviews',
 })
 TOPIC_CAUSE_CODES = frozenset({'settings_before_topic', 'settings_before_progress', 'settings_changed_progress', 'settings_changed_topic', 'sqlite_constraint', 'sqlite_locked', 'sqlite_other', 'invalid_input', 'unexpected'})
+PRACTICE_DIAG_CODES = frozenset({'DB_MISSING', 'LOOKUP_FAILED', 'TEST_MISSING', 'TEST_AMBIGUOUS', 'ATTEMPT_NOT_STARTED', 'ATTEMPT_SUBMITTED', 'QUESTION_COUNT_MISMATCH', 'ANSWER_RECORD_MISSING', 'ANSWER_COUNTER_ZERO', 'ANSWER_COUNTER_MISMATCH', 'ANSWER_COUNTER_WITHOUT_RECORD', 'ROW_PRESENT_PREDICATE_MISMATCH', 'OPERATION_FAILED'})
 REASON_CODES = frozenset({
     'subject_card_missing',
     'workspace_plan_mismatch', 'subject_owner_mismatch', 'subject_owner_lookup_failed',
@@ -112,6 +113,8 @@ REASON_CODES = frozenset({
     'compose_wait_timeout', 'compose_assertion', 'app_process_crashed',
     'practice_test_create_operation_failed', 'practice_test_not_persisted',
     'practice_test_action_not_visible',
+    *('practice_' + code.lower() for code in PRACTICE_DIAG_CODES),
+    'practice_diagnostic_unreviewed', 'practice_diagnostic_ambiguous',
     'session_status_lookup_failed', 'session_status_not_completed',
     'session_finish_operation_failed', 'session_ui_not_settled', 'root_navigation_missing',
     'test_failed', 'unexpected_runner_status', 'runner_nonzero_exit',
@@ -490,9 +493,18 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
     """Map volatile Android stdout to stable enums; persist none of raw."""
     marker = re.search(r'SFDT22_STEP_([a-z][a-z0-9_]{1,39})', raw)
     stage = marker.group(1) if marker and marker.group(1) in STAGES else 'unavailable'
+    practice_diags = re.findall(r'\bSFDT22_PRACTICE_DIAG_([A-Z_]{2,40})\b', raw)
     boundary = re.search(r'SFDT22_BOUNDARY_(AFTER_CREATE|AFTER_SUBJECT|AFTER_TOPIC|BEFORE_SESSION_START)_(MISSING|LOOKUP_FAILED|AMBIGUOUS|MISMATCHED)', raw)
     topic_cause = re.search(r'SFDT22_TOPIC_CAUSE_([A-Z_]{2,50})\b', raw)
-    if boundary:
+    if practice_diags and test == TESTS[3] and stage == 'practice_answer_acknowledged':
+        variants = set(practice_diags)
+        if len(variants) != 1:
+            reason = 'practice_diagnostic_ambiguous'
+        elif next(iter(variants)) not in PRACTICE_DIAG_CODES:
+            reason = 'practice_diagnostic_unreviewed'
+        else:
+            reason = 'practice_' + next(iter(variants)).lower()
+    elif boundary:
         reason = 'boundary_' + boundary.group(1).lower() + '_' + boundary.group(2).lower()
     elif topic_cause and test == TESTS[1] and stage == 'topic_save_feedback' and topic_cause.group(1).lower() in TOPIC_CAUSE_CODES:
         reason = 'topic_save_' + topic_cause.group(1).lower()

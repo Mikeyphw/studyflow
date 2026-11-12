@@ -29,6 +29,9 @@ jobs:
           test -z "$(git status --porcelain --untracked-files=normal)"
           echo "f7d7390a7962fe752395981cfc66df05ecfa24c8516da97e35c249f981ab5812  scripts/sfdt21_emulator_verify.py" | sha256sum --check --status
           echo "700ac0a4e17ba56e36e3cc056afea5b232577ef84fb75e5fa62221f3f356af0b  scripts/sfdt21_emulator_ci.sh" | sha256sum --check --status
+          echo "cef0b98d282cce52b7651b94c301fa43a0a5b5f9d011e6ec52ac9cf76304b373  scripts/sfdt21_hf32_package_diag.py" | sha256sum --check --status
+          echo "d4cd51a9439c2611b93576596ee5dc02676097c414e439127b8946523e522fc4  scripts/test_sfdt21_hf32_package_diag.py" | sha256sum --check --status
+          python3 -B scripts/test_sfdt21_hf32_package_diag.py
           echo "4950bb7a8a3b11c593af9eed88561581dcce2e4c8af54611306fb3999bea5f76  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt21HostedRealUiTest.kt" | sha256sum --check --status
           python3 -B scripts/test_sfdt21_emulator_contract.py
           echo "d7be62e9dd74ab16e2689235fcc6d41b6bc4938922948ed7c690279f323b5bf5  scripts/test_sfdt22_hf30_hf10_dual_android_contract.py" | sha256sum --check --status
@@ -79,7 +82,8 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew --no-daemon --max-workers=2 --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
+          python3 -B scripts/sfdt21_hf32_package_diag.py --output-dir "$RUNNER_TEMP/sfdt21-emulator" \
+            --task :app:assembleDebug --task :app:assembleDebugAndroidTest
           test -f app/build/outputs/apk/debug/app-debug.apk
           test -f app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           test ! -e app/build/outputs/apk/release/app-release.apk

@@ -937,22 +937,69 @@ class Sfdt22HostedStudyJourneyTest {
     /** Asynchronous answer operations may complete after a Compose snackbar
      * disappears. Require the actual Room mutation, or emit a distinct stable
      * failure category; do not suppress a rejected production operation. */
+    /** HF32: read-only, bounded diagnostic; no private values leave the emulator. */
+    private fun diagnosePracticeAnswerPersistence(): String {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return "DB_MISSING"
+        return try {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT tests.questionCount, tests.answeredCount, " +
+                        "tests.startedAtEpochMillis, tests.submittedAtEpochMillis, tests.configurationJson " +
+                        "FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? LIMIT 2",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows ->
+                    if (!rows.moveToFirst()) {
+                        "TEST_MISSING"
+                    } else {
+                        val questionCount = rows.getInt(0)
+                        val answeredCount = rows.getInt(1)
+                        val started = !rows.isNull(2)
+                        val submitted = !rows.isNull(3)
+                        val hasAnswerRecord = !rows.isNull(4) &&
+                            rows.getString(4).lineSequence().any { it.startsWith("answer=") }
+                        val ambiguous = rows.moveToNext()
+                        when {
+                            ambiguous -> "TEST_AMBIGUOUS"
+                            !started -> "ATTEMPT_NOT_STARTED"
+                            submitted -> "ATTEMPT_SUBMITTED"
+                            questionCount != 1 -> "QUESTION_COUNT_MISMATCH"
+                            answeredCount == 0 && hasAnswerRecord -> "ANSWER_COUNTER_ZERO"
+                            answeredCount == 0 -> "ANSWER_RECORD_MISSING"
+                            answeredCount != 1 -> "ANSWER_COUNTER_MISMATCH"
+                            !hasAnswerRecord -> "ANSWER_COUNTER_WITHOUT_RECORD"
+                            else -> "ROW_PRESENT_PREDICATE_MISMATCH"
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            "LOOKUP_FAILED"
+        }
+    }
+
     private fun awaitRealPracticeAnswerPersisted() {
         val errors = rule.onAllNodes(hasText(text(PracticeR.string.operation_failed)))
         try {
             rule.waitUntil(35_000L) {
                 if (errors.fetchSemanticsNodes().isNotEmpty()) {
-                    throw AssertionError("SFDT22_PRACTICE_ANSWER_OPERATION_FAILED")
+                    throw AssertionError("SFDT22_PRACTICE_ANSWER_OPERATION_FAILED",
+                        AssertionError("SFDT22_PRACTICE_DIAG_OPERATION_FAILED"))
                 }
                 persistedPracticeAnswerCount() == 1L
             }
         } catch (failure: Throwable) {
             if (failure is AssertionError &&
                 failure.message == "SFDT22_PRACTICE_ANSWER_OPERATION_FAILED") throw failure
-            throw AssertionError("SFDT22_PRACTICE_ANSWER_NOT_PERSISTED", failure)
+            throw AssertionError("SFDT22_PRACTICE_ANSWER_NOT_PERSISTED",
+                AssertionError("SFDT22_PRACTICE_DIAG_" + diagnosePracticeAnswerPersistence(), failure))
         }
         if (errors.fetchSemanticsNodes().isNotEmpty()) {
-            throw AssertionError("SFDT22_PRACTICE_ANSWER_OPERATION_FAILED")
+            throw AssertionError("SFDT22_PRACTICE_ANSWER_OPERATION_FAILED",
+                AssertionError("SFDT22_PRACTICE_DIAG_OPERATION_FAILED"))
         }
     }
 
