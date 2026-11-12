@@ -26,6 +26,7 @@ TESTS = (
     'realActivityOpensGlobalSearchAndReturnsToToday',
 )
 SCREENS = ('today', 'plan', 'practice', 'progress')
+SEARCH_FAILURE_STAGES = ('search_shell_ready', 'search_action_ready', 'search_open_action', 'search_editor_ready', 'search_back_navigation', 'search_route_closed', 'search_today_selected')
 SHA40 = re.compile(r'[0-9a-f]{40}\Z')
 SHA256 = re.compile(r'[0-9a-f]{64}\Z')
 OUTCOME = 'PASS_HOSTED_REAL_MAINACTIVITY_UI'
@@ -83,7 +84,12 @@ def summarize(raw: str) -> dict:
     errors = ('INSTRUMENTATION_FAILED', 'INSTRUMENTATION_ABORTED',
               'Process crashed', 'INSTRUMENTATION_RESULT: shortMsg=',
               'AssertionFailedError', 'AssertionError', 'ComposeTimeoutException')
+    stage_match = re.search(r'SFDT21_STEP_([a-z][a-z0-9_]{2,50})', raw)
+    failure_stage = (stage_match.group(1) if stage_match and
+                     stage_match.group(1) in SEARCH_FAILURE_STAGES and
+                     TESTS[3] in failed else 'unavailable')
     return {
+        'failure_stage': failure_stage,
         'expected_tests': list(TESTS),
         'started_tests': [t for t in TESTS if t in started],
         'passed_tests': [t for t in TESTS if t in passed],
@@ -217,6 +223,8 @@ def run(output_dir: Path, source: str, run_id: str, attempt: str, repo: Path) ->
                            timeout=720, check=False)
         summary = summarize(p.stdout.decode('utf-8', 'replace'))
         evidence['instrumentation_summary'] = summary
+        if summary['failed_tests']:
+            evidence['instrumentation_failure_stage'] = summary.get('failure_stage', 'unavailable')
         need(p.returncode == 0 and valid_summary(summary), 'Real MainActivity UI tests failed')
         phase = 'screenshots'
         images = []

@@ -912,6 +912,50 @@ class Sfdt22HostedStudyJourneyTest {
         }
     }
 
+    /** HF10: real committed answer proof, never a snackbar-only success.
+     * Restrict to exactly one started, unsubmitted, one-question real practice
+     * test on the newly created plan. SQL parameters never leave the emulator. */
+    private fun persistedPracticeAnswerCount(): Long? {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return null
+        return runCatching {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT COUNT(*) FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? " +
+                        "AND tests.startedAtEpochMillis IS NOT NULL " +
+                        "AND tests.submittedAtEpochMillis IS NULL " +
+                        "AND tests.questionCount = 1 AND tests.answeredCount = 1",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows -> if (rows.moveToFirst()) rows.getLong(0) else null }
+            }
+        }.getOrNull()
+    }
+
+    /** Asynchronous answer operations may complete after a Compose snackbar
+     * disappears. Require the actual Room mutation, or emit a distinct stable
+     * failure category; do not suppress a rejected production operation. */
+    private fun awaitRealPracticeAnswerPersisted() {
+        val errors = rule.onAllNodes(hasText(text(PracticeR.string.operation_failed)))
+        try {
+            rule.waitUntil(35_000L) {
+                if (errors.fetchSemanticsNodes().isNotEmpty()) {
+                    throw AssertionError("SFDT22_PRACTICE_ANSWER_OPERATION_FAILED")
+                }
+                persistedPracticeAnswerCount() == 1L
+            }
+        } catch (failure: Throwable) {
+            if (failure is AssertionError &&
+                failure.message == "SFDT22_PRACTICE_ANSWER_OPERATION_FAILED") throw failure
+            throw AssertionError("SFDT22_PRACTICE_ANSWER_NOT_PERSISTED", failure)
+        }
+        if (errors.fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_PRACTICE_ANSWER_OPERATION_FAILED")
+        }
+    }
+
     private fun click(resId: Int) = clickLabel(text(resId))
 
     private fun clickLabel(label: String) {
@@ -1312,7 +1356,15 @@ class Sfdt22HostedStudyJourneyTest {
         stage("practice_runner_question") { visible(questionStatement) }
         stage("practice_answer_true") { clickLabel("True") }
         // This snackbar is shown only after the real answer operation completes.
-        stage("practice_answer_acknowledged") { visible(text(PracticeR.string.answer_saved)) }
+        stage("practice_answer_acknowledged") {
+            // Room is the authoritative completion evidence. A short-lived
+            // success snackbar is optional, but when present must be visible.
+            awaitRealPracticeAnswerPersisted()
+            val success = rule.onAllNodes(hasText(text(PracticeR.string.answer_saved)))
+            if (success.fetchSemanticsNodes().isNotEmpty()) {
+                visible(text(PracticeR.string.answer_saved))
+            }
+        }
         stage("practice_finish_test") { click(PracticeR.string.finish_attempt) }
         stage("practice_test_finished") { visible(text(PracticeR.string.attempt_finished)) }
         stage("practice_capture_question") { screenshot("question") }

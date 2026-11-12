@@ -29,7 +29,7 @@ jobs:
           test -z "$(git status --porcelain --untracked-files=normal)"
           echo "dc340789d3b7ecb8ba284538b2aac87dfbbe96167b860bd438a798d796adbc94  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
           echo "c644463f145be1d1cac4865322eaf357a90f470a5363c8f5fd6444f0921a2464  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
-          echo "605c49283351b7132180b9b5103f35dbae00808b9cd9d02299877b711a049c5d  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "0f78c72f42df50845dd24c6be8076aaeb12cce3077dca2b5805432fc926963eb  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
           echo "53d32c91ac814074501ddebbcfc368812aad4d664282a7a6ca975fbc2622321f  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentDialogs.kt" | sha256sum --check --status
           echo "82a314c22c2b5bf86e942b0186d0a3603c9ee4d0d99e52f1bb73d54c4545dcd1  feature/workspace/src/main/java/com/mikeyphw/studyflow/feature/workspace/WorkspaceUtilityScreens.kt" | sha256sum --check --status
           echo "b22486e751156118b7a8c09824fd609a1c28eb89c515be4b081ea4c31cdb189c  feature/plans/src/main/java/com/mikeyphw/studyflow/feature/plans/PlanListScreen.kt" | sha256sum --check --status
@@ -153,6 +153,9 @@ jobs:
           echo "2234090826763a288a6b24c4f4efa79eeb24bc09f035554b5637ec199e715b09  scripts/test_sfdt22_hf30_hf09_practice_readiness_contract.py" | sha256sum --check --status
           echo "83ea7f24439b82f5b1d3a79a1443e28ba21e056768faed3af339c5dae5869d56  docs/actions/SFDT22_HF30_HF09_PRACTICE_READINESS.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf30_hf09_practice_readiness_contract.py
+          echo "0ab4fe01fa7993c42157e9e68fe9d261c58159de5ba83f2d42f4246a4e3b5b33  scripts/test_sfdt22_hf30_hf10_dual_android_contract.py" | sha256sum --check --status
+          echo "999cb95681baeb2b8f2f034c47a1b5fc9e16d3c5e8453f450b95578c0091d625  docs/actions/SFDT22_HF30_HF10_PRACTICE_ANSWER_AND_SEARCH_RETURN.md" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf30_hf10_dual_android_contract.py
           echo "9cf50e48470c29f36fc1c2877cade35622c843312a2c1ccbd2cbaf80d417d4a3  scripts/test_sfdt22_hf30_opt01_contract.py" | sha256sum --check --status
           echo "0d26d4def1f8d3455773d294e3c04b723cf7b86e3a03687dbaa1db09fde49eca  docs/actions/STUDYFLOW_OPT01_WORKFLOW_TRIGGER_DEDUP.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf30_opt01_contract.py
