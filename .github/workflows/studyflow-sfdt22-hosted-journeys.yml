@@ -153,7 +153,7 @@ jobs:
           echo "2234090826763a288a6b24c4f4efa79eeb24bc09f035554b5637ec199e715b09  scripts/test_sfdt22_hf30_hf09_practice_readiness_contract.py" | sha256sum --check --status
           echo "83ea7f24439b82f5b1d3a79a1443e28ba21e056768faed3af339c5dae5869d56  docs/actions/SFDT22_HF30_HF09_PRACTICE_READINESS.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf30_hf09_practice_readiness_contract.py
-          echo "0ab4fe01fa7993c42157e9e68fe9d261c58159de5ba83f2d42f4246a4e3b5b33  scripts/test_sfdt22_hf30_hf10_dual_android_contract.py" | sha256sum --check --status
+          echo "4f2b041b2b27cd8c82fc768425cb4c89686380f930d9b07559296348d0f4890d  scripts/test_sfdt22_hf30_hf10_dual_android_contract.py" | sha256sum --check --status
           echo "999cb95681baeb2b8f2f034c47a1b5fc9e16d3c5e8453f450b95578c0091d625  docs/actions/SFDT22_HF30_HF10_PRACTICE_ANSWER_AND_SEARCH_RETURN.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf30_hf10_dual_android_contract.py
           echo "9cf50e48470c29f36fc1c2877cade35622c843312a2c1ccbd2cbaf80d417d4a3  scripts/test_sfdt22_hf30_opt01_contract.py" | sha256sum --check --status

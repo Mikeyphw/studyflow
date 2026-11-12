@@ -62,6 +62,9 @@ class HF10SourceContracts(unittest.TestCase):
         offsets=[body.index('searchStage("'+s+'")') for s in SEARCH_STAGES]
         self.assertEqual(offsets,sorted(offsets))
         self.assertIn('editors.fetchSemanticsNodes().isEmpty()',body)
+        # Kotlin Compose UI test collections are indexed; onFirst() is not supported.
+        self.assertNotIn('.onFirst()',src)
+        self.assertIn('editors[0].assertIsDisplayed()',body)
         self.assertIn('awaitRealShell()',body)
         for forbidden in ('setContent(', 'assumeTrue(', 'Thread.sleep(', 'mockk(', 'runCatching { Espresso.pressBack() }'):
             self.assertNotIn(forbidden,body)

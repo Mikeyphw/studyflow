@@ -29,9 +29,9 @@ jobs:
           test -z "$(git status --porcelain --untracked-files=normal)"
           echo "f7d7390a7962fe752395981cfc66df05ecfa24c8516da97e35c249f981ab5812  scripts/sfdt21_emulator_verify.py" | sha256sum --check --status
           echo "700ac0a4e17ba56e36e3cc056afea5b232577ef84fb75e5fa62221f3f356af0b  scripts/sfdt21_emulator_ci.sh" | sha256sum --check --status
-          echo "68644b8fb378168edb7d53afcc387028e929efea488c5fa098e3c8089335b0ae  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt21HostedRealUiTest.kt" | sha256sum --check --status
+          echo "4950bb7a8a3b11c593af9eed88561581dcce2e4c8af54611306fb3999bea5f76  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt21HostedRealUiTest.kt" | sha256sum --check --status
           python3 -B scripts/test_sfdt21_emulator_contract.py
-          echo "0ab4fe01fa7993c42157e9e68fe9d261c58159de5ba83f2d42f4246a4e3b5b33  scripts/test_sfdt22_hf30_hf10_dual_android_contract.py" | sha256sum --check --status
+          echo "4f2b041b2b27cd8c82fc768425cb4c89686380f930d9b07559296348d0f4890d  scripts/test_sfdt22_hf30_hf10_dual_android_contract.py" | sha256sum --check --status
           echo "999cb95681baeb2b8f2f034c47a1b5fc9e16d3c5e8453f450b95578c0091d625  docs/actions/SFDT22_HF30_HF10_PRACTICE_ANSWER_AND_SEARCH_RETURN.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf30_hf10_dual_android_contract.py
           python3 -B scripts/verify_studyflow_actions.py --source-only

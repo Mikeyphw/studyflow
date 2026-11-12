@@ -134,7 +134,7 @@ class Sfdt21HostedRealUiTest {
         searchStage("search_editor_ready") {
             rule.waitUntil(30_000L) {
                 editors.fetchSemanticsNodes().isNotEmpty() &&
-                    runCatching { editors.onFirst().assertIsDisplayed() }.isSuccess
+                    runCatching { editors[0].assertIsDisplayed() }.isSuccess
             }
         }
         // Two real Back presses at most: keyboard first, destination second.
