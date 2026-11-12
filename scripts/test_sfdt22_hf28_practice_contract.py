@@ -47,7 +47,7 @@ class PracticeHF28(unittest.TestCase):
                      'click(PracticeR.string.create_practice_test)',
                      'visible(text(PracticeR.string.start_or_resume))',
                      'click(PracticeR.string.start_or_resume)',
-                     'clickLabel("True")','visible(text(PracticeR.string.answer_saved))',
+                     'clickLabel("True")','assertOptionalPracticeAckVisible()',
                      'click(PracticeR.string.finish_attempt)',
                      'visible(text(PracticeR.string.attempt_finished))',
                      'clickReviewCenterEntry()',
@@ -58,6 +58,18 @@ class PracticeHF28(unittest.TestCase):
             self.assertIn(real,src)
         self.assertLess(src.index('practice_create_test'),src.index('practice_test_ready'))
         self.assertLess(src.index('practice_test_ready'),src.index('practice_start_test'))
+        self.assertIn('awaitRealPracticeAnswerPersisted()',src)
+        self.assertNotIn('visible(text(PracticeR.string.answer_saved))',src)
+        self.assertLess(src.index('awaitRealPracticeAnswerPersisted()'),
+                        src.index('assertOptionalPracticeAckVisible()'))
+        ui=self.get(UI)
+        helper=ui.split('    private fun assertOptionalPracticeAckVisible() {',1)[1].split(
+            '    private fun click(resId:',1)[0]
+        self.assertIn('confirmation.fetchSemanticsNodes().isEmpty()) return',helper)
+        self.assertIn('confirmation.onFirst().assertIsDisplayed()',helper)
+        self.assertIn('displayed.isFailure && confirmation.fetchSemanticsNodes().isNotEmpty()',helper)
+        self.assertNotIn('seek(',helper)
+        self.assertNotIn('waitUntil(',helper)
         for forbidden in ('assumeTrue(', 'setContent(', 'Thread.sleep(', 'mock', 'fallbackToDestructiveMigration', 'runCatching { click('):
             self.assertNotIn(forbidden,src)
     def test_nonqualifying_focused_and_strict_full_gates(self):

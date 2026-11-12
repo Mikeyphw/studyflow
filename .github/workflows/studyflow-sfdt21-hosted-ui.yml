@@ -31,7 +31,7 @@ jobs:
           echo "700ac0a4e17ba56e36e3cc056afea5b232577ef84fb75e5fa62221f3f356af0b  scripts/sfdt21_emulator_ci.sh" | sha256sum --check --status
           echo "4950bb7a8a3b11c593af9eed88561581dcce2e4c8af54611306fb3999bea5f76  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt21HostedRealUiTest.kt" | sha256sum --check --status
           python3 -B scripts/test_sfdt21_emulator_contract.py
-          echo "4f2b041b2b27cd8c82fc768425cb4c89686380f930d9b07559296348d0f4890d  scripts/test_sfdt22_hf30_hf10_dual_android_contract.py" | sha256sum --check --status
+          echo "d7be62e9dd74ab16e2689235fcc6d41b6bc4938922948ed7c690279f323b5bf5  scripts/test_sfdt22_hf30_hf10_dual_android_contract.py" | sha256sum --check --status
           echo "999cb95681baeb2b8f2f034c47a1b5fc9e16d3c5e8453f450b95578c0091d625  docs/actions/SFDT22_HF30_HF10_PRACTICE_ANSWER_AND_SEARCH_RETURN.md" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf30_hf10_dual_android_contract.py
           python3 -B scripts/verify_studyflow_actions.py --source-only

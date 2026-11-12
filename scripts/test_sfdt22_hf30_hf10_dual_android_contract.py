@@ -42,7 +42,7 @@ class HF10SourceContracts(unittest.TestCase):
         self.assertIn('awaitRealPracticeAnswerPersisted()',b)
         self.assertIn('clickLabel("True")',b)
         self.assertIn('click(PracticeR.string.finish_attempt)',b)
-        self.assertIn('visible(text(PracticeR.string.answer_saved))',b)
+        self.assertIn('assertOptionalPracticeAckVisible()',b)
         self.assertIn('clickReviewCenterEntry()',b)
         self.assertEqual(ui.count('@Test fun '),5)
         self.assertEqual(ui.count('screenshot("'),7)

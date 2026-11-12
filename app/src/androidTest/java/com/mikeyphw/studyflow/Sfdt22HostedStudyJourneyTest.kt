@@ -956,6 +956,22 @@ class Sfdt22HostedStudyJourneyTest {
         }
     }
 
+    /**
+     * HF31: the real Room commit is the acceptance proof. The success snackbar
+     * is transient, and a check-then-seek() sequence can time out after it has
+     * naturally disappeared. Inspect only its current semantics and never wait
+     * for a vanished optional snackbar to reappear. A persistent hidden snackbar
+     * remains an error. No production code or repository writes are bypassed.
+     */
+    private fun assertOptionalPracticeAckVisible() {
+        val confirmation = rule.onAllNodes(hasText(text(PracticeR.string.answer_saved)))
+        if (confirmation.fetchSemanticsNodes().isEmpty()) return
+        val displayed = runCatching { confirmation.onFirst().assertIsDisplayed() }
+        if (displayed.isFailure && confirmation.fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_PRACTICE_ACK_PRESENT_BUT_HIDDEN", displayed.exceptionOrNull())
+        }
+    }
+
     private fun click(resId: Int) = clickLabel(text(resId))
 
     private fun clickLabel(label: String) {
@@ -1357,13 +1373,11 @@ class Sfdt22HostedStudyJourneyTest {
         stage("practice_answer_true") { clickLabel("True") }
         // This snackbar is shown only after the real answer operation completes.
         stage("practice_answer_acknowledged") {
-            // Room is the authoritative completion evidence. A short-lived
-            // success snackbar is optional, but when present must be visible.
+            // Require the real committed answer. Never accept snackbar-only success.
             awaitRealPracticeAnswerPersisted()
-            val success = rule.onAllNodes(hasText(text(PracticeR.string.answer_saved)))
-            if (success.fetchSemanticsNodes().isNotEmpty()) {
-                visible(text(PracticeR.string.answer_saved))
-            }
+            // A snackbar is optional and short-lived: an absent one is not a
+            // failure after durable Room proof. A persistent hidden one is.
+            assertOptionalPracticeAckVisible()
         }
         stage("practice_finish_test") { click(PracticeR.string.finish_attempt) }
         stage("practice_test_finished") { visible(text(PracticeR.string.attempt_finished)) }
