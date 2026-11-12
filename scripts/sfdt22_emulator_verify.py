@@ -79,7 +79,9 @@ STAGES = frozenset({
     'restart_open_content', 'restart_open_overview', 'restart_open_questions', 'restart_open_reviews',
 })
 TOPIC_CAUSE_CODES = frozenset({'settings_before_topic', 'settings_before_progress', 'settings_changed_progress', 'settings_changed_topic', 'sqlite_constraint', 'sqlite_locked', 'sqlite_other', 'invalid_input', 'unexpected'})
-PRACTICE_DIAG_CODES = frozenset({'DB_MISSING', 'LOOKUP_FAILED', 'TEST_MISSING', 'TEST_AMBIGUOUS', 'ATTEMPT_NOT_STARTED', 'ATTEMPT_SUBMITTED', 'QUESTION_COUNT_MISMATCH', 'ANSWER_RECORD_MISSING', 'ANSWER_COUNTER_ZERO', 'ANSWER_COUNTER_MISMATCH', 'ANSWER_COUNTER_WITHOUT_RECORD', 'ROW_PRESENT_PREDICATE_MISMATCH', 'OPERATION_FAILED'})
+PRACTICE_DIAG_CODES = frozenset({'DB_MISSING', 'LOOKUP_FAILED', 'TEST_MISSING', 'TEST_AMBIGUOUS', 'ATTEMPT_NOT_STARTED', 'ATTEMPT_SUBMITTED', 'QUESTION_COUNT_MISMATCH', 'ANSWER_RECORD_MISSING', 'ANSWER_COUNTER_ZERO', 'ANSWER_COUNTER_MISMATCH', 'ANSWER_COUNTER_WITHOUT_RECORD', 'ROW_PRESENT_PREDICATE_MISMATCH', 'OPERATION_FAILED',
+    'START_DB_MISSING', 'START_LOOKUP_FAILED', 'START_TEST_MISSING', 'START_TEST_AMBIGUOUS', 'START_ATTEMPT_NOT_STARTED', 'START_ATTEMPT_SUBMITTED', 'START_QUESTION_COUNT_MISMATCH', 'START_PREDICATE_MISMATCH', 'START_OPERATION_FAILED', 'START_CONTROL_MISSING', 'START_CONTROL_AMBIGUOUS', 'START_CONTROL_NOT_READY', 'RUNNER_QUESTION_MISSING', 'RUNNER_QUESTION_AMBIGUOUS', 'RUNNER_ANSWER_MISSING', 'RUNNER_ANSWER_AMBIGUOUS', 'RUNNER_NOT_READY',
+})
 REASON_CODES = frozenset({
     'subject_card_missing',
     'workspace_plan_mismatch', 'subject_owner_mismatch', 'subject_owner_lookup_failed',
@@ -496,11 +498,17 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
     practice_diags = re.findall(r'\bSFDT22_PRACTICE_DIAG_([A-Z_]{2,40})\b', raw)
     boundary = re.search(r'SFDT22_BOUNDARY_(AFTER_CREATE|AFTER_SUBJECT|AFTER_TOPIC|BEFORE_SESSION_START)_(MISSING|LOOKUP_FAILED|AMBIGUOUS|MISMATCHED)', raw)
     topic_cause = re.search(r'SFDT22_TOPIC_CAUSE_([A-Z_]{2,50})\b', raw)
-    if practice_diags and test == TESTS[3] and stage == 'practice_answer_acknowledged':
+    if practice_diags and test == TESTS[3] and stage in ('practice_start_test', 'practice_runner_question', 'practice_answer_true', 'practice_answer_acknowledged'):
         variants = set(practice_diags)
         if len(variants) != 1:
             reason = 'practice_diagnostic_ambiguous'
-        elif next(iter(variants)) not in PRACTICE_DIAG_CODES:
+        elif next(iter(variants)) not in PRACTICE_DIAG_CODES or not (
+            (stage == 'practice_start_test' and next(iter(variants)).startswith('START_')) or
+            (stage in ('practice_runner_question', 'practice_answer_true') and
+             next(iter(variants)).startswith('RUNNER_')) or
+            (stage == 'practice_answer_acknowledged' and
+             not next(iter(variants)).startswith(('START_', 'RUNNER_')))
+        ):
             reason = 'practice_diagnostic_unreviewed'
         else:
             reason = 'practice_' + next(iter(variants)).lower()

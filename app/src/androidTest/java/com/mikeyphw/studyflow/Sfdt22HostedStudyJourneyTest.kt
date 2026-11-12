@@ -915,6 +915,112 @@ class Sfdt22HostedStudyJourneyTest {
     /** HF10: real committed answer proof, never a snackbar-only success.
      * Restrict to exactly one started, unsubmitted, one-question real practice
      * test on the newly created plan. SQL parameters never leave the emulator. */
+    /** HF33: independently prove the real practice row is started before reading runner UI.
+     * This is a read-only query; no app fixture, ID, answer or private row is exported. */
+    private fun persistedPracticeAttemptStartedCount(): Long? {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return null
+        return runCatching {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT COUNT(*) FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? " +
+                        "AND tests.startedAtEpochMillis IS NOT NULL " +
+                        "AND tests.submittedAtEpochMillis IS NULL " +
+                        "AND tests.questionCount = 1",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows -> if (rows.moveToFirst()) rows.getLong(0) else null }
+            }
+        }.getOrNull()
+    }
+
+    /** Returns only an allowlisted category, never a row, timestamp or SQL error. */
+    private fun diagnosePracticeAttemptStart(): String {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return "START_DB_MISSING"
+        return try {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT tests.questionCount, tests.startedAtEpochMillis, " +
+                        "tests.submittedAtEpochMillis FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? LIMIT 2",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows ->
+                    if (!rows.moveToFirst()) "START_TEST_MISSING" else {
+                        val questionCount = rows.getInt(0)
+                        val started = !rows.isNull(1)
+                        val submitted = !rows.isNull(2)
+                        when {
+                            rows.moveToNext() -> "START_TEST_AMBIGUOUS"
+                            !started -> "START_ATTEMPT_NOT_STARTED"
+                            submitted -> "START_ATTEMPT_SUBMITTED"
+                            questionCount != 1 -> "START_QUESTION_COUNT_MISMATCH"
+                            else -> "START_PREDICATE_MISMATCH"
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            "START_LOOKUP_FAILED"
+        }
+    }
+
+    private fun awaitRealPracticeAttemptStarted() {
+        val errors = rule.onAllNodes(hasText(text(PracticeR.string.operation_failed)))
+        try {
+            rule.waitUntil(35_000L) {
+                if (errors.fetchSemanticsNodes().isNotEmpty()) {
+                    throw AssertionError("SFDT22_PRACTICE_DIAG_START_OPERATION_FAILED")
+                }
+                persistedPracticeAttemptStartedCount() == 1L
+            }
+        } catch (failure: Throwable) {
+            if (failure is AssertionError &&
+                failure.message == "SFDT22_PRACTICE_DIAG_START_OPERATION_FAILED") throw failure
+            throw AssertionError("SFDT22_PRACTICE_DIAG_" + diagnosePracticeAttemptStart(), failure)
+        }
+        if (errors.fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_PRACTICE_DIAG_START_OPERATION_FAILED")
+        }
+    }
+
+    /** Ignore identically named question-bank text; require the real active runner. */
+    private fun awaitRunnerQuestionReady() {
+        val question = rule.onAllNodes(
+            hasTestTag("studyflow.practice.runner.question") and
+                hasText(questionStatement, substring = false) and
+                hasAnyAncestor(hasTestTag("studyflow.practice.runner")),
+            useUnmergedTree = true,
+        )
+        val answer = rule.onAllNodes(
+            hasTestTag("studyflow.practice.runner.answer") and hasText("True") and
+                hasClickAction() and hasAnyAncestor(hasTestTag("studyflow.practice.runner")),
+        )
+        try {
+            rule.waitUntil(25_000L) {
+                question.fetchSemanticsNodes().size == 1 &&
+                    runCatching { question.onFirst().assertIsDisplayed() }.isSuccess &&
+                    answer.fetchSemanticsNodes().size == 1 &&
+                    runCatching { answer.onFirst().assertIsDisplayed().assertIsEnabled() }.isSuccess
+            }
+        } catch (failure: Throwable) {
+            val questions = question.fetchSemanticsNodes().size
+            val answers = answer.fetchSemanticsNodes().size
+            val category = when {
+                questions == 0 -> "RUNNER_QUESTION_MISSING"
+                questions > 1 -> "RUNNER_QUESTION_AMBIGUOUS"
+                answers == 0 -> "RUNNER_ANSWER_MISSING"
+                answers > 1 -> "RUNNER_ANSWER_AMBIGUOUS"
+                else -> "RUNNER_NOT_READY"
+            }
+            throw AssertionError("SFDT22_PRACTICE_DIAG_" + category, failure)
+        }
+    }
+
     private fun persistedPracticeAnswerCount(): Long? {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val dbFile = context.getDatabasePath("studyflow.db")
@@ -1022,11 +1128,38 @@ class Sfdt22HostedStudyJourneyTest {
     private fun click(resId: Int) = clickLabel(text(resId))
 
     private fun clickLabel(label: String) {
-        // The matching node must expose a real production click action.
-        val matcher = hasText(label) and hasClickAction()
-        seek(matcher)
-        val node = rule.onAllNodes(matcher).onFirst()
+        // HF33: no generic text-matching fallback for the real practice runner.
+        val exactPracticeTag = when (label) {
+            text(PracticeR.string.start_or_resume) -> "studyflow.practice.test.start"
+            "True" -> "studyflow.practice.runner.answer"
+            else -> null
+        }
+        val matcher = if (exactPracticeTag != null) {
+            val scoped = hasTestTag(exactPracticeTag) and hasText(label) and hasClickAction()
+            if (label == "True") scoped and hasAnyAncestor(hasTestTag("studyflow.practice.runner"))
+            else scoped
+        } else hasText(label) and hasClickAction()
+        try {
+            seek(matcher)
+        } catch (failure: Throwable) {
+            if (exactPracticeTag != null) {
+                val category = if (label == "True") "RUNNER_ANSWER_MISSING" else "START_CONTROL_MISSING"
+                throw AssertionError("SFDT22_PRACTICE_DIAG_" + category, failure)
+            }
+            throw failure
+        }
+        val candidates = rule.onAllNodes(matcher)
+        if (exactPracticeTag != null && candidates.fetchSemanticsNodes().size != 1) {
+            val category = if (label == "True") "RUNNER_ANSWER_AMBIGUOUS" else "START_CONTROL_AMBIGUOUS"
+            throw AssertionError("SFDT22_PRACTICE_DIAG_" + category)
+        }
+        val node = candidates.onFirst()
         runCatching { node.performScrollTo() }
+        if (exactPracticeTag != null &&
+            runCatching { node.assertIsDisplayed().assertIsEnabled() }.isFailure) {
+            val category = if (label == "True") "RUNNER_NOT_READY" else "START_CONTROL_NOT_READY"
+            throw AssertionError("SFDT22_PRACTICE_DIAG_" + category)
+        }
         node.performClick()
         rule.waitForIdle()
     }
@@ -1415,8 +1548,14 @@ class Sfdt22HostedStudyJourneyTest {
             awaitRealPracticeTestReady()
             visible(text(PracticeR.string.start_or_resume))
         }
-        stage("practice_start_test") { click(PracticeR.string.start_or_resume) }
-        stage("practice_runner_question") { visible(questionStatement) }
+        stage("practice_start_test") {
+            click(PracticeR.string.start_or_resume)
+            awaitRealPracticeAttemptStarted()
+        }
+        stage("practice_runner_question") {
+            visible(questionStatement)
+            awaitRunnerQuestionReady()
+        }
         stage("practice_answer_true") { clickLabel("True") }
         // This snackbar is shown only after the real answer operation completes.
         stage("practice_answer_acknowledged") {

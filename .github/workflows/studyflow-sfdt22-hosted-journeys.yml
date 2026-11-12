@@ -27,9 +27,12 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=normal)"
-          echo "75bb9fe93a4e299e4527206cdeb4fb247b67f4657120f9affb035d06914b6657  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
+          echo "cb08779a9ecab10ec878596c4d65e73c2808e50fd6951e603cbdf7f9c31316f4  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
           echo "c644463f145be1d1cac4865322eaf357a90f470a5363c8f5fd6444f0921a2464  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
-          echo "5a2245275b76bfa9dac0868de8954ab436b15e7b26267838e238264f9b574d42  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "008e2857b5c04e2f0a631fce77016bf00d408f7977c8d582d888f642a1166b09  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "e289b8cce29b91a23e529bf60a4d5db7a3d2a4462593f754bf96b985e5ce4cea  feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeScreen.kt" | sha256sum --check --status
+          echo "e261e2acf6364957a68987d6960d06081bc9146ca8490aae54efad9c63b1ef74  scripts/test_sfdt22_hf33_start_runner_contract.py" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf33_start_runner_contract.py
           echo "85d4df8070e4a2f2819fa94d1ee0b2f38572a268ae5f6bbb56b1f5c657c08a85  scripts/test_sfdt22_hf32_diagnostics_contract.py" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf32_diagnostics_contract.py
           echo "53d32c91ac814074501ddebbcfc368812aad4d664282a7a6ca975fbc2622321f  feature/subjects/src/main/java/com/mikeyphw/studyflow/feature/subjects/StudyContentDialogs.kt" | sha256sum --check --status
