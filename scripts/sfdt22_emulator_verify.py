@@ -51,9 +51,9 @@ STAGES = frozenset({
     'subject_capture', 'topic_open_dialog',
     'topic_fill_name', 'topic_save', 'topic_save_feedback', 'topic_expand',
     'topic_confirm', 'topic_capture',
-    'session_open_root', 'session_open_overview', 'session_open_sessions', 'session_quick_dialog', 'session_title', 'session_start', 'session_running', 'session_pause', 'session_paused', 'session_resume', 'session_resumed', 'session_finish_open', 'session_finish_dialog', 'session_finish_notes', 'session_finish_confirm', 'session_finished', 'session_capture',
+    'session_open_root', 'session_open_overview', 'session_open_sessions', 'session_quick_dialog', 'session_title', 'session_start', 'session_running', 'session_pause', 'session_paused', 'session_resume', 'session_resumed', 'session_finish_open', 'session_finish_dialog', 'session_finish_notes', 'session_finish_confirm', 'session_finished', 'session_capture', 'session_completion_ui', 'session_completion_persisted', 'session_return_to_workspace', 'session_workspace_ready',
     'practice_open_questions', 'practice_open_reviews',
-    'practice_open_root',
+    'practice_open_root', 'practice_session_closed', 'practice_shell_ready', 'practice_tab_selected',
     'practice_enter_question_bank',
     'practice_open_question_editor',
     'practice_choose_true_false',
@@ -79,6 +79,9 @@ STAGES = frozenset({
     'restart_open_content', 'restart_open_overview', 'restart_open_questions', 'restart_open_reviews',
 })
 TOPIC_CAUSE_CODES = frozenset({'settings_before_topic', 'settings_before_progress', 'settings_changed_progress', 'settings_changed_topic', 'sqlite_constraint', 'sqlite_locked', 'sqlite_other', 'invalid_input', 'unexpected'})
+PRACTICE_DIAG_CODES = frozenset({'DB_MISSING', 'LOOKUP_FAILED', 'TEST_MISSING', 'TEST_AMBIGUOUS', 'ATTEMPT_NOT_STARTED', 'ATTEMPT_SUBMITTED', 'QUESTION_COUNT_MISMATCH', 'ANSWER_RECORD_MISSING', 'ANSWER_COUNTER_ZERO', 'ANSWER_COUNTER_MISMATCH', 'ANSWER_COUNTER_WITHOUT_RECORD', 'ROW_PRESENT_PREDICATE_MISMATCH', 'OPERATION_FAILED',
+    'START_DB_MISSING', 'START_LOOKUP_FAILED', 'START_TEST_MISSING', 'START_TEST_AMBIGUOUS', 'START_ATTEMPT_NOT_STARTED', 'START_ATTEMPT_SUBMITTED', 'START_QUESTION_COUNT_MISMATCH', 'START_PREDICATE_MISMATCH', 'START_OPERATION_FAILED', 'START_CONTROL_MISSING', 'START_CONTROL_AMBIGUOUS', 'START_CONTROL_NOT_READY', 'RUNNER_QUESTION_MISSING', 'RUNNER_QUESTION_AMBIGUOUS', 'RUNNER_ANSWER_MISSING', 'RUNNER_ANSWER_AMBIGUOUS', 'RUNNER_NOT_READY',
+})
 REASON_CODES = frozenset({
     'subject_card_missing',
     'workspace_plan_mismatch', 'subject_owner_mismatch', 'subject_owner_lookup_failed',
@@ -110,6 +113,12 @@ REASON_CODES = frozenset({
     'topic_value_not_written',
     'no_matching_compose_node', 'ambiguous_compose_node',
     'compose_wait_timeout', 'compose_assertion', 'app_process_crashed',
+    'practice_test_create_operation_failed', 'practice_test_not_persisted',
+    'practice_test_action_not_visible',
+    *('practice_' + code.lower() for code in PRACTICE_DIAG_CODES),
+    'practice_diagnostic_unreviewed', 'practice_diagnostic_ambiguous',
+    'session_status_lookup_failed', 'session_status_not_completed',
+    'session_finish_operation_failed', 'session_ui_not_settled', 'root_navigation_missing',
     'test_failed', 'unexpected_runner_status', 'runner_nonzero_exit',
     *('boundary_' + point + '_' + state for point in
       ('after_create', 'after_subject', 'after_topic', 'before_session_start') for state in
@@ -486,9 +495,24 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
     """Map volatile Android stdout to stable enums; persist none of raw."""
     marker = re.search(r'SFDT22_STEP_([a-z][a-z0-9_]{1,39})', raw)
     stage = marker.group(1) if marker and marker.group(1) in STAGES else 'unavailable'
+    practice_diags = re.findall(r'\bSFDT22_PRACTICE_DIAG_([A-Z_]{2,40})\b', raw)
     boundary = re.search(r'SFDT22_BOUNDARY_(AFTER_CREATE|AFTER_SUBJECT|AFTER_TOPIC|BEFORE_SESSION_START)_(MISSING|LOOKUP_FAILED|AMBIGUOUS|MISMATCHED)', raw)
     topic_cause = re.search(r'SFDT22_TOPIC_CAUSE_([A-Z_]{2,50})\b', raw)
-    if boundary:
+    if practice_diags and test == TESTS[3] and stage in ('practice_start_test', 'practice_runner_question', 'practice_answer_true', 'practice_answer_acknowledged'):
+        variants = set(practice_diags)
+        if len(variants) != 1:
+            reason = 'practice_diagnostic_ambiguous'
+        elif next(iter(variants)) not in PRACTICE_DIAG_CODES or not (
+            (stage == 'practice_start_test' and next(iter(variants)).startswith('START_')) or
+            (stage in ('practice_runner_question', 'practice_answer_true') and
+             next(iter(variants)).startswith('RUNNER_')) or
+            (stage == 'practice_answer_acknowledged' and
+             not next(iter(variants)).startswith(('START_', 'RUNNER_')))
+        ):
+            reason = 'practice_diagnostic_unreviewed'
+        else:
+            reason = 'practice_' + next(iter(variants)).lower()
+    elif boundary:
         reason = 'boundary_' + boundary.group(1).lower() + '_' + boundary.group(2).lower()
     elif topic_cause and test == TESTS[1] and stage == 'topic_save_feedback' and topic_cause.group(1).lower() in TOPIC_CAUSE_CODES:
         reason = 'topic_save_' + topic_cause.group(1).lower()
@@ -596,6 +620,22 @@ def summarize_failure(raw: str, test: str, returncode: int) -> JourneyFailure:
         reason = 'topic_editable_missing'
     elif 'SFDT22_TOPIC_VALUE_NOT_WRITTEN' in raw:
         reason = 'topic_value_not_written'
+    elif 'SFDT22_PRACTICE_TEST_CREATE_OPERATION_FAILED' in raw and test == TESTS[3] and stage == 'practice_test_ready':
+        reason = 'practice_test_create_operation_failed'
+    elif 'SFDT22_PRACTICE_TEST_NOT_PERSISTED' in raw and test == TESTS[3] and stage == 'practice_test_ready':
+        reason = 'practice_test_not_persisted'
+    elif 'SFDT22_PRACTICE_TEST_ACTION_NOT_VISIBLE' in raw and test == TESTS[3] and stage == 'practice_test_ready':
+        reason = 'practice_test_action_not_visible'
+    elif 'SFDT22_SESSION_FINISH_OPERATION_FAILED' in raw:
+        reason = 'session_finish_operation_failed'
+    elif 'SFDT22_SESSION_UI_NOT_SETTLED' in raw:
+        reason = 'session_ui_not_settled'
+    elif 'SFDT22_SESSION_STATUS_LOOKUP_FAILED' in raw:
+        reason = 'session_status_lookup_failed'
+    elif 'SFDT22_SESSION_STATUS_NOT_COMPLETED' in raw:
+        reason = 'session_status_not_completed'
+    elif 'SFDT22_ROOT_NAVIGATION_MISSING' in raw:
+        reason = 'root_navigation_missing'
     elif 'No node found that satisfies' in raw or 'No matching node found' in raw:
         reason = 'no_matching_compose_node'
     elif 'Expected exactly' in raw or 'Found multiple nodes' in raw:

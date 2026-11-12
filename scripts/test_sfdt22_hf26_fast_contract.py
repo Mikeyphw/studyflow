@@ -22,7 +22,8 @@ class FastLoop(unittest.TestCase):
         cls.legacy=(ROOT/'.github/workflows/studyflow-ci.yml').read_text()
     def test_01_staging_is_owner_scoped_and_not_a_pr_gate(self):
         s=self.stage
-        self.assertIn("'sfdt22-hotfix/**'",s)
+        self.assertIn("'sfdt22-hotfix/*-staging-*'",s)
+        self.assertNotIn("'sfdt22-hotfix/**'",s)
         self.assertIn("github.repository == 'Mikeyphw/studyflow'",s)
         self.assertIn("startsWith(github.ref, 'refs/heads/sfdt22-hotfix/')",s)
         self.assertIn('uses: ./.github/workflows/studyflow-sfdt22-hotfix-session.yml',s)
@@ -46,7 +47,9 @@ class FastLoop(unittest.TestCase):
         self.assertIn('case "$GITHUB_REF" in refs/heads/sfdt22-hotfix/*)',f)
         self.assertIn("github.event.label.name == 'sfdt22-hotfix-session'",f)
         self.assertIn('cache-read-only: true',f)
-        self.assertIn('--diagnostic-through session',f)
+        self.assertEqual(f.count('--diagnostic-through practice'), 2)
+        self.assertNotIn('--diagnostic-through session',f)
+        self.assertIn('scripts/sfdt22_emulator_verify.py --verify-diagnostic --diagnostic-through practice',f)
         self.assertIn('--verify-diagnostic',f)
         self.assertIn('release_qualified":false',f)
         self.assertIn('publication_allowed":false',f)
@@ -75,20 +78,21 @@ class FastLoop(unittest.TestCase):
             self.assertIn("    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.lane == 'all' || inputs.lane == '"+lane+"') }}",c)
         self.assertIn("    if: ${{ github.event_name == 'workflow_dispatch' && inputs.lane == 'deep' }}",c)
         self.assertEqual(c.count('test "$EXPECTED_SHA" = "$GITHUB_SHA"'),1)
-    def test_06_staging_dispatch_does_not_mark_three_journeys_as_release_pass(self):
+    def test_06_staging_dispatch_does_not_mark_four_journeys_as_release_pass(self):
         f=self.focus
         self.assertNotIn('PASS_HOSTED_REAL_STUDY_JOURNEYS',f)
         self.assertIn('NO full gate',f)
         self.assertIn('diagnostic_only":true',f)
         self.assertEqual(f.count('STUDYFLOW_RELEASE_STORE_PASSWORD'),1)
-        self.assertIn('scripts/sfdt22_emulator_verify.py --run --diagnostic-through session',f)
+        self.assertIn('scripts/sfdt22_emulator_verify.py --run --diagnostic-through practice',f)
+        self.assertIn('scripts/sfdt22_emulator_verify.py --verify-diagnostic --diagnostic-through practice',f)
     def test_07_policy_resists_mutations(self):
         s=self.stage
-        for mutated in (s.replace("'sfdt22-hotfix/**'","'**'"),
+        for mutated in (s.replace("'sfdt22-hotfix/*-staging-*'","'**'"),
                         s.replace('expected_sha: ${{ github.sha }}','expected_sha: anything'),
                         s.replace("github.repository == 'Mikeyphw/studyflow'","true")):
             self.assertFalse(all(x in mutated for x in (
-                "'sfdt22-hotfix/**'","expected_sha: ${{ github.sha }}",
+                "'sfdt22-hotfix/*-staging-*'","expected_sha: ${{ github.sha }}",
                 "github.repository == 'Mikeyphw/studyflow'")))
     def test_08_archive_source_constraints(self):
         d=(ROOT/DOC).read_text()

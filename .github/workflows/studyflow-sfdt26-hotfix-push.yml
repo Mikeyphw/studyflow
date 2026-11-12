@@ -4,7 +4,7 @@ name: StudyFlow SFDT26 Fast Hotfix Staging (nonqualifying)
 on:
   push:
     branches:
-      - 'sfdt22-hotfix/**'
+      - 'sfdt22-hotfix/*-staging-*'
 permissions:
   contents: read
 concurrency:
@@ -13,7 +13,7 @@ concurrency:
 jobs:
   focused-real-ui:
     if: ${{ github.repository == 'Mikeyphw/studyflow' && startsWith(github.ref, 'refs/heads/sfdt22-hotfix/') }}
-    name: Stage reviewed SHA through three real UI journeys (not full acceptance)
+    name: Stage reviewed SHA through four real UI journeys (not full acceptance)
     uses: ./.github/workflows/studyflow-sfdt22-hotfix-session.yml
     with:
       expected_sha: ${{ github.sha }}

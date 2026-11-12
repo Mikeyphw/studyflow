@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """HF28: practice/review real-UI journey and fail-closed source/runtime contracts."""
 from __future__ import annotations
-import hashlib, pathlib, sys, unittest
+import hashlib, pathlib, re, sys, unittest
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 import sfdt22_emulator_verify as host
@@ -28,7 +28,14 @@ class PracticeHF28(unittest.TestCase):
     def test_real_production_controls_and_all_steps_guarded(self):
         src=self.body()
         self.assertEqual(len(STAGES),25)
-        self.assertEqual(src.count('stage("'),len(STAGES))
+        expected = (
+            'practice_session_closed', 'practice_shell_ready',
+            'practice_open_root', 'practice_tab_selected', *STAGES[1:]
+        )
+        observed = re.findall(r'stage\("([a-z][a-z0-9_]*)"\)', src)
+        self.assertEqual(len(expected), 28)
+        self.assertEqual(observed, list(expected))
+        self.assertTrue(all(name in host.STAGES for name in expected))
         self.assertEqual([s for s in STAGES if s in host.STAGES],list(STAGES))
         for stage in STAGES:
             self.assertEqual(src.count('stage("'+stage+'")'),1,stage)
@@ -40,7 +47,7 @@ class PracticeHF28(unittest.TestCase):
                      'click(PracticeR.string.create_practice_test)',
                      'visible(text(PracticeR.string.start_or_resume))',
                      'click(PracticeR.string.start_or_resume)',
-                     'clickLabel("True")','visible(text(PracticeR.string.answer_saved))',
+                     'clickLabel("True")','assertOptionalPracticeAckVisible()',
                      'click(PracticeR.string.finish_attempt)',
                      'visible(text(PracticeR.string.attempt_finished))',
                      'clickReviewCenterEntry()',
@@ -51,6 +58,18 @@ class PracticeHF28(unittest.TestCase):
             self.assertIn(real,src)
         self.assertLess(src.index('practice_create_test'),src.index('practice_test_ready'))
         self.assertLess(src.index('practice_test_ready'),src.index('practice_start_test'))
+        self.assertIn('awaitRealPracticeAnswerPersisted()',src)
+        self.assertNotIn('visible(text(PracticeR.string.answer_saved))',src)
+        self.assertLess(src.index('awaitRealPracticeAnswerPersisted()'),
+                        src.index('assertOptionalPracticeAckVisible()'))
+        ui=self.get(UI)
+        helper=ui.split('    private fun assertOptionalPracticeAckVisible() {',1)[1].split(
+            '    private fun click(resId:',1)[0]
+        self.assertIn('confirmation.fetchSemanticsNodes().isEmpty()) return',helper)
+        self.assertIn('confirmation.onFirst().assertIsDisplayed()',helper)
+        self.assertIn('displayed.isFailure && confirmation.fetchSemanticsNodes().isNotEmpty()',helper)
+        self.assertNotIn('seek(',helper)
+        self.assertNotIn('waitUntil(',helper)
         for forbidden in ('assumeTrue(', 'setContent(', 'Thread.sleep(', 'mock', 'fallbackToDestructiveMigration', 'runCatching { click('):
             self.assertNotIn(forbidden,src)
     def test_nonqualifying_focused_and_strict_full_gates(self):

@@ -46,6 +46,7 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -890,7 +891,8 @@ private fun PracticeRunnerCard(
         }
     }
     StudyFlowSectionCard(title = title) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(modifier = Modifier.testTag("studyflow.practice.runner"),
+            verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 pluralStringResource(
                     R.plurals.runner_progress,
@@ -908,7 +910,8 @@ private fun PracticeRunnerCard(
             if (question == null) {
                 Text(stringResource(R.string.no_questions_message))
             } else {
-                Text(question.statement, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(question.statement, modifier = Modifier.testTag("studyflow.practice.runner.question"),
+                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 val questionStartedAt = remember(state.attemptId, question.id.value) { SystemClock.elapsedRealtime() }
                 val answerChoices = questionAnswerChoices(question)
                 var draftTextAnswer by rememberSaveable(state.attemptId, question.id.value) { mutableStateOf("") }
@@ -945,7 +948,7 @@ private fun PracticeRunnerCard(
                                     onAnswer(question, option, elapsedSeconds, null)
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().testTag("studyflow.practice.runner.answer"),
                         ) { Text(option) }
                     }
                 }
@@ -1098,7 +1101,9 @@ private fun RecentTestsCard(tests: List<StudyTest>, onStart: (StudyTest) -> Unit
                             )
                             Text(pluralStringResource(R.plurals.answered_value, test.answeredCount, test.answeredCount))
                             Text(pluralStringResource(R.plurals.correct_value, test.correctCount, test.correctCount))
-                            OutlinedButton(enabled = test.submittedAtEpochMillis == null, onClick = { onStart(test) }) {
+                            OutlinedButton(enabled = test.submittedAtEpochMillis == null,
+                                modifier = Modifier.testTag("studyflow.practice.test.start"),
+                                onClick = { onStart(test) }) {
                                 Icon(Icons.Outlined.PlayArrow, contentDescription = null)
                                 Text(stringResource(R.string.start_or_resume))
                             }
