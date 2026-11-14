@@ -68,6 +68,7 @@ class Sfdt22HostedStudyJourneyTest {
     private val questionStatement = "SFDT22: ecosystems include living organisms?"
     private val flashcardFront = "SFDT22 review: what is ecology?"
     private val flashcardBack = "Relationships between organisms and their environment"
+    private var startReceiptBaseline = -1L // HF35: instrumentation-local, read-only baseline
 
     /** Read-only SQLite inspection of the *actual* app database, never a test fixture. */
     private fun recordBoundary(point: String, state: String) {
@@ -971,7 +972,72 @@ class Sfdt22HostedStudyJourneyTest {
 
     /** HF34: inspect ONLY allowlisted Compose start-result tags, never private data.
      * A missing status falls back to the original read-only Room diagnostic. */
+    /** Baseline before the real UI tap; the test never writes this preference. */
+    private fun captureStartReceiptBaseline() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val preferences = context.getSharedPreferences("sfdt35-practice-start", Context.MODE_PRIVATE)
+        startReceiptBaseline = preferences.getLong("sequence", 0L)
+    }
+
+    /** Hash of the single real Practice Test row. Neither hash nor SQL values
+     * may leave the emulator. SQLite is opened READONLY (not a synthetic model). */
+    private fun expectedPracticeTestFingerprint(): String? {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return null
+        return runCatching {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT tests.id FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? LIMIT 2",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows ->
+                    if (!rows.moveToFirst()) null else {
+                        val id = rows.getString(0)
+                        if (rows.moveToNext()) null else MessageDigest.getInstance("SHA-256")
+                            .digest(id.toByteArray(Charsets.UTF_8))
+                            .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+                    }
+                }
+            }
+        }.getOrNull()
+    }
+
+    /** Read-only receipt comparison: distinct target test + monotonic action.
+     * A historical receipt or a different attempt NEVER proves this tap. */
+    private fun durableStartReceiptCategory(): String? {
+        if (startReceiptBaseline < 0L) return "START_RECEIPT_BASELINE_MISSING"
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val preferences = context.getSharedPreferences("sfdt35-practice-start", Context.MODE_PRIVATE)
+        val sequence = runCatching { preferences.getLong("sequence", 0L) }.getOrElse {
+            return "START_RECEIPT_LOOKUP_FAILED"
+        }
+        if (sequence <= startReceiptBaseline) return null // A new action never reached disk.
+        val expectedFingerprint = expectedPracticeTestFingerprint()
+            ?: return "START_RECEIPT_LOOKUP_FAILED"
+        val fingerprint = preferences.getString("fingerprint", null)
+        if (expectedFingerprint != fingerprint) return "START_RECEIPT_WRONG_ATTEMPT"
+        val phase = preferences.getString("phase", null)
+        val screenReset = rule.onAllNodes(
+            hasTestTag("studyflow.practice.start.idle"), useUnmergedTree = true,
+        ).fetchSemanticsNodes().isNotEmpty()
+        return when (phase) {
+            "requested" -> if (screenReset) "START_SCREEN_RECREATED_AFTER_REQUEST" else "START_ACTION_STALLED"
+            "committed" -> "START_COMMITTED_BUT_ROW_MISSING"
+            "result_uncommitted" -> "START_RESULT_UNCOMMITTED"
+            "rejected_argument" -> "START_REJECTED_ARGUMENT"
+            "rejected_state" -> "START_REJECTED_STATE"
+            "rejected_sqlite" -> "START_REJECTED_SQLITE"
+            "rejected_other" -> "START_REJECTED_OTHER"
+            else -> "START_RECEIPT_MALFORMED"
+        }
+    }
+
     private fun startOutcomeCategory(): String? {
+        // Prefer a durable record of THIS exact action to a transient Compose tag.
+        val durable = durableStartReceiptCategory()
+        if (durable != null) return durable
         val categories = listOf(
             "idle" to "START_ACTION_NOT_DELIVERED",
             "requested" to "START_ACTION_STALLED",
@@ -981,6 +1047,7 @@ class Sfdt22HostedStudyJourneyTest {
             "rejected_state" to "START_REJECTED_STATE",
             "rejected_sqlite" to "START_REJECTED_SQLITE",
             "rejected_other" to "START_REJECTED_OTHER",
+            "receipt_write_failed" to "START_RECEIPT_WRITE_FAILED",
         )
         val observed = categories.filter { (state, _) ->
             rule.onAllNodes(
@@ -990,7 +1057,9 @@ class Sfdt22HostedStudyJourneyTest {
         }
         return when (observed.size) {
             0 -> null
-            1 -> observed.single().second
+            1 -> if (observed.single().first == "requested") "START_RECEIPT_NOT_DURABLE"
+                 else if (observed.single().first == "receipt_write_failed") "START_RECEIPT_WRITE_FAILED"
+                 else observed.single().second
             else -> "START_OUTCOME_AMBIGUOUS"
         }
     }
@@ -1578,6 +1647,7 @@ class Sfdt22HostedStudyJourneyTest {
             visible(text(PracticeR.string.start_or_resume))
         }
         stage("practice_start_test") {
+            captureStartReceiptBaseline()
             click(PracticeR.string.start_or_resume)
             awaitRealPracticeAttemptStarted()
         }

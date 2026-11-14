@@ -46,6 +46,10 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import android.content.Context
+import android.content.pm.ApplicationInfo
+import java.security.MessageDigest
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -96,6 +100,13 @@ fun PracticeScreen(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    // HF35: debug-only, app-private, outcome-only proof independent of Compose lifetime.
+    val context = LocalContext.current
+    val debugStartReceipt = remember(context) {
+        if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
+            context.getSharedPreferences("sfdt35-practice-start", Context.MODE_PRIVATE)
+        } else null
+    }
     val snackbar = remember { SnackbarHostState() }
     val questionsFlow = remember(plan.id) { practice.observeQuestions(plan.id) }
     val testsFlow = remember(plan.id) { practice.observeTests(plan.id) }
@@ -190,6 +201,31 @@ fun PracticeScreen(
                 .onSuccess { snackbar.showSnackbar(success) }
                 .onFailure { snackbar.showSnackbar(operationFailed) }
         }
+    }
+
+    // HF35: only a fingerprint of the random test ID, a bounded enum, and a
+    // monotonic receipt counter. Never write names, statements, answers or IDs.
+    // Synchronous tiny commit is intentional: it survives a transient screen
+    // recreation/process death and cannot be mistaken for an ephemeral tag.
+    fun writeDebugStartReceipt(testId: String, phase: String) {
+        val preferences = debugStartReceipt ?: return // Release builds never write.
+        if (phase !in setOf("requested", "result_uncommitted", "committed",
+                "rejected_argument", "rejected_state", "rejected_sqlite", "rejected_other")) {
+            startOutcome = "receipt_write_failed"
+            return
+        }
+        val success = runCatching {
+            val digest = MessageDigest.getInstance("SHA-256")
+                .digest(testId.toByteArray(Charsets.UTF_8))
+                .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+            val sequence = preferences.getLong("sequence", 0L)
+            preferences.edit()
+                .putString("fingerprint", digest)
+                .putString("phase", phase)
+                .putLong("sequence", sequence + 1L)
+                .commit()
+        }.getOrDefault(false)
+        if (!success) startOutcome = "receipt_write_failed"
     }
 
     val activeTest = activeTestId?.let { id -> tests.firstOrNull { it.id.value == id } }
@@ -792,6 +828,7 @@ fun PracticeScreen(
                     onStart = { test ->
                         // The tap must be observable BEFORE coroutine scheduling.
                         startOutcome = "requested"
+                        writeDebugStartReceipt(test.id.value, "requested")
                         scope.launch {
                             val outcome = runRecoverableOperation {
                                 practice.startPracticeTest(plan.id, test.id)
@@ -799,10 +836,12 @@ fun PracticeScreen(
                             outcome.onSuccess { started ->
                                 if (started.startedAtEpochMillis == null) {
                                     startOutcome = "result_uncommitted"
+                                    writeDebugStartReceipt(test.id.value, "result_uncommitted")
                                     snackbar.showSnackbar(operationFailed)
                                 } else {
                                     // Navigate ONLY after a real repository start result.
                                     startOutcome = "committed"
+                                    writeDebugStartReceipt(test.id.value, "committed")
                                     activeMockId = null
                                     activeTestId = started.id.value
                                     snackbar.showSnackbar(testCreated)
@@ -814,6 +853,7 @@ fun PracticeScreen(
                                     is android.database.sqlite.SQLiteException -> "rejected_sqlite"
                                     else -> "rejected_other"
                                 }
+                                writeDebugStartReceipt(test.id.value, startOutcome)
                                 snackbar.showSnackbar(operationFailed)
                             }
                         }
