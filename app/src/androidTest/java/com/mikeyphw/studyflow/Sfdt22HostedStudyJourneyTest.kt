@@ -969,6 +969,32 @@ class Sfdt22HostedStudyJourneyTest {
         }
     }
 
+    /** HF34: inspect ONLY allowlisted Compose start-result tags, never private data.
+     * A missing status falls back to the original read-only Room diagnostic. */
+    private fun startOutcomeCategory(): String? {
+        val categories = listOf(
+            "idle" to "START_ACTION_NOT_DELIVERED",
+            "requested" to "START_ACTION_STALLED",
+            "committed" to "START_COMMITTED_BUT_ROW_MISSING",
+            "result_uncommitted" to "START_RESULT_UNCOMMITTED",
+            "rejected_argument" to "START_REJECTED_ARGUMENT",
+            "rejected_state" to "START_REJECTED_STATE",
+            "rejected_sqlite" to "START_REJECTED_SQLITE",
+            "rejected_other" to "START_REJECTED_OTHER",
+        )
+        val observed = categories.filter { (state, _) ->
+            rule.onAllNodes(
+                hasTestTag("studyflow.practice.start.$state"),
+                useUnmergedTree = true,
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+        return when (observed.size) {
+            0 -> null
+            1 -> observed.single().second
+            else -> "START_OUTCOME_AMBIGUOUS"
+        }
+    }
+
     private fun awaitRealPracticeAttemptStarted() {
         val errors = rule.onAllNodes(hasText(text(PracticeR.string.operation_failed)))
         try {
@@ -981,7 +1007,10 @@ class Sfdt22HostedStudyJourneyTest {
         } catch (failure: Throwable) {
             if (failure is AssertionError &&
                 failure.message == "SFDT22_PRACTICE_DIAG_START_OPERATION_FAILED") throw failure
-            throw AssertionError("SFDT22_PRACTICE_DIAG_" + diagnosePracticeAttemptStart(), failure)
+            // Prefer the production callback's enum over a lossy timeout guess.
+            // Still refuse any result lacking the independent Room timestamp.
+            throw AssertionError("SFDT22_PRACTICE_DIAG_" +
+                (startOutcomeCategory() ?: diagnosePracticeAttemptStart()), failure)
         }
         if (errors.fetchSemanticsNodes().isNotEmpty()) {
             throw AssertionError("SFDT22_PRACTICE_DIAG_START_OPERATION_FAILED")

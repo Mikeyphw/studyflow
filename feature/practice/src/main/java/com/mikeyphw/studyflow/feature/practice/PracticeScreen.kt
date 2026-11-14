@@ -125,6 +125,8 @@ fun PracticeScreen(
     var outcomeFilter by rememberSaveable { mutableStateOf<QuestionAttemptOutcome?>(null) }
     var activeTestId by rememberSaveable { mutableStateOf<String?>(null) }
     var activeMockId by rememberSaveable { mutableStateOf<String?>(null) }
+    // HF34: stable, non-sensitive outcome of the real Start action. No user data.
+    var startOutcome by remember { mutableStateOf("idle") }
     var bancaBlueprintPreview by remember { mutableStateOf<ExamBlueprintPreview?>(null) }
     var blueprintScoringMode by rememberSaveable { mutableStateOf(ExamScoringMode.NO_PENALTY) }
     var blueprintWrongPenalty by rememberSaveable { mutableStateOf("1.0") }
@@ -194,7 +196,7 @@ fun PracticeScreen(
     val activeMock = activeMockId?.let { id -> mocks.firstOrNull { it.id.value == id } }
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.testTag("studyflow.practice.start.$startOutcome"),
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
@@ -788,10 +790,32 @@ fun PracticeScreen(
                 RecentTestsCard(
                     tests = tests,
                     onStart = { test ->
-                        launchAction(testCreated) {
-                            practice.startPracticeTest(plan.id, test.id)
-                            activeMockId = null
-                            activeTestId = test.id.value
+                        // The tap must be observable BEFORE coroutine scheduling.
+                        startOutcome = "requested"
+                        scope.launch {
+                            val outcome = runRecoverableOperation {
+                                practice.startPracticeTest(plan.id, test.id)
+                            }
+                            outcome.onSuccess { started ->
+                                if (started.startedAtEpochMillis == null) {
+                                    startOutcome = "result_uncommitted"
+                                    snackbar.showSnackbar(operationFailed)
+                                } else {
+                                    // Navigate ONLY after a real repository start result.
+                                    startOutcome = "committed"
+                                    activeMockId = null
+                                    activeTestId = started.id.value
+                                    snackbar.showSnackbar(testCreated)
+                                }
+                            }.onFailure { failure ->
+                                startOutcome = when (failure) {
+                                    is IllegalArgumentException -> "rejected_argument"
+                                    is IllegalStateException -> "rejected_state"
+                                    is android.database.sqlite.SQLiteException -> "rejected_sqlite"
+                                    else -> "rejected_other"
+                                }
+                                snackbar.showSnackbar(operationFailed)
+                            }
                         }
                     },
                 )
