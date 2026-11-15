@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""OPT02 P02: coordinated reuse of exact-source signed APK pair in targeted CI.
+"""OPT02 P02 HF02: coordinated, diagnosable exact-source APK artifact reuse.
 
 Fail-closed immutable artifact verification. A producer that is absent, pending,
 failed, or expired is a cache MISS: ordinary hosted Gradle compilation remains
@@ -33,17 +33,45 @@ EXPECTED_KEYS = frozenset({'SFDT22_PHYSICAL_APKS.json', 'app-debug.apk', 'app-de
 class Refused(Exception):
     pass
 
+class ToolFailure(Refused):
+    """Allowlisted command failure category; raw gh output is never logged."""
+    def __init__(self, stage: str, category: str, rc: int, transient: bool):
+        self.stage, self.category, self.rc, self.transient = stage, category, rc, transient
+        super().__init__(f'{stage}_{category}_RC_{rc}')
+
 def need(ok: bool, reason: str) -> None:
     if not ok:
         raise Refused(reason)
+
+def classify_tool_failure(argv: list[str], rc: int, stderr: bytes) -> ToolFailure:
+    """Use bounded error patterns, never expose potentially sensitive stderr."""
+    kind = ('GH_ARTIFACT_DOWNLOAD' if argv[:3] == ['gh', 'run', 'download'] else
+            'GH_API' if argv[:2] == ['gh', 'api'] else
+            'APK_SIGNER' if len(argv) > 1 and argv[1] == 'verify' else 'OTHER_COMMAND')
+    message = stderr[:12_000].decode('utf-8', 'replace').lower()
+    if re.search(r'\b(401|403)\b|forbidden|permission denied|resource not accessible|bad credentials|unauthorized', message):
+        return ToolFailure(kind, 'ACCESS_DENIED', rc, False)
+    if re.search(r'\b(404|410)\b|not found|does not exist|not yet available|artifact not found', message):
+        return ToolFailure(kind, 'NOT_YET_AVAILABLE', rc, kind == 'GH_ARTIFACT_DOWNLOAD')
+    if re.search(r'\b(429|500|502|503|504)\b|rate limit|bad gateway|service unavailable|temporarily unavailable', message):
+        return ToolFailure(kind, 'SERVICE_TRANSIENT', rc, kind == 'GH_ARTIFACT_DOWNLOAD')
+    if re.search(r'timeout|timed out|connection reset|connection refused|unexpected eof|tls handshake|network is unreachable|temporary failure', message):
+        return ToolFailure(kind, 'NETWORK_TRANSIENT', rc, kind == 'GH_ARTIFACT_DOWNLOAD')
+    return ToolFailure(kind, 'UNCLASSIFIED_NONZERO', rc, kind == 'GH_ARTIFACT_DOWNLOAD')
 
 def command(argv: list[str], *, limit: int = 180_000, timeout: int = 45) -> bytes:
     try:
         run = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              timeout=timeout, check=False)
-    except (OSError, subprocess.TimeoutExpired):
-        raise Refused('COMMAND_UNAVAILABLE_OR_TIMEOUT') from None
-    need(run.returncode == 0 and len(run.stdout) <= limit, 'COMMAND_FAILURE')
+    except subprocess.TimeoutExpired:
+        raise ToolFailure('GH_ARTIFACT_DOWNLOAD' if argv[:3] == ['gh', 'run', 'download'] else 'OTHER_COMMAND',
+                          'EXECUTION_TIMEOUT', -1, argv[:3] == ['gh', 'run', 'download']) from None
+    except OSError:
+        raise Refused('COMMAND_UNAVAILABLE') from None
+    if run.returncode != 0:
+        # No raw stdout/stderr or GitHub auth tokens in job logs.
+        raise classify_tool_failure(argv, run.returncode, run.stderr)
+    need(len(run.stdout) <= limit, 'COMMAND_OUTPUT_OVERSIZED')
     return run.stdout
 
 def github_json(path: str) -> dict:
@@ -247,6 +275,40 @@ def find_producer(source: str, *, wait_seconds: int = 0) -> dict | None:
             return None  # no producer registered: avoid a 12-minute idle miss
 
 
+def download_with_retry(run_id: int, name: str, tmp: Path, *, attempts: int = 6,
+                        sleep=time.sleep) -> None:
+    """Retry transient artifact propagation/transfer only; never retry bad bytes.
+
+    The successful producer can publish artifact metadata before gh download
+    can fetch the ZIP. Download stays in a disposable staging directory. Only
+    `verify_bundle()` may make the pair eligible for delivery.
+    """
+    need(type(run_id) is int and run_id > 0 and
+         re.fullmatch(r'sfdt22-physical-apks-' + str(run_id) + r'-[1-9][0-9]*', name) is not None,
+         'DOWNLOAD_IDENTITY_INVALID')
+    need(type(attempts) is int and 1 <= attempts <= 6, 'DOWNLOAD_RETRY_BUDGET_INVALID')
+    need(tmp.is_dir() and not tmp.is_symlink(), 'DOWNLOAD_DIR_INVALID')
+    for attempt in range(1, attempts + 1):
+        # A partial failed extraction must not poison the next attempt.
+        for entry in tmp.iterdir():
+            need(entry.is_file() or entry.is_symlink(), 'DOWNLOAD_UNEXPECTED_DIRECTORY')
+            entry.unlink()
+        try:
+            command(['gh', 'run', 'download', str(run_id), '-R', REPO,
+                     '--name', name, '--dir', str(tmp)], limit=10_000, timeout=180)
+            print('OPT02_SHARED_APKS_INFO DOWNLOAD_PASS attempts=' + str(attempt), flush=True)
+            return
+        except ToolFailure as error:
+            if not error.transient:
+                raise Refused(str(error)) from None
+            print('OPT02_SHARED_APKS_INFO DOWNLOAD_RETRY attempt=' + str(attempt) +
+                  ' category=' + error.category + ' rc=' + str(error.rc), flush=True)
+            if attempt == attempts:
+                raise Refused('GH_ARTIFACT_DOWNLOAD_RETRY_EXHAUSTED_' + error.category) from None
+            sleep(min(5 * attempt, 20))
+    raise Refused('GH_ARTIFACT_DOWNLOAD_UNREACHABLE')
+
+
 def try_reuse(root: Path, source: str, android_home: Path,
               *, wait_seconds: int = 0) -> tuple[bool, str]:
     # P02 waits for the separate exact-source producer before any Gradle fallback.
@@ -262,8 +324,7 @@ def try_reuse(root: Path, source: str, android_home: Path,
     with tempfile.TemporaryDirectory(prefix='opt02-shared-') as temporary:
         tmp = Path(temporary)
         name = artifact['name']
-        command(['gh', 'run', 'download', str(run_id), '-R', REPO,
-                 '--name', name, '--dir', str(tmp)], limit=10_000, timeout=240)
+        download_with_retry(run_id, name, tmp)
         app, test = verify_bundle(tmp, source, candidate, android_home)
         deliver(app, test, root)
     return True, 'EXACT_SHA_SIGNED_APK_PAIR_VERIFIED'

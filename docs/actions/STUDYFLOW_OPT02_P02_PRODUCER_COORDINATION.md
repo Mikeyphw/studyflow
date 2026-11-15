@@ -47,3 +47,40 @@ Do not infer that a prior physical PASS qualifies any new source SHA.
 
 Next: OPT02 P03, quantify reuse rate, elapsed minutes and duplicate compilation
 using GitHub run logs. Then OPT03 cross-lane caching and workflow optimization.
+
+## HF02 — Diagnosable artifact transfer and bounded retry (15 November 2026)
+
+On PR #16 SHA `708cbe29031a4499914b001cf4113a3a820fe9e4`, the
+canonical physical APK producer run **43745630803** succeeded at 18:23:33 UTC
+and published the uniquely named artifact. The Targeted consumer run
+**43745636320** had waited for the correct producer, but at 18:23:46 it ended
+with `OPT02_SHARED_APKS_REFUSED COMMAND_FAILURE` (exit 2). The previous helper
+suppressed subprocess stderr, so the old logs **cannot determine** whether the
+failure was transient GitHub artifact availability, a transfer problem, missing
+permissions, or a signer invocation. Do not claim the cause is established.
+
+HF02 replaces this generic diagnostic with allowlisted command-stage and
+error-category markers, never raw output or tokens. After a successful exact-
+SHA producer and unique artifact metadata, the consumer retries **only** the
+GitHub artifact transfer: at most six attempts, each in an isolated disposable
+staging directory with partial files removed and bounded delays (5, 10, 15,
+20, 20 seconds). 401/403 and other permanent access errors refuse immediately.
+404 propagation, 5xx and recognized transport failures are retried. Unknown
+nonzero transfer failures also get bounded retries, then fail with an explicit
+category. A successful download still must pass unmodified artifact identity,
+SHA-256, same signer and manifest provenance checks; **no invalid APK can
+trigger a Gradle fallback or a HIT**.
+
+The 720-second wait for the producer remains unchanged. If the producer is
+absent, failed or superseded, the historical Gradle fallback remains valid.
+This HF02 patch only affects CI helper/tests/handoff/source manifest, not the
+physical APK producer, SFDT21, Android app/test source or release gates.
+
+**Acceptance**: a new Targeted CI log must contain
+`OPT02_SHARED_APKS_HIT EXACT_SHA_SIGNED_APK_PAIR_VERIFIED`, the independent
+Android compile step must be **skipped**, and the required result gate must
+pass. If still failing, use the category in `OPT02_SHARED_APKS_REFUSED` or
+`OPT02_SHARED_APKS_INFO DOWNLOAD_RETRY` to diagnose the exact stage. Do not
+re-run physical device tests merely for this CI-only fix. All Gradle on GitHub.
+
+Next: OPT02 P03 measurement, then OPT03 workflow optimization.

@@ -252,6 +252,62 @@ class Opt02SharedAPKContracts(unittest.TestCase):
         self.assertIn("vars.STUDYFLOW_SFDT22_HOSTED_ENABLED == 'true'",full)
         self.assertIn('needs: [source, emulator]',full)
 
+    def test_18_hf02_command_diagnostics_redact_sensitive_output(self):
+        # The failed real run only exposed COMMAND_FAILURE; classify safely.
+        for stderr, category, transient in (
+            (b'HTTP 404 Not Found after upload', 'NOT_YET_AVAILABLE', True),
+            (b'HTTP 503 Service Unavailable', 'SERVICE_TRANSIENT', True),
+            (b'connection reset by peer', 'NETWORK_TRANSIENT', True),
+            (b'HTTP 403 Resource not accessible by integration', 'ACCESS_DENIED', False),
+            (b'Some unknown error, token=DO_NOT_PRINT', 'UNCLASSIFIED_NONZERO', True),
+        ):
+            with self.subTest(category=category):
+                error = opt.classify_tool_failure(['gh', 'run', 'download', '123'], 1, stderr)
+                self.assertEqual(error.category, category)
+                self.assertEqual(error.transient, transient)
+                self.assertNotIn('DO_NOT_PRINT', str(error))
+        self.assertFalse(opt.classify_tool_failure(['apksigner','verify'],2,b'bad APK').transient)
+
+    def test_19_hf02_download_retries_then_succeeds_without_unverified_delivery(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp=Path(td);called=[];sleeps=[]
+            def download(args, **kwargs):
+                called.append(args)
+                self.assertEqual(args[:4], ['gh','run','download','123'])
+                if len(called) < 3:
+                    (tmp/'partial.txt').write_text('discard me')
+                    raise opt.ToolFailure('GH_ARTIFACT_DOWNLOAD','NOT_YET_AVAILABLE',1,True)
+                self.assertFalse((tmp/'partial.txt').exists())
+                bundle(tmp)
+                return b''
+            with mock.patch.object(opt,'command',side_effect=download):
+                opt.download_with_retry(123,'sfdt22-physical-apks-123-2',tmp,sleep=sleeps.append)
+            self.assertEqual(len(called),3)
+            self.assertEqual(sleeps,[5,10])
+            self.assertEqual(set(x.name for x in tmp.iterdir()),opt.EXPECTED_KEYS)
+
+    def test_20_hf02_download_errors_never_trigger_gradle_fallback(self):
+        for category,transient,attempts in [('ACCESS_DENIED',False,1),
+                                             ('NOT_YET_AVAILABLE',True,3),
+                                             ('UNCLASSIFIED_NONZERO',True,3)]:
+            with self.subTest(category=category),tempfile.TemporaryDirectory() as td:
+                with mock.patch.object(opt,'command',side_effect=opt.ToolFailure(
+                     'GH_ARTIFACT_DOWNLOAD',category,1,transient)) as command:
+                    with self.assertRaises(opt.Refused) as raised:
+                        opt.download_with_retry(123,'sfdt22-physical-apks-123-2',Path(td),
+                                                attempts=attempts,sleep=lambda _:None)
+                self.assertEqual(command.call_count,attempts)
+                self.assertIn('GH_ARTIFACT_DOWNLOAD',str(raised.exception))
+                self.assertEqual(list(Path(td).iterdir()),[])
+
+    def test_21_hf02_wrong_artifact_identity_never_downloaded(self):
+        with tempfile.TemporaryDirectory() as td, \
+             mock.patch.object(opt,'command',side_effect=AssertionError('should not download')):
+            for bad in ('sfdt22-physical-apks-124-1', 'sfdt22-physical-apks-123-0',
+                        'sfdt22-physical-apks-123-2/../../malicious'):
+                with self.assertRaises(opt.Refused):
+                    opt.download_with_retry(123,bad,Path(td))
+
     def test_09_cross_workflow_consumer_and_unchanged_mandatory_gates(self):
         wf=(ROOT/'.github/workflows/studyflow-targeted.yml').read_text()
         full=(ROOT/'.github/workflows/studyflow-sfdt22-hosted-journeys.yml').read_text()
