@@ -204,9 +204,13 @@ jobs:
           python3 -B scripts/test_sfdt22_hf27_contract.py
           echo "fcaec6f66e513085eb861f24fa35b2a1aab9634a343e1d95bd685718f2a5ac26  scripts/ci/studyflow_ci_policy.py" | sha256sum --check --status
           echo "186d385de37bdbadf0c8658de8422b67e97137a02273dee7252adbdba06ad905  scripts/ci/test_studyflow_ci_policy.py" | sha256sum --check --status
-          echo "d76e794ed195c8369776e5c22894bdf74ea0275388bedf228857f374905c03c6  .github/workflows/studyflow-targeted.yml" | sha256sum --check --status
+          echo "fa5703af5f07eaf2bebbe453f3fd84275c12095813d13dec065ac4ee068feea4  .github/workflows/studyflow-targeted.yml" | sha256sum --check --status
           echo "f46f69c197fdb72eb7af299462816dfe2b3e632c265c72229e6ff84d6972f277  docs/actions/STUDYFLOW_TARGETED_CI.md" | sha256sum --check --status
           python3 -B scripts/ci/test_studyflow_ci_policy.py
+          echo "abef05207af215b8b2f626180b48162317c791d9e94b1fdf2b03b86adbcf9969  scripts/ci/opt02_shared_apks.py" | sha256sum --check --status
+          echo "c50f1ced4ba04d95a6f6a218211df18c441fdfb5fdcb56d5b33e56f4647932fe  scripts/ci/test_opt02_shared_apks.py" | sha256sum --check --status
+          echo "570287c9348a43f18338ee4bed66d17220dea1590077eae4a995d2fd68e6bef9  docs/actions/STUDYFLOW_OPT02_P01_SHARED_ANDROID_APKS.md" | sha256sum --check --status
+          python3 -B scripts/ci/test_opt02_shared_apks.py
           python3 -B scripts/ci/studyflow_ci_policy.py source-check
           python3 -B scripts/test_sfdt22_hf01_contract.py
           python3 -B scripts/sfdt22_emulator_verify.py --source-check
