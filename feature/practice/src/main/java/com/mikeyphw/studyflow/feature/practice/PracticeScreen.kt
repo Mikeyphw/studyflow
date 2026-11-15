@@ -11,6 +11,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
@@ -46,6 +47,11 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import android.content.Context
+import android.content.pm.ApplicationInfo
+import java.security.MessageDigest
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -95,6 +101,14 @@ fun PracticeScreen(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val practiceListState = rememberLazyListState()
+    // HF35: debug-only, app-private, outcome-only proof independent of Compose lifetime.
+    val context = LocalContext.current
+    val debugStartReceipt = remember(context) {
+        if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
+            context.getSharedPreferences("sfdt35-practice-start", Context.MODE_PRIVATE)
+        } else null
+    }
     val snackbar = remember { SnackbarHostState() }
     val questionsFlow = remember(plan.id) { practice.observeQuestions(plan.id) }
     val testsFlow = remember(plan.id) { practice.observeTests(plan.id) }
@@ -124,6 +138,8 @@ fun PracticeScreen(
     var outcomeFilter by rememberSaveable { mutableStateOf<QuestionAttemptOutcome?>(null) }
     var activeTestId by rememberSaveable { mutableStateOf<String?>(null) }
     var activeMockId by rememberSaveable { mutableStateOf<String?>(null) }
+    // HF34: stable, non-sensitive outcome of the real Start action. No user data.
+    var startOutcome by remember { mutableStateOf("idle") }
     var bancaBlueprintPreview by remember { mutableStateOf<ExamBlueprintPreview?>(null) }
     var blueprintScoringMode by rememberSaveable { mutableStateOf(ExamScoringMode.NO_PENALTY) }
     var blueprintWrongPenalty by rememberSaveable { mutableStateOf("1.0") }
@@ -189,11 +205,44 @@ fun PracticeScreen(
         }
     }
 
+    // HF35: only a fingerprint of the random test ID, a bounded enum, and a
+    // monotonic receipt counter. Never write names, statements, answers or IDs.
+    // Synchronous tiny commit is intentional: it survives a transient screen
+    // recreation/process death and cannot be mistaken for an ephemeral tag.
+    fun writeDebugStartReceipt(testId: String, phase: String) {
+        val preferences = debugStartReceipt ?: return // Release builds never write.
+        if (phase !in setOf("requested", "result_uncommitted", "committed",
+                "rejected_argument", "rejected_state", "rejected_sqlite", "rejected_other")) {
+            startOutcome = "receipt_write_failed"
+            return
+        }
+        val success = runCatching {
+            val digest = MessageDigest.getInstance("SHA-256")
+                .digest(testId.toByteArray(Charsets.UTF_8))
+                .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+            val sequence = preferences.getLong("sequence", 0L)
+            preferences.edit()
+                .putString("fingerprint", digest)
+                .putString("phase", phase)
+                .putLong("sequence", sequence + 1L)
+                .commit()
+        }.getOrDefault(false)
+        if (!success) startOutcome = "receipt_write_failed"
+    }
+
     val activeTest = activeTestId?.let { id -> tests.firstOrNull { it.id.value == id } }
     val activeMock = activeMockId?.let { id -> mocks.firstOrNull { it.id.value == id } }
 
+    // HF39: starting a runner inserts it above the current list viewport.
+    // Scroll the actual production list so the attempt is visible to the user.
+    LaunchedEffect(activeTest?.id?.value, activeMock?.id?.value) {
+        if (activeTest != null || activeMock != null) {
+            practiceListState.scrollToItem(1)
+        }
+    }
+
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.testTag("studyflow.practice.start.$startOutcome"),
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
@@ -215,6 +264,7 @@ fun PracticeScreen(
         },
     ) { padding ->
         LazyColumn(
+            state = practiceListState,
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -787,10 +837,36 @@ fun PracticeScreen(
                 RecentTestsCard(
                     tests = tests,
                     onStart = { test ->
-                        launchAction(testCreated) {
-                            practice.startPracticeTest(plan.id, test.id)
-                            activeMockId = null
-                            activeTestId = test.id.value
+                        // The tap must be observable BEFORE coroutine scheduling.
+                        startOutcome = "requested"
+                        writeDebugStartReceipt(test.id.value, "requested")
+                        scope.launch {
+                            val outcome = runRecoverableOperation {
+                                practice.startPracticeTest(plan.id, test.id)
+                            }
+                            outcome.onSuccess { started ->
+                                if (started.startedAtEpochMillis == null) {
+                                    startOutcome = "result_uncommitted"
+                                    writeDebugStartReceipt(test.id.value, "result_uncommitted")
+                                    snackbar.showSnackbar(operationFailed)
+                                } else {
+                                    // Navigate ONLY after a real repository start result.
+                                    startOutcome = "committed"
+                                    writeDebugStartReceipt(test.id.value, "committed")
+                                    activeMockId = null
+                                    activeTestId = started.id.value
+                                    snackbar.showSnackbar(testCreated)
+                                }
+                            }.onFailure { failure ->
+                                startOutcome = when (failure) {
+                                    is IllegalArgumentException -> "rejected_argument"
+                                    is IllegalStateException -> "rejected_state"
+                                    is android.database.sqlite.SQLiteException -> "rejected_sqlite"
+                                    else -> "rejected_other"
+                                }
+                                writeDebugStartReceipt(test.id.value, startOutcome)
+                                snackbar.showSnackbar(operationFailed)
+                            }
                         }
                     },
                 )
@@ -890,7 +966,8 @@ private fun PracticeRunnerCard(
         }
     }
     StudyFlowSectionCard(title = title) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(modifier = Modifier.testTag("studyflow.practice.runner"),
+            verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 pluralStringResource(
                     R.plurals.runner_progress,
@@ -908,7 +985,8 @@ private fun PracticeRunnerCard(
             if (question == null) {
                 Text(stringResource(R.string.no_questions_message))
             } else {
-                Text(question.statement, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(question.statement, modifier = Modifier.testTag("studyflow.practice.runner.question"),
+                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 val questionStartedAt = remember(state.attemptId, question.id.value) { SystemClock.elapsedRealtime() }
                 val answerChoices = questionAnswerChoices(question)
                 var draftTextAnswer by rememberSaveable(state.attemptId, question.id.value) { mutableStateOf("") }
@@ -945,7 +1023,7 @@ private fun PracticeRunnerCard(
                                     onAnswer(question, option, elapsedSeconds, null)
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().testTag("studyflow.practice.runner.answer"),
                         ) { Text(option) }
                     }
                 }
@@ -1098,7 +1176,9 @@ private fun RecentTestsCard(tests: List<StudyTest>, onStart: (StudyTest) -> Unit
                             )
                             Text(pluralStringResource(R.plurals.answered_value, test.answeredCount, test.answeredCount))
                             Text(pluralStringResource(R.plurals.correct_value, test.correctCount, test.correctCount))
-                            OutlinedButton(enabled = test.submittedAtEpochMillis == null, onClick = { onStart(test) }) {
+                            OutlinedButton(enabled = test.submittedAtEpochMillis == null,
+                                modifier = Modifier.testTag("studyflow.practice.test.start"),
+                                onClick = { onStart(test) }) {
                                 Icon(Icons.Outlined.PlayArrow, contentDescription = null)
                                 Text(stringResource(R.string.start_or_resume))
                             }

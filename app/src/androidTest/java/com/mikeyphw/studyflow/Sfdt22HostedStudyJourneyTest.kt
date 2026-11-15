@@ -68,6 +68,8 @@ class Sfdt22HostedStudyJourneyTest {
     private val questionStatement = "SFDT22: ecosystems include living organisms?"
     private val flashcardFront = "SFDT22 review: what is ecology?"
     private val flashcardBack = "Relationships between organisms and their environment"
+    private var startReceiptBaseline = -1L // HF35: instrumentation-local, read-only baseline
+    private var startRetryPerformed = false // HF36: one verified, real UI retry maximum
 
     /** Read-only SQLite inspection of the *actual* app database, never a test fixture. */
     private fun recordBoundary(point: String, state: String) {
@@ -230,6 +232,37 @@ class Sfdt22HostedStudyJourneyTest {
         }
     }
 
+    /** On-device, read-only SQLite proof independent of Compose/snackbar state.
+     * Only fixed AssertionError categories are exported by the host parser. */
+    private fun assertSessionClosedInDatabase() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val file = context.getDatabasePath("studyflow.db")
+        if (!file.isFile) throw AssertionError("SFDT22_SESSION_STATUS_LOOKUP_FAILED")
+        val counts = try {
+            SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+                db.rawQuery(
+                    "SELECT COUNT(*), " +
+                        "COALESCE(SUM(CASE WHEN s.status = 'COMPLETED' " +
+                        "AND s.endedAtEpochMillis IS NOT NULL AND s.notes = ? THEN 1 ELSE 0 END), 0), " +
+                        "COALESCE(SUM(CASE WHEN s.status IN ('RUNNING','PAUSED') THEN 1 ELSE 0 END), 0) " +
+                        "FROM study_sessions AS s " +
+                        "JOIN study_plans AS p ON p.id = s.studyPlanId WHERE p.name = ?",
+                    arrayOf(sessionName, planName),
+                ).use { cursor ->
+                    if (!cursor.moveToFirst()) null else Triple(
+                        cursor.getLong(0), cursor.getLong(1), cursor.getLong(2),
+                    )
+                }
+            }
+        } catch (_: Exception) {
+            null
+        }
+        if (counts == null) throw AssertionError("SFDT22_SESSION_STATUS_LOOKUP_FAILED")
+        if (counts != Triple(1L, 1L, 0L)) {
+            throw AssertionError("SFDT22_SESSION_STATUS_NOT_COMPLETED")
+        }
+    }
+
     private fun sessionRouteBoundary() {
         val expected = rule.activity.getString(SessionsR.string.sessions_subtitle, planName)
         val matched = runCatching {
@@ -248,13 +281,9 @@ class Sfdt22HostedStudyJourneyTest {
     private fun text(resId: Int): String = rule.activity.getString(resId)
 
     private fun tab(name: String) = rule.onNode(
-        hasText(text(when (name) {
-            "today" -> WorkspaceR.string.today_title
-            "plan" -> WorkspaceR.string.plan_title
-            "practice" -> WorkspaceR.string.practice_title
-            "progress" -> WorkspaceR.string.progress_title
-            else -> error("Unknown SFDT22 root")
-        })) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab),
+        hasTestTag("studyflow.shell.root.$name") and
+            SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab) and hasClickAction(),
+        useUnmergedTree = true,
     )
 
     private fun innerTab(resId: Int) = rule.onAllNodes(
@@ -303,10 +332,20 @@ class Sfdt22HostedStudyJourneyTest {
     }
 
     private fun shell() {
-        rule.waitUntil(30_000L) {
-            listOf("today", "plan", "practice", "progress").all { name ->
-                runCatching { tab(name).fetchSemanticsNode() }.isSuccess
+        val roots = listOf("today", "plan", "practice", "progress")
+        try {
+            rule.waitUntil(30_000L) {
+                roots.all { name ->
+                    rule.onAllNodes(
+                        hasTestTag("studyflow.shell.root.$name") and
+                            SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab) and
+                            hasClickAction(),
+                        useUnmergedTree = true,
+                    ).fetchSemanticsNodes().size == 1
+                }
             }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_ROOT_NAVIGATION_MISSING", failure)
         }
     }
 
@@ -346,9 +385,11 @@ class Sfdt22HostedStudyJourneyTest {
 
     private fun openRoot(name: String) {
         shell()
-        tab(name).performClick()
-        rule.waitForIdle()
-        tab(name).assertIsDisplayed().assertIsSelected()
+        val root = tab(name)
+        root.assertIsDisplayed().assertIsEnabled().performTouchInput { click() }
+        rule.waitUntil(25_000L) {
+            runCatching { tab(name).assertIsDisplayed().assertIsSelected() }.isSuccess
+        }
     }
 
     /** Await a genuine workspace tab, its selection, and actionable pane content. */
@@ -807,14 +848,514 @@ class Sfdt22HostedStudyJourneyTest {
         }
     }
 
+    /** HF09: inspect the actual committed study-test row, never a test fixture.
+     * Data values are used ONLY as bound parameters on the emulator and never
+     * exported in hosted diagnostics or test assertions. */
+    private fun persistedPracticeTestCount(): Long? {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return null
+        return runCatching {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT COUNT(*) FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? " +
+                        "AND tests.submittedAtEpochMillis IS NULL",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows -> if (rows.moveToFirst()) rows.getLong(0) else null }
+            }
+        }.getOrNull()
+    }
+
+    /** Create is asynchronous; a LazyColumn cannot compose off-screen rows
+     * until the actual production list is scrolled. Prove DB -> rendered action.
+     * Re-try a real scroll while Room Flow delivers the committed row; never
+     * accept snackbar-only success or invoke a domain method directly. */
+    private fun awaitRealPracticeTestReady() {
+        val operationFailure = hasText(text(PracticeR.string.operation_failed))
+        try {
+            rule.waitUntil(35_000L) {
+                if (rule.onAllNodes(operationFailure).fetchSemanticsNodes().isNotEmpty()) {
+                    throw AssertionError("SFDT22_PRACTICE_TEST_CREATE_OPERATION_FAILED")
+                }
+                persistedPracticeTestCount() == 1L
+            }
+        } catch (failure: Throwable) {
+            if (failure is AssertionError &&
+                failure.message == "SFDT22_PRACTICE_TEST_CREATE_OPERATION_FAILED") throw failure
+            throw AssertionError("SFDT22_PRACTICE_TEST_NOT_PERSISTED", failure)
+        }
+        val panel = hasText(text(PracticeR.string.recent_tests))
+        val actionable = hasText(text(PracticeR.string.start_or_resume)) and hasClickAction()
+        try {
+            rule.waitUntil(30_000L) {
+                val buttons = rule.onAllNodes(actionable)
+                if (buttons.fetchSemanticsNodes().isNotEmpty()) {
+                    val visible = runCatching {
+                        buttons.onFirst().performScrollTo()
+                        buttons.onFirst().assertIsDisplayed().assertIsEnabled()
+                    }.isSuccess
+                    if (visible) return@waitUntil true
+                }
+                // One scroll attempt before the Room emission can miss the row.
+                // Here every iteration can scroll the real LazyColumn again.
+                val lists = rule.onAllNodes(hasScrollToIndexAction())
+                if (lists.fetchSemanticsNodes().isNotEmpty()) {
+                    runCatching { lists.onFirst().performScrollToNode(panel) }
+                    runCatching { lists.onFirst().performScrollToNode(actionable) }
+                }
+                buttons.fetchSemanticsNodes().isNotEmpty() && runCatching {
+                    buttons.onFirst().assertIsDisplayed().assertIsEnabled()
+                }.isSuccess
+            }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_PRACTICE_TEST_ACTION_NOT_VISIBLE", failure)
+        }
+    }
+
+    /** HF10: real committed answer proof, never a snackbar-only success.
+     * Restrict to exactly one started, unsubmitted, one-question real practice
+     * test on the newly created plan. SQL parameters never leave the emulator. */
+    /** HF33: independently prove the real practice row is started before reading runner UI.
+     * This is a read-only query; no app fixture, ID, answer or private row is exported. */
+    private fun persistedPracticeAttemptStartedCount(): Long? {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return null
+        return runCatching {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT COUNT(*) FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? " +
+                        "AND tests.startedAtEpochMillis IS NOT NULL " +
+                        "AND tests.submittedAtEpochMillis IS NULL " +
+                        "AND tests.questionCount = 1",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows -> if (rows.moveToFirst()) rows.getLong(0) else null }
+            }
+        }.getOrNull()
+    }
+
+    /** Returns only an allowlisted category, never a row, timestamp or SQL error. */
+    private fun diagnosePracticeAttemptStart(): String {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return "START_DB_MISSING"
+        return try {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT tests.questionCount, tests.startedAtEpochMillis, " +
+                        "tests.submittedAtEpochMillis FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? LIMIT 2",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows ->
+                    if (!rows.moveToFirst()) "START_TEST_MISSING" else {
+                        val questionCount = rows.getInt(0)
+                        val started = !rows.isNull(1)
+                        val submitted = !rows.isNull(2)
+                        when {
+                            rows.moveToNext() -> "START_TEST_AMBIGUOUS"
+                            !started -> "START_ATTEMPT_NOT_STARTED"
+                            submitted -> "START_ATTEMPT_SUBMITTED"
+                            questionCount != 1 -> "START_QUESTION_COUNT_MISMATCH"
+                            else -> "START_PREDICATE_MISMATCH"
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            "START_LOOKUP_FAILED"
+        }
+    }
+
+    /** HF34: inspect ONLY allowlisted Compose start-result tags, never private data.
+     * A missing status falls back to the original read-only Room diagnostic. */
+    /** HF36: a newly-created test raises a transient snackbar at the bottom of the
+     * screen. Compose may still report the Start control displayed while that
+     * snackbar intercepts the actual touch. Never tap through it. */
+    private fun awaitPracticeCreateSnackbarGone() {
+        val message = hasText(text(PracticeR.string.practice_test_created))
+        try {
+            rule.waitUntil(12_000L) {
+                rule.onAllNodes(message, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isEmpty()
+            }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_PRACTICE_DIAG_START_SNACKBAR_OBSTRUCTION", failure)
+        }
+    }
+
+    /** A missing delivery receipt can mean an obstructed touch, not a failed
+     * domain operation. Permit exactly ONE more production UI tap only when:
+     * - no new, durable callback receipt exists;
+     * - the exact practice attempt is still unstarted in read-only Room;
+     * - the live Practice screen still reports idle (not requested/rejected);
+     * - the creation snackbar is gone and the real Start control is actionable.
+     * Never repeat a received callback or an ambiguous database result. */
+    private fun retryOnlyUndeliveredPracticeStart() {
+        if (startReceiptBaseline < 0L) {
+            throw AssertionError("SFDT22_PRACTICE_DIAG_START_RECEIPT_BASELINE_MISSING")
+        }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val prefs = context.getSharedPreferences("sfdt35-practice-start", Context.MODE_PRIVATE)
+        if (expectedPracticeTestFingerprint() == null) {
+            throw AssertionError("SFDT22_PRACTICE_DIAG_START_RETRY_UNSAFE_ROW")
+        }
+        // Allow normal coroutine delivery to win before considering a second tap.
+        // No sleeps or test-only production writes.
+        runCatching {
+            rule.waitUntil(7_000L) {
+                persistedPracticeAttemptStartedCount() == 1L ||
+                    prefs.getLong("sequence", 0L) > startReceiptBaseline
+            }
+        }
+        val sequence = runCatching { prefs.getLong("sequence", 0L) }.getOrElse { failure ->
+            throw AssertionError("SFDT22_PRACTICE_DIAG_START_RECEIPT_LOOKUP_FAILED", failure)
+        }
+        if (sequence > startReceiptBaseline) return // callback delivered, regardless of outcome
+        when (persistedPracticeAttemptStartedCount()) {
+            1L -> return // committed; never press a second time
+            0L -> Unit // only this exact state allows considering a safe retry
+            else -> throw AssertionError("SFDT22_PRACTICE_DIAG_START_RETRY_UNSAFE_ROW")
+        }
+        if (startOutcomeCategory() != "START_ACTION_NOT_DELIVERED") return
+        awaitPracticeCreateSnackbarGone()
+        // A second check closes the window while the snackbar was clearing.
+        if (persistedPracticeAttemptStartedCount() != 0L ||
+            prefs.getLong("sequence", 0L) > startReceiptBaseline) return
+        startRetryPerformed = true
+        click(PracticeR.string.start_or_resume) // same real tagged UI control, not domain API
+    }
+
+    /** Baseline before the real UI tap; the test never writes this preference. */
+    private fun captureStartReceiptBaseline() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val preferences = context.getSharedPreferences("sfdt35-practice-start", Context.MODE_PRIVATE)
+        startReceiptBaseline = preferences.getLong("sequence", 0L)
+    }
+
+    /** Hash of the single real Practice Test row. Neither hash nor SQL values
+     * may leave the emulator. SQLite is opened READONLY (not a synthetic model). */
+    private fun expectedPracticeTestFingerprint(): String? {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return null
+        return runCatching {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT tests.id FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? LIMIT 2",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows ->
+                    if (!rows.moveToFirst()) null else {
+                        val id = rows.getString(0)
+                        if (rows.moveToNext()) null else MessageDigest.getInstance("SHA-256")
+                            .digest(id.toByteArray(Charsets.UTF_8))
+                            .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+                    }
+                }
+            }
+        }.getOrNull()
+    }
+
+    /** Read-only receipt comparison: distinct target test + monotonic action.
+     * A historical receipt or a different attempt NEVER proves this tap. */
+    private fun durableStartReceiptCategory(): String? {
+        if (startReceiptBaseline < 0L) return "START_RECEIPT_BASELINE_MISSING"
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val preferences = context.getSharedPreferences("sfdt35-practice-start", Context.MODE_PRIVATE)
+        val sequence = runCatching { preferences.getLong("sequence", 0L) }.getOrElse {
+            return "START_RECEIPT_LOOKUP_FAILED"
+        }
+        if (sequence <= startReceiptBaseline) return null // A new action never reached disk.
+        val expectedFingerprint = expectedPracticeTestFingerprint()
+            ?: return "START_RECEIPT_LOOKUP_FAILED"
+        val fingerprint = preferences.getString("fingerprint", null)
+        if (expectedFingerprint != fingerprint) return "START_RECEIPT_WRONG_ATTEMPT"
+        val phase = preferences.getString("phase", null)
+        val screenReset = rule.onAllNodes(
+            hasTestTag("studyflow.practice.start.idle"), useUnmergedTree = true,
+        ).fetchSemanticsNodes().isNotEmpty()
+        return when (phase) {
+            "requested" -> if (screenReset) "START_SCREEN_RECREATED_AFTER_REQUEST" else "START_ACTION_STALLED"
+            "committed" -> "START_COMMITTED_BUT_ROW_MISSING"
+            "result_uncommitted" -> "START_RESULT_UNCOMMITTED"
+            "rejected_argument" -> "START_REJECTED_ARGUMENT"
+            "rejected_state" -> "START_REJECTED_STATE"
+            "rejected_sqlite" -> "START_REJECTED_SQLITE"
+            "rejected_other" -> "START_REJECTED_OTHER"
+            else -> "START_RECEIPT_MALFORMED"
+        }
+    }
+
+    private fun startOutcomeCategory(): String? {
+        // Prefer a durable record of THIS exact action to a transient Compose tag.
+        val durable = durableStartReceiptCategory()
+        if (durable != null) return durable
+        val categories = listOf(
+            "idle" to "START_ACTION_NOT_DELIVERED",
+            "requested" to "START_ACTION_STALLED",
+            "committed" to "START_COMMITTED_BUT_ROW_MISSING",
+            "result_uncommitted" to "START_RESULT_UNCOMMITTED",
+            "rejected_argument" to "START_REJECTED_ARGUMENT",
+            "rejected_state" to "START_REJECTED_STATE",
+            "rejected_sqlite" to "START_REJECTED_SQLITE",
+            "rejected_other" to "START_REJECTED_OTHER",
+            "receipt_write_failed" to "START_RECEIPT_WRITE_FAILED",
+        )
+        val observed = categories.filter { (state, _) ->
+            rule.onAllNodes(
+                hasTestTag("studyflow.practice.start.$state"),
+                useUnmergedTree = true,
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+        return when (observed.size) {
+            0 -> null
+            1 -> if (observed.single().first == "idle" && startRetryPerformed) "START_RETRY_NOT_DELIVERED"
+                 else if (observed.single().first == "requested") "START_RECEIPT_NOT_DURABLE"
+                 else if (observed.single().first == "receipt_write_failed") "START_RECEIPT_WRITE_FAILED"
+                 else observed.single().second
+            else -> "START_OUTCOME_AMBIGUOUS"
+        }
+    }
+
+    private fun awaitRealPracticeAttemptStarted() {
+        val errors = rule.onAllNodes(hasText(text(PracticeR.string.operation_failed)))
+        try {
+            rule.waitUntil(35_000L) {
+                if (errors.fetchSemanticsNodes().isNotEmpty()) {
+                    throw AssertionError("SFDT22_PRACTICE_DIAG_START_OPERATION_FAILED")
+                }
+                persistedPracticeAttemptStartedCount() == 1L
+            }
+        } catch (failure: Throwable) {
+            if (failure is AssertionError &&
+                failure.message == "SFDT22_PRACTICE_DIAG_START_OPERATION_FAILED") throw failure
+            // Prefer the production callback's enum over a lossy timeout guess.
+            // Still refuse any result lacking the independent Room timestamp.
+            throw AssertionError("SFDT22_PRACTICE_DIAG_" +
+                (startOutcomeCategory() ?: diagnosePracticeAttemptStart()), failure)
+        }
+        if (errors.fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_PRACTICE_DIAG_START_OPERATION_FAILED")
+        }
+    }
+
+    /** Ignore identically named question-bank text; require the real active runner. */
+    /** HF39: distinguish an absent runner from an off-screen runner item.
+     * The real PracticeRunnerCard is inside a LazyColumn; it is inserted above
+     * RecentTestsCard when Start succeeds, and physical screens can be short.
+     * We require a visible real question, then a visible enabled real answer,
+     * sequentially. We never accept unrelated question-bank text. */
+    private fun awaitRunnerQuestionReady() {
+        val runner = hasTestTag("studyflow.practice.runner")
+        val questionMatcher = hasTestTag("studyflow.practice.runner.question") and
+            hasText(questionStatement, substring = false) and hasAnyAncestor(hasTestTag("studyflow.practice.runner"))
+        val answerMatcher = hasTestTag("studyflow.practice.runner.answer") and
+            hasText("True") and hasClickAction() and hasAnyAncestor(hasTestTag("studyflow.practice.runner"))
+        val roots = rule.onAllNodes(runner, useUnmergedTree = true)
+        val questions = rule.onAllNodes(questionMatcher, useUnmergedTree = true)
+        val answers = rule.onAllNodes(answerMatcher)
+        val scrollables = rule.onAllNodes(hasScrollToIndexAction(), useUnmergedTree = true)
+
+        // Resolve the lazy runner item first; one scroll attempt can occur
+        // before the Room observer finishes emitting the started test.
+        try {
+            rule.waitUntil(25_000L) {
+                if (roots.fetchSemanticsNodes().isEmpty() &&
+                    scrollables.fetchSemanticsNodes().isNotEmpty()) {
+                    runCatching { scrollables.onFirst().performScrollToNode(runner) }
+                }
+                roots.fetchSemanticsNodes().size == 1 &&
+                    questions.fetchSemanticsNodes().size == 1
+            }
+        } catch (failure: Throwable) {
+            val category = when {
+                roots.fetchSemanticsNodes().isEmpty() -> "RUNNER_ROOT_MISSING"
+                questions.fetchSemanticsNodes().isEmpty() -> "RUNNER_QUESTION_MISSING"
+                questions.fetchSemanticsNodes().size > 1 -> "RUNNER_QUESTION_AMBIGUOUS"
+                else -> "RUNNER_NOT_READY"
+            }
+            throw AssertionError("SFDT22_PRACTICE_DIAG_" + category, failure)
+        }
+        runCatching { questions.onFirst().performScrollTo() }
+        if (runCatching { questions.onFirst().assertIsDisplayed() }.isFailure) {
+            throw AssertionError("SFDT22_PRACTICE_DIAG_RUNNER_QUESTION_OFFSCREEN")
+        }
+
+        // The answer can lie below the question on a small phone. The two
+        // controls cannot always be displayed simultaneously, so never
+        // require that impossible conjunction as evidence.
+        try {
+            rule.waitUntil(25_000L) {
+                if (answers.fetchSemanticsNodes().isNotEmpty()) {
+                    runCatching { answers.onFirst().performScrollTo() }
+                } else if (scrollables.fetchSemanticsNodes().isNotEmpty()) {
+                    runCatching { scrollables.onFirst().performScrollToNode(answerMatcher) }
+                }
+                answers.fetchSemanticsNodes().size == 1 &&
+                    runCatching {
+                        answers.onFirst().assertIsDisplayed().assertIsEnabled()
+                    }.isSuccess
+            }
+        } catch (failure: Throwable) {
+            val size = answers.fetchSemanticsNodes().size
+            val category = when {
+                size == 0 -> "RUNNER_ANSWER_MISSING"
+                size > 1 -> "RUNNER_ANSWER_AMBIGUOUS"
+                runCatching { answers.onFirst().assertIsDisplayed() }.isFailure ->
+                    "RUNNER_ANSWER_OFFSCREEN"
+                runCatching { answers.onFirst().assertIsEnabled() }.isFailure ->
+                    "RUNNER_ANSWER_DISABLED"
+                else -> "RUNNER_NOT_READY"
+            }
+            throw AssertionError("SFDT22_PRACTICE_DIAG_" + category, failure)
+        }
+    }
+
+    private fun persistedPracticeAnswerCount(): Long? {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return null
+        return runCatching {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT COUNT(*) FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? " +
+                        "AND tests.startedAtEpochMillis IS NOT NULL " +
+                        "AND tests.submittedAtEpochMillis IS NULL " +
+                        "AND tests.questionCount = 1 AND tests.answeredCount = 1",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows -> if (rows.moveToFirst()) rows.getLong(0) else null }
+            }
+        }.getOrNull()
+    }
+
+    /** Asynchronous answer operations may complete after a Compose snackbar
+     * disappears. Require the actual Room mutation, or emit a distinct stable
+     * failure category; do not suppress a rejected production operation. */
+    /** HF32: read-only, bounded diagnostic; no private values leave the emulator. */
+    private fun diagnosePracticeAnswerPersistence(): String {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val dbFile = context.getDatabasePath("studyflow.db")
+        if (!dbFile.isFile) return "DB_MISSING"
+        return try {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { sql ->
+                sql.rawQuery(
+                    "SELECT tests.questionCount, tests.answeredCount, " +
+                        "tests.startedAtEpochMillis, tests.submittedAtEpochMillis, tests.configurationJson " +
+                        "FROM study_tests AS tests " +
+                        "JOIN study_plans AS plans ON plans.id = tests.studyPlanId " +
+                        "WHERE plans.name = ? AND tests.title = ? LIMIT 2",
+                    arrayOf(planName, "$planName practice"),
+                ).use { rows ->
+                    if (!rows.moveToFirst()) {
+                        "TEST_MISSING"
+                    } else {
+                        val questionCount = rows.getInt(0)
+                        val answeredCount = rows.getInt(1)
+                        val started = !rows.isNull(2)
+                        val submitted = !rows.isNull(3)
+                        val hasAnswerRecord = !rows.isNull(4) &&
+                            rows.getString(4).lineSequence().any { it.startsWith("answer=") }
+                        val ambiguous = rows.moveToNext()
+                        when {
+                            ambiguous -> "TEST_AMBIGUOUS"
+                            !started -> "ATTEMPT_NOT_STARTED"
+                            submitted -> "ATTEMPT_SUBMITTED"
+                            questionCount != 1 -> "QUESTION_COUNT_MISMATCH"
+                            answeredCount == 0 && hasAnswerRecord -> "ANSWER_COUNTER_ZERO"
+                            answeredCount == 0 -> "ANSWER_RECORD_MISSING"
+                            answeredCount != 1 -> "ANSWER_COUNTER_MISMATCH"
+                            !hasAnswerRecord -> "ANSWER_COUNTER_WITHOUT_RECORD"
+                            else -> "ROW_PRESENT_PREDICATE_MISMATCH"
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            "LOOKUP_FAILED"
+        }
+    }
+
+    private fun awaitRealPracticeAnswerPersisted() {
+        val errors = rule.onAllNodes(hasText(text(PracticeR.string.operation_failed)))
+        try {
+            rule.waitUntil(35_000L) {
+                if (errors.fetchSemanticsNodes().isNotEmpty()) {
+                    throw AssertionError("SFDT22_PRACTICE_ANSWER_OPERATION_FAILED",
+                        AssertionError("SFDT22_PRACTICE_DIAG_OPERATION_FAILED"))
+                }
+                persistedPracticeAnswerCount() == 1L
+            }
+        } catch (failure: Throwable) {
+            if (failure is AssertionError &&
+                failure.message == "SFDT22_PRACTICE_ANSWER_OPERATION_FAILED") throw failure
+            throw AssertionError("SFDT22_PRACTICE_ANSWER_NOT_PERSISTED",
+                AssertionError("SFDT22_PRACTICE_DIAG_" + diagnosePracticeAnswerPersistence(), failure))
+        }
+        if (errors.fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_PRACTICE_ANSWER_OPERATION_FAILED",
+                AssertionError("SFDT22_PRACTICE_DIAG_OPERATION_FAILED"))
+        }
+    }
+
+    /**
+     * HF31: the real Room commit is the acceptance proof. The success snackbar
+     * is transient, and a check-then-seek() sequence can time out after it has
+     * naturally disappeared. Inspect only its current semantics and never wait
+     * for a vanished optional snackbar to reappear. A persistent hidden snackbar
+     * remains an error. No production code or repository writes are bypassed.
+     */
+    private fun assertOptionalPracticeAckVisible() {
+        val confirmation = rule.onAllNodes(hasText(text(PracticeR.string.answer_saved)))
+        if (confirmation.fetchSemanticsNodes().isEmpty()) return
+        val displayed = runCatching { confirmation.onFirst().assertIsDisplayed() }
+        if (displayed.isFailure && confirmation.fetchSemanticsNodes().isNotEmpty()) {
+            throw AssertionError("SFDT22_PRACTICE_ACK_PRESENT_BUT_HIDDEN", displayed.exceptionOrNull())
+        }
+    }
+
     private fun click(resId: Int) = clickLabel(text(resId))
 
     private fun clickLabel(label: String) {
-        // The matching node must expose a real production click action.
-        val matcher = hasText(label) and hasClickAction()
-        seek(matcher)
-        val node = rule.onAllNodes(matcher).onFirst()
+        // HF33: no generic text-matching fallback for the real practice runner.
+        val exactPracticeTag = when (label) {
+            text(PracticeR.string.start_or_resume) -> "studyflow.practice.test.start"
+            "True" -> "studyflow.practice.runner.answer"
+            else -> null
+        }
+        val matcher = if (exactPracticeTag != null) {
+            val scoped = hasTestTag(exactPracticeTag) and hasText(label) and hasClickAction()
+            if (label == "True") scoped and hasAnyAncestor(hasTestTag("studyflow.practice.runner"))
+            else scoped
+        } else hasText(label) and hasClickAction()
+        try {
+            seek(matcher)
+        } catch (failure: Throwable) {
+            if (exactPracticeTag != null) {
+                val category = if (label == "True") "RUNNER_ANSWER_MISSING" else "START_CONTROL_MISSING"
+                throw AssertionError("SFDT22_PRACTICE_DIAG_" + category, failure)
+            }
+            throw failure
+        }
+        val candidates = rule.onAllNodes(matcher)
+        if (exactPracticeTag != null && candidates.fetchSemanticsNodes().size != 1) {
+            val category = if (label == "True") "RUNNER_ANSWER_AMBIGUOUS" else "START_CONTROL_AMBIGUOUS"
+            throw AssertionError("SFDT22_PRACTICE_DIAG_" + category)
+        }
+        val node = candidates.onFirst()
         runCatching { node.performScrollTo() }
+        if (exactPracticeTag != null &&
+            runCatching { node.assertIsDisplayed().assertIsEnabled() }.isFailure) {
+            val category = if (label == "True") "RUNNER_NOT_READY" else "START_CONTROL_NOT_READY"
+            throw AssertionError("SFDT22_PRACTICE_DIAG_" + category)
+        }
         node.performClick()
         rule.waitForIdle()
     }
@@ -1119,12 +1660,70 @@ class Sfdt22HostedStudyJourneyTest {
             writeSessionEditor("studyflow.session.finish.notes", sessionName)
         }
         stage("session_finish_confirm") { clickSessionAction("studyflow.session.finish.confirm") }
+        stage("session_completion_persisted") {
+            // The production save is asynchronous. Distinguish a rejected save
+            // from a successful DB mutation whose UI did not refresh. Never
+            // treat a snackbar or timeout as positive completion evidence.
+            val failures = rule.onAllNodes(hasText(text(SessionsR.string.operation_failed)))
+            var errorSeen = false
+            try {
+                rule.waitUntil(35_000L) {
+                    errorSeen = errorSeen || failures.fetchSemanticsNodes().isNotEmpty()
+                    errorSeen || runCatching {
+                        assertSessionClosedInDatabase()
+                        true
+                    }.getOrDefault(false)
+                }
+            } catch (_: Exception) {
+                // Fail below with a fixed non-sensitive status category.
+            }
+            if (errorSeen || failures.fetchSemanticsNodes().isNotEmpty()) {
+                throw AssertionError("SFDT22_SESSION_FINISH_OPERATION_FAILED")
+            }
+            // Re-read SQLite, independently of Compose or snackbar semantics.
+            assertSessionClosedInDatabase()
+        }
+        stage("session_completion_ui") {
+            // Real production empty-session card, not merely a snackbar/title.
+            val empty = rule.onAllNodes(
+                hasTestTag("studyflow.session.active.empty"), useUnmergedTree = true,
+            )
+            val noActive = hasText(text(SessionsR.string.no_active_session))
+            val controlTags = listOf(
+                "studyflow.session.active.pause", "studyflow.session.active.resume",
+                "studyflow.session.active.finish",
+            )
+            val ready = runCatching {
+                rule.waitUntil(20_000L) {
+                    empty.fetchSemanticsNodes().size == 1 &&
+                        runCatching { empty.onFirst().assertIsDisplayed() }.isSuccess &&
+                        rule.onAllNodes(noActive).fetchSemanticsNodes().isNotEmpty() &&
+                        controlTags.all { tag ->
+                            rule.onAllNodes(hasTestTag(tag), useUnmergedTree = true)
+                                .fetchSemanticsNodes().isEmpty()
+                        }
+                }
+                true
+            }.getOrDefault(false)
+            if (!ready) throw AssertionError("SFDT22_SESSION_UI_NOT_SETTLED")
+        }
         stage("session_finished") { visible(sessionName) }
         stage("session_capture") { screenshot("session") }
+        stage("session_return_to_workspace") {
+            // Real in-app Back control, never injected NavController/deep-link routing.
+            rule.onNodeWithContentDescription(text(SessionsR.string.go_back))
+                .assertIsDisplayed().performClick()
+            rule.waitForIdle()
+        }
+        stage("session_workspace_ready") { shell() }
     }
 
     @Test fun realUserAnswersQuestionAndOpensReviewQueue() {
+        // Independent test invocation: recheck actual persisted session state.
+        stage("practice_session_closed") { assertSessionClosedInDatabase() }
+        stage("practice_shell_ready") { shell() }
         stage("practice_open_root") { openRoot("practice") }
+        stage("practice_tab_selected") { tab("practice").assertIsDisplayed().assertIsSelected() }
         stage("practice_open_questions") {
             openInnerTabReady(WorkspaceR.string.practice_questions, WorkspaceR.string.open_question_bank)
         }
@@ -1142,13 +1741,28 @@ class Sfdt22HostedStudyJourneyTest {
         // The new StudyTest is saved asynchronously. Require its actual, actionable
         // production button BEFORE selecting it; no sleeps, seeded rows or shortcuts.
         stage("practice_test_ready") {
+            awaitRealPracticeTestReady()
             visible(text(PracticeR.string.start_or_resume))
         }
-        stage("practice_start_test") { click(PracticeR.string.start_or_resume) }
-        stage("practice_runner_question") { visible(questionStatement) }
+        stage("practice_start_test") {
+            captureStartReceiptBaseline()
+            awaitPracticeCreateSnackbarGone()
+            click(PracticeR.string.start_or_resume)
+            retryOnlyUndeliveredPracticeStart()
+            awaitRealPracticeAttemptStarted()
+        }
+        stage("practice_runner_question") {
+            awaitRunnerQuestionReady()
+        }
         stage("practice_answer_true") { clickLabel("True") }
         // This snackbar is shown only after the real answer operation completes.
-        stage("practice_answer_acknowledged") { visible(text(PracticeR.string.answer_saved)) }
+        stage("practice_answer_acknowledged") {
+            // Require the real committed answer. Never accept snackbar-only success.
+            awaitRealPracticeAnswerPersisted()
+            // A snackbar is optional and short-lived: an absent one is not a
+            // failure after durable Room proof. A persistent hidden one is.
+            assertOptionalPracticeAckVisible()
+        }
         stage("practice_finish_test") { click(PracticeR.string.finish_attempt) }
         stage("practice_test_finished") { visible(text(PracticeR.string.attempt_finished)) }
         stage("practice_capture_question") { screenshot("question") }

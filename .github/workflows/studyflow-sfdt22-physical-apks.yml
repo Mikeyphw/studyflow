@@ -1,0 +1,108 @@
+name: StudyFlow SFDT22 Physical ARM64 Instrumentation APKs (build only)
+on:
+  push:
+    branches: ['sfdt22-hotfix/hf30-hf04-pr-20261110']
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: 'Reviewed exact 40-character source HEAD; must match dispatched branch'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: sfdt22-physical-apks-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    name: Build APK pair — NO emulator, NO device, NO release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      STUDYFLOW_SFDT21_HOSTED_EMULATOR: 'true'  # Existing reviewed debug androidTest build-type switch ONLY
+      STUDYFLOW_SFDT22_HOSTED_JOURNEYS: 'true'
+      CI: 'true'
+      PYTHONDONTWRITEBYTECODE: '1'
+      EXPECTED_SHA: ${{ inputs.expected_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Enforce exact source and physical-lane contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          test "$GITHUB_REPOSITORY" = 'Mikeyphw/studyflow'
+          test -z "${STUDYFLOW_RELEASE_STORE_PASSWORD:-}${STUDYFLOW_RELEASE_KEY_PASSWORD:-}${STUDYFLOW_RELEASE_STORE_FILE:-}"
+          python3 -B scripts/test_sfdt22_physical_contract.py
+          python3 -B scripts/test_sfdt22_hf38_contract.py
+          python3 -B scripts/sfdt22_emulator_verify.py --source-check
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
+        with:
+          cmdline-tools-version: 15859902
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0 ndk;29.0.14206865'
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          cache-read-only: true
+          gradle-version: '9.7.1'
+      - name: Build matching debuggable app plus real androidTest APK, no emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          test ! -e app/build/outputs/apk/release/app-release.apk
+      - name: Create exact-source SHA and independent signing manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SFDT22_PHYSICAL_ARTIFACT_DIR="$RUNNER_TEMP/sfdt22-physical-apks"
+          mkdir -p "$SFDT22_PHYSICAL_ARTIFACT_DIR"
+          python3 -B - <<'PYTHON'
+          import hashlib,json,os,re,shutil,subprocess
+          from pathlib import Path
+          dst=Path(os.environ['SFDT22_PHYSICAL_ARTIFACT_DIR'])
+          source=Path('app/build/outputs/apk/debug/app-debug.apk')
+          runner=Path('app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk')
+          paths=((source,dst/'app-debug.apk'),(runner,dst/'app-debug-androidTest.apk'))
+          tool=Path(os.environ['ANDROID_HOME'])/'build-tools/36.0.0/apksigner'
+          assert tool.is_file()
+          digests=[]; certs=[]
+          for src,target in paths:
+              assert src.is_file() and 1024 < src.stat().st_size < 90000000
+              shutil.copyfile(src,target)
+              digest=hashlib.sha256(target.read_bytes()).hexdigest()
+              out=subprocess.check_output([str(tool),'verify','--print-certs',str(target)],text=True)
+              match=re.search(r'^Signer #1 certificate SHA-256 digest: ([a-fA-F0-9]{64})$',out,re.M)
+              assert match is not None
+              digests.append(digest);certs.append(match.group(1).lower())
+          assert certs[0]==certs[1], 'App and instrumentation signer mismatch'
+          manifest=dict(schema=1,source_sha=os.environ['GITHUB_SHA'],
+              run_id=os.environ['GITHUB_RUN_ID'],run_attempt=os.environ['GITHUB_RUN_ATTEMPT'],
+              app_sha256=digests[0],test_sha256=digests[1],
+              app_certificate_sha256=certs[0],test_certificate_sha256=certs[1],
+              executed_in_hosted_emulator=False,physical_device_qualified=False,
+              release_qualified=False,publication_allowed=False)
+          (dst/'SFDT22_PHYSICAL_APKS.json').write_text(json.dumps(manifest,sort_keys=True,indent=2)+'\n')
+          print('SFDT22_PHYSICAL_APKS_BUILD_ONLY_PASS source='+os.environ['GITHUB_SHA'])
+          PYTHON
+      - name: Upload build-only signed APK pair (no qualification claim)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sfdt22-physical-apks-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sfdt22-physical-apks/
+          if-no-files-found: error
+          retention-days: 14

@@ -100,26 +100,62 @@ class Sfdt21HostedRealUiTest {
         tab("today").assertIsSelected()
     }
 
+    /** HF10: test-only stable stage markers; never serialize raw UI values. */
+    private fun searchStage(step: String, action: () -> Unit) {
+        require(step in setOf(
+            "search_shell_ready", "search_action_ready", "search_open_action",
+            "search_editor_ready", "search_back_navigation", "search_route_closed",
+            "search_today_selected",
+        ))
+        try {
+            action()
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT21_STEP_" + step, failure)
+        }
+    }
+
     @Test
     fun realActivityOpensGlobalSearchAndReturnsToToday() {
-        awaitRealShell()
-        // Tap the production Today header, open its actual SearchRoute, and
-        // assert the searchable screen was rendered (not merely the tab state).
+        searchStage("search_shell_ready") { awaitRealShell() }
         val searchLabel = rule.activity.getString(WorkspaceR.string.search)
-        rule.onNodeWithContentDescription(searchLabel).performClick()
-        rule.onNode(hasSetTextAction()).assertIsDisplayed()
-        // A focused search field may leave the IME visible. The first real
-        // Android Back press can dismiss only the keyboard; use a second real
-        // Back if SearchRoute is still on screen, never bypass navigation.
-        Espresso.pressBack()
-        rule.waitForIdle()
-        if (rule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty()) {
+        val searchAction = rule.onNodeWithContentDescription(searchLabel)
+        searchStage("search_action_ready") {
+            rule.waitUntil(25_000L) {
+                runCatching { searchAction.assertIsDisplayed() }.isSuccess
+            }
+        }
+        // Navigate through the production header, never inject NavController.
+        searchStage("search_open_action") {
+            searchAction.performClick()
+            rule.waitForIdle()
+        }
+        // Navigation Compose can render the route asynchronously.
+        val editors = rule.onAllNodes(hasSetTextAction())
+        searchStage("search_editor_ready") {
+            rule.waitUntil(30_000L) {
+                editors.fetchSemanticsNodes().isNotEmpty() &&
+                    runCatching { editors[0].assertIsDisplayed() }.isSuccess
+            }
+        }
+        // Two real Back presses at most: keyboard first, destination second.
+        searchStage("search_back_navigation") {
             Espresso.pressBack()
+            rule.waitForIdle()
+            if (editors.fetchSemanticsNodes().isNotEmpty()) {
+                Espresso.pressBack()
+                rule.waitForIdle()
+            }
         }
-        rule.waitUntil(30_000L) {
-            rule.onAllNodes(tabMatcher("today")).fetchSemanticsNodes().size == 1
+        // A selected Today tab alone does NOT prove SearchRoute was dismissed.
+        searchStage("search_route_closed") {
+            rule.waitUntil(25_000L) { editors.fetchSemanticsNodes().isEmpty() }
         }
-        tab("today").assertIsDisplayed().assertIsSelected()
+        searchStage("search_today_selected") {
+            rule.waitUntil(30_000L) {
+                runCatching { tab("today").assertIsDisplayed().assertIsSelected() }.isSuccess
+            }
+            awaitRealShell()
+        }
     }
 
     @Test

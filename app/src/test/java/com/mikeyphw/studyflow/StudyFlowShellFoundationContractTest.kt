@@ -42,5 +42,14 @@ class StudyFlowShellFoundationContractTest {
         assertFalse("NavigationBar(" in primitives)
         assertFalse("NavigationRail(" in primitives)
         assertTrue("Role.Tab" in primitives)
+        assertTrue("testTag(\"studyflow.shell.root." in primitives)
+        // The dock MUST remain outside the session visibility branch.
+        assertTrue("StudyFlowCompactDock(destinations = destinations)" in shell)
+        assertTrue("AnimatedVisibility(" in shell)
+        assertFalse("studyflow-session-dock-morph" in shell)
+        val compactBranch = shell.substringAfter("// Always preserve access to Today/Plan/Practice/Progress")
+        assertTrue(compactBranch.indexOf("StudyFlowActiveSessionBar(") >= 0)
+        assertTrue(compactBranch.indexOf("StudyFlowCompactDock(destinations = destinations)") >
+            compactBranch.indexOf("StudyFlowActiveSessionBar("))
     }
 }

@@ -7,6 +7,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.mikeyphw.studyflow.core.database.StudyFlowDatabase
 import com.mikeyphw.studyflow.core.database.entity.PlannedActivityEntity
 import com.mikeyphw.studyflow.core.database.entity.StudyPlanEntity
+import com.mikeyphw.studyflow.core.domain.ManageStudySession
+import com.mikeyphw.studyflow.core.model.PlannedActivity
 import com.mikeyphw.studyflow.core.model.PlannedActivityId
 import com.mikeyphw.studyflow.core.model.PlannedActivityStatus
 import com.mikeyphw.studyflow.core.model.StudyActivityType
@@ -167,6 +169,160 @@ class StudySessionAtomicStateTest {
             database.studyPlanningDao().findPlannedActivity(planId.value, activityId.value)?.status,
         )
         assertNull(database.databaseMetadataDao().findValue("session_source_activity_status:${sessionId.value}"))
+    }
+
+    @Test
+    fun quickSessionCompletesAndPersistsWithoutPlannedActivity() = runBlocking {
+        val planId = StudyPlanId("plan")
+        database.studyPlanDao().insert(plan())
+        val repository = RoomStudySessionRepository(database)
+        var now = 2_000L
+        val manager = ManageStudySession(
+            repository, clock = { now }, monotonicClockMillis = { now },
+        )
+        val sessionId = StudySessionId("quick-complete")
+        val started = manager.startQuickSession(
+            sessionId = sessionId,
+            studyPlanId = planId,
+            title = "Quick theory",
+            type = StudyActivityType.THEORY,
+            targetDurationMinutes = 25,
+        )
+        assertNull(started.plannedActivityId)
+        now = 62_000L
+        val completed = manager.complete(
+            planId = planId,
+            sessionId = sessionId,
+            pagesCompleted = 3,
+            questionsAnswered = 5,
+            correctAnswers = 4,
+            concentrationRating = 5,
+            difficultyRating = 2,
+            notes = "Completed quick session",
+        )
+        assertEquals(StudySessionStatus.COMPLETED, completed.status)
+        val persisted = requireNotNull(
+            database.studyPlanningDao().findStudySession(planId.value, sessionId.value),
+        )
+        assertEquals(StudySessionStatus.COMPLETED.name, persisted.status)
+        assertEquals("Completed quick session", persisted.notes)
+        assertEquals(3, persisted.pagesCompleted)
+        assertEquals(5, persisted.questionsAnswered)
+        assertEquals(4, persisted.correctAnswers)
+        assertEquals(62_000L, persisted.endedAtEpochMillis)
+        assertNull(repository.findActiveSession(planId))
+        // A committed terminal quick session must release active-session ownership.
+        val next = manager.startQuickSession(
+            sessionId = StudySessionId("quick-next"),
+            studyPlanId = planId,
+            title = "Next quick session",
+            type = StudyActivityType.QUESTIONS,
+            targetDurationMinutes = 25,
+        )
+        assertEquals(StudySessionStatus.RUNNING, next.status)
+    }
+
+    @Test
+    fun quickSessionCancelsAndPersistsWithoutPlannedActivity() = runBlocking {
+        val planId = StudyPlanId("plan")
+        database.studyPlanDao().insert(plan())
+        val repository = RoomStudySessionRepository(database)
+        var now = 2_000L
+        val manager = ManageStudySession(
+            repository, clock = { now }, monotonicClockMillis = { now },
+        )
+        val sessionId = StudySessionId("quick-cancel")
+        val started = manager.startQuickSession(
+            sessionId = sessionId,
+            studyPlanId = planId,
+            title = "Quick cancellation",
+            type = StudyActivityType.THEORY,
+            targetDurationMinutes = 25,
+        )
+        assertNull(started.plannedActivityId)
+        now = 32_000L
+        val cancelled = manager.cancel(planId, sessionId)
+        assertEquals(StudySessionStatus.CANCELLED, cancelled.status)
+        val persisted = requireNotNull(
+            database.studyPlanningDao().findStudySession(planId.value, sessionId.value),
+        )
+        assertEquals(StudySessionStatus.CANCELLED.name, persisted.status)
+        assertEquals(32_000L, persisted.endedAtEpochMillis)
+        assertNull(repository.findActiveSession(planId))
+    }
+
+    @Test
+    fun linkedSessionCompletionStillUpdatesPlannedActivity() = runBlocking {
+        val planId = StudyPlanId("plan")
+        val activityId = PlannedActivityId("linked-complete-activity")
+        database.studyPlanDao().insert(plan())
+        database.studyPlanningDao().upsertPlannedActivity(
+            PlannedActivityEntity(
+                id = activityId.value,
+                studyPlanId = planId.value,
+                subjectId = null,
+                topicId = null,
+                materialId = null,
+                videoResourceId = null,
+                type = StudyActivityType.THEORY.name,
+                title = "Scheduled theory",
+                scheduledStartEpochMillis = 1_000L,
+                plannedDurationMinutes = 25,
+                status = PlannedActivityStatus.PLANNED.name,
+                locked = false,
+                completedAtEpochMillis = null,
+            ),
+        )
+        var now = 2_000L
+        val repository = RoomStudySessionRepository(database)
+        val manager = ManageStudySession(
+            repository, clock = { now }, monotonicClockMillis = { now },
+        )
+        val sessionId = StudySessionId("linked-complete")
+        manager.startFromActivity(
+            sessionId,
+            PlannedActivity(
+                id = activityId,
+                studyPlanId = planId,
+                subjectId = null,
+                topicId = null,
+                materialId = null,
+                videoResourceId = null,
+                type = StudyActivityType.THEORY,
+                title = "Scheduled theory",
+                scheduledStartEpochMillis = 1_000L,
+                plannedDurationMinutes = 25,
+                status = PlannedActivityStatus.PLANNED,
+                locked = false,
+                completedAtEpochMillis = null,
+            ),
+        )
+        assertEquals(
+            PlannedActivityStatus.IN_PROGRESS.name,
+            database.studyPlanningDao().findPlannedActivity(planId.value, activityId.value)?.status,
+        )
+        now = 62_000L
+        val completed = manager.complete(
+            planId = planId,
+            sessionId = sessionId,
+            pagesCompleted = 1,
+            questionsAnswered = 0,
+            correctAnswers = 0,
+            concentrationRating = null,
+            difficultyRating = null,
+            notes = "Scheduled session completed",
+        )
+        assertEquals(StudySessionStatus.COMPLETED, completed.status)
+        assertEquals(
+            StudySessionStatus.COMPLETED.name,
+            database.studyPlanningDao().findStudySession(planId.value, sessionId.value)?.status,
+        )
+        val updatedActivity = requireNotNull(
+            database.studyPlanningDao().findPlannedActivity(planId.value, activityId.value),
+        )
+        assertEquals(PlannedActivityStatus.COMPLETED.name, updatedActivity.status)
+        assertEquals(completed.endedAtEpochMillis, updatedActivity.completedAtEpochMillis)
+        assertNull(repository.findActiveSession(planId))
     }
 
     private fun plan() = StudyPlanEntity(

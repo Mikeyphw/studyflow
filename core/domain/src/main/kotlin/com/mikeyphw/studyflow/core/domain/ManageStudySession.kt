@@ -227,9 +227,14 @@ class ManageStudySession(
         return repository.transitionSession(
             expectedStatus = current.status,
             session = finished,
-            linkedActivityExpectedStatus = PlannedActivityStatus.IN_PROGRESS,
-            linkedActivityStatus = PlannedActivityStatus.COMPLETED,
-            linkedActivityCompletedAtEpochMillis = finished.endedAtEpochMillis,
+            // Quick sessions have no linked scheduled activity. Keep the
+            // session transition transactional without inventing one.
+            linkedActivityExpectedStatus = if (current.plannedActivityId != null)
+                PlannedActivityStatus.IN_PROGRESS else null,
+            linkedActivityStatus = if (current.plannedActivityId != null)
+                PlannedActivityStatus.COMPLETED else null,
+            linkedActivityCompletedAtEpochMillis = if (current.plannedActivityId != null)
+                finished.endedAtEpochMillis else null,
         )
     }
 
@@ -242,8 +247,10 @@ class ManageStudySession(
         return repository.transitionSession(
             expectedStatus = current.status,
             session = cancelled,
-            linkedActivityExpectedStatus = PlannedActivityStatus.IN_PROGRESS,
-            linkedActivityStatus = PlannedActivityStatus.PLANNED,
+            linkedActivityExpectedStatus = if (current.plannedActivityId != null)
+                PlannedActivityStatus.IN_PROGRESS else null,
+            linkedActivityStatus = if (current.plannedActivityId != null)
+                PlannedActivityStatus.PLANNED else null,
             linkedActivityCompletedAtEpochMillis = null,
         )
     }

@@ -145,6 +145,24 @@ class ManageStudySessionFocusTest {
     }
 
     @Test
+    fun quickSessionCancelsWithoutInventingAPlannedActivity() = runBlocking {
+        val repository = FakeStudySessionRepository()
+        val manager = ManageStudySession(repository, clock = { 1_000L })
+        val planId = StudyPlanId("plan")
+        val started = manager.startQuickSession(
+            sessionId = StudySessionId("quick-cancel"),
+            studyPlanId = planId,
+            title = "Quick session",
+            type = StudyActivityType.THEORY,
+            targetDurationMinutes = 25,
+        )
+        assertEquals(null, started.plannedActivityId)
+        val cancelled = manager.cancel(planId, started.id)
+        assertEquals(StudySessionStatus.CANCELLED, cancelled.status)
+        assertEquals(null, repository.findAnyActiveSession())
+    }
+
+    @Test
     fun monotonicRuntimeSurvivesWallClockMovingBackward() = runBlocking {
         var wallNow = 10_000L
         var monotonicNow = 1_000L
@@ -324,6 +342,12 @@ private class FakeStudySessionRepository : StudySessionRepository {
     ): StudySession {
         val current = requireNotNull(findSession(session.studyPlanId, session.id))
         require(current.status == expectedStatus)
+        if (session.plannedActivityId == null) {
+            // Mirror the real Room transition's linked-activity preconditions.
+            require(linkedActivityExpectedStatus == null)
+            require(linkedActivityStatus == null)
+            require(linkedActivityCompletedAtEpochMillis == null)
+        }
         sessions.value = sessions.value.filterNot { it.id == session.id } + session
         return session
     }
