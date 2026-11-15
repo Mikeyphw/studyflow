@@ -202,7 +202,7 @@ def find_producer(source: str, *, wait_seconds: int = 0) -> dict | None:
     is never awaited, so old or unrelated PRs do not waste CI minutes.
     """
     from urllib.parse import quote
-    need(type(wait_seconds) is int and 0 <= wait_seconds <= 360,
+    need(type(wait_seconds) is int and 0 <= wait_seconds <= 900,
          'PRODUCER_WAIT_BUDGET_INVALID')
     need(SHA40.fullmatch(source) is not None, 'SOURCE_SHA_INVALID')
     listing_path = ('repos/' + REPO + '/actions/workflows/' + PRODUCER +
@@ -220,7 +220,11 @@ def find_producer(source: str, *, wait_seconds: int = 0) -> dict | None:
          'PRODUCER_BRANCH_HEAD_UNVERIFIABLE')
     if identity['sha'] != source:
         return None  # No build will arrive for a superseded HEAD
+    # 2026-11-15: the push producer took 7m35s while the former 300s
+    # consumer budget expired after 5m. A bounded 12m budget accommodates
+    # normal hosted queues while no-run discovery is capped at 60s.
     deadline = time.monotonic() + wait_seconds
+    discovery_deadline = time.monotonic() + min(wait_seconds, 60)
     attempt = 0
     while True:
         remaining = deadline - time.monotonic()
@@ -236,8 +240,11 @@ def find_producer(source: str, *, wait_seconds: int = 0) -> dict | None:
         success = select_run(listing, source)
         if success is not None:
             return success
-        if producer_activity(listing, source) == 'terminal':
+        state = producer_activity(listing, source)
+        if state == 'terminal':
             return None
+        if state == 'not_discovered' and time.monotonic() >= discovery_deadline:
+            return None  # no producer registered: avoid a 12-minute idle miss
 
 
 def try_reuse(root: Path, source: str, android_home: Path,
@@ -271,15 +278,15 @@ def main() -> int:
     p.add_argument('--reuse', action='store_true', required=True)
     p.add_argument('--expected-sha', required=True)
     p.add_argument('--github-output', type=Path, required=True)
-    p.add_argument('--wait-seconds', type=int, default=300,
-                   help='OPT02 P02: hosted wait for matching producer, 0..360 seconds')
+    p.add_argument('--wait-seconds', type=int, default=720,
+                   help='OPT02 P02 HF01: hosted producer wait 0..900 seconds (default 720)')
     a = p.parse_args()
     try:
         root = Path(__file__).resolve().parents[2]
         inspect_source(root, a.expected_sha)
         home = os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT')
         need(bool(home), 'ANDROID_HOME_UNAVAILABLE')
-        need(0 <= a.wait_seconds <= 360, 'PRODUCER_WAIT_BUDGET_INVALID')
+        need(0 <= a.wait_seconds <= 900, 'PRODUCER_WAIT_BUDGET_INVALID')
         yes, detail = try_reuse(root, a.expected_sha, Path(home),
                                 wait_seconds=a.wait_seconds)
         append_output(a.github_output, yes)

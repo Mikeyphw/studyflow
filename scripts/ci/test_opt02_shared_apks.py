@@ -196,18 +196,61 @@ class Opt02SharedAPKContracts(unittest.TestCase):
               {**waiting,'repository':{'full_name':'attacker/repo'}}]}):
             with self.assertRaisesRegex(opt.Refused,'PRODUCER_REPOSITORY_MISMATCH'):
                 opt.find_producer(SHA,wait_seconds=30)
-        for limit in (-1,361,2.5,True):
+        for limit in (-1,901,2.5,True):
             with self.assertRaisesRegex(opt.Refused,'PRODUCER_WAIT_BUDGET_INVALID'):
                 opt.find_producer(SHA,wait_seconds=limit)
 
     def test_14_p02_no_qualifications_or_unbounded_wait(self):
         source=(ROOT/'scripts/ci/opt02_shared_apks.py').read_text()
         self.assertIn('wait_seconds=a.wait_seconds',source)
-        self.assertIn('0 <= a.wait_seconds <= 360',source)
+        self.assertIn('0 <= a.wait_seconds <= 900',source)
+        self.assertIn('default=720',source)
+        self.assertIn('discovery_deadline',source)
         self.assertIn("'EXACT_SHA_SIGNED_APK_PAIR_VERIFIED'",source)
         self.assertIn('verify_bundle(tmp, source, candidate, android_home)',source)
         self.assertNotIn('physical_device_qualified=True',source)
         self.assertNotIn('release_qualified=True',source)
+
+    def test_15_hf01_producer_completes_after_legacy_300s_but_before_720s(self):
+        # Real P02 missed: polling began 17:11:19Z, producer ended 17:17:52Z.
+        # Reproduce a 400s completion using deterministic fake monotonic time.
+        run = run_fixture()
+        running = {**run, 'status':'in_progress', 'conclusion':None}
+        clock = {'seconds':0.0, 'polls':0}
+        def api(path):
+            if '/branches/' in path: return {'commit':{'sha':SHA}}
+            clock['polls'] += 1
+            return {'workflow_runs':[run if clock['seconds'] >= 400 else running]}
+        with mock.patch.object(opt,'github_json',side_effect=api), \
+             mock.patch.object(opt.time,'monotonic',side_effect=lambda:clock['seconds']), \
+             mock.patch.object(opt.time,'sleep',side_effect=lambda d:clock.__setitem__('seconds',clock['seconds']+d)):
+            observed = opt.find_producer(SHA,wait_seconds=720)
+        self.assertEqual(observed,run)
+        self.assertEqual(clock['seconds'],400)
+        self.assertGreater(clock['seconds'],300)
+
+    def test_16_hf01_pending_still_times_out_and_missing_producer_exits_early(self):
+        run = run_fixture()
+        running = {**run, 'status':'in_progress', 'conclusion':None}
+        for reply, expected_seconds in [([running],720), ([],60)]:
+            with self.subTest(reply=bool(reply)):
+                clock={'seconds':0.0}
+                def api(path):
+                    return {'commit':{'sha':SHA}} if '/branches/' in path else {'workflow_runs':reply}
+                with mock.patch.object(opt,'github_json',side_effect=api), \
+                     mock.patch.object(opt.time,'monotonic',side_effect=lambda:clock['seconds']), \
+                     mock.patch.object(opt.time,'sleep',side_effect=lambda d:clock.__setitem__('seconds',clock['seconds']+d)):
+                    self.assertIsNone(opt.find_producer(SHA,wait_seconds=720))
+                self.assertEqual(clock['seconds'],expected_seconds)
+
+    def test_17_hf01_handoff_and_limits_are_in_full_manifest(self):
+        full = (ROOT/'.github/workflows/studyflow-sfdt22-hosted-journeys.yml').read_text()
+        doc = ROOT/'docs/actions/STUDYFLOW_OPT02_P02_PRODUCER_COORDINATION.md'
+        self.assertIn('default=720', (ROOT/'scripts/ci/opt02_shared_apks.py').read_text())
+        self.assertIn('720 seconds',doc.read_text())
+        self.assertIn(hashlib.sha256(doc.read_bytes()).hexdigest()+'  docs/actions/STUDYFLOW_OPT02_P02_PRODUCER_COORDINATION.md',full)
+        self.assertIn("vars.STUDYFLOW_SFDT22_HOSTED_ENABLED == 'true'",full)
+        self.assertIn('needs: [source, emulator]',full)
 
     def test_09_cross_workflow_consumer_and_unchanged_mandatory_gates(self):
         wf=(ROOT/'.github/workflows/studyflow-targeted.yml').read_text()
