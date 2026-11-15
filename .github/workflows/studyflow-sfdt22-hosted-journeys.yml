@@ -317,7 +317,6 @@ jobs:
     # Skipped while hosted execution is paused, never a positive acceptance.
     if: ${{ always() && github.event_name == 'workflow_dispatch' && vars.STUDYFLOW_SFDT22_HOSTED_ENABLED == 'true' }}
     name: SFDT22 hosted real-study UI gate
-    if: always()
     needs: [source, emulator]
     runs-on: ubuntu-24.04
     timeout-minutes: 3
