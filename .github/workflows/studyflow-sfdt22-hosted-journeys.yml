@@ -27,10 +27,10 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -z "$(git status --porcelain --untracked-files=normal)"
-          echo "7330a9d370ca7442cb3eceeafad8908dd63f02e72dacdc3c243cc7d0c7ba66aa  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
+          echo "07d960c471bb4160675aa5d276e9cef0106236d2a6bbb9036e35132579ba2539  scripts/sfdt22_emulator_verify.py" | sha256sum --check --status
           echo "c644463f145be1d1cac4865322eaf357a90f470a5363c8f5fd6444f0921a2464  scripts/sfdt22_emulator_ci.sh" | sha256sum --check --status
-          echo "e282116cc4d10e09a02a75dcd36e252f5e2c123883844bb1fbd2d549de48bcd8  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
-          echo "d245ab38413c662bd531089be1403e5ac8484e853302bff3ce6718e83eb50bf6  feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeScreen.kt" | sha256sum --check --status
+          echo "482f393092231461fef19eb277353b1affc40b4999d73b229f5aaff23dd66ffe  app/src/androidTest/java/com/mikeyphw/studyflow/Sfdt22HostedStudyJourneyTest.kt" | sha256sum --check --status
+          echo "516ca0e71610cd9b3b429e8ffd6e4d8c11ffba0e893284055eaacde3f5f6bcdf  feature/practice/src/main/java/com/mikeyphw/studyflow/feature/practice/PracticeScreen.kt" | sha256sum --check --status
           echo "773e3c7c9ac044b41005368a6fa41e86bd8a463ccb8870bf1a6e20b7c8355cb2  scripts/test_sfdt22_hf34_start_outcome_contract.py" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf34_start_outcome_contract.py
           echo "5bda9c19f514dc7df7a110abd9ed88b2b4939e2fb8b25cb5a2eb83cd2ae5f537  scripts/test_sfdt22_hf35_durable_start_contract.py" | sha256sum --check --status
@@ -44,6 +44,8 @@ jobs:
           python3 -B scripts/test_sfdt22_physical_contract.py
           echo "9b67f096e97a6efe6a54a520fc505d95f801d2d055820472125397449d40138a  scripts/test_sfdt22_hf38_contract.py" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf38_contract.py
+          echo "676da372a96a15b074daae9182f62d481bdd8fffd40e8fc20a709b037cb9dc06  scripts/test_sfdt22_hf39_runner_navigation_contract.py" | sha256sum --check --status
+          python3 -B scripts/test_sfdt22_hf39_runner_navigation_contract.py
           echo "e261e2acf6364957a68987d6960d06081bc9146ca8490aae54efad9c63b1ef74  scripts/test_sfdt22_hf33_start_runner_contract.py" | sha256sum --check --status
           python3 -B scripts/test_sfdt22_hf33_start_runner_contract.py
           echo "85d4df8070e4a2f2819fa94d1ee0b2f38572a268ae5f6bbb56b1f5c657c08a85  scripts/test_sfdt22_hf32_diagnostics_contract.py" | sha256sum --check --status

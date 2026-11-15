@@ -1146,32 +1146,71 @@ class Sfdt22HostedStudyJourneyTest {
     }
 
     /** Ignore identically named question-bank text; require the real active runner. */
+    /** HF39: distinguish an absent runner from an off-screen runner item.
+     * The real PracticeRunnerCard is inside a LazyColumn; it is inserted above
+     * RecentTestsCard when Start succeeds, and physical screens can be short.
+     * We require a visible real question, then a visible enabled real answer,
+     * sequentially. We never accept unrelated question-bank text. */
     private fun awaitRunnerQuestionReady() {
-        val question = rule.onAllNodes(
-            hasTestTag("studyflow.practice.runner.question") and
-                hasText(questionStatement, substring = false) and
-                hasAnyAncestor(hasTestTag("studyflow.practice.runner")),
-            useUnmergedTree = true,
-        )
-        val answer = rule.onAllNodes(
-            hasTestTag("studyflow.practice.runner.answer") and hasText("True") and
-                hasClickAction() and hasAnyAncestor(hasTestTag("studyflow.practice.runner")),
-        )
+        val runner = hasTestTag("studyflow.practice.runner")
+        val questionMatcher = hasTestTag("studyflow.practice.runner.question") and
+            hasText(questionStatement, substring = false) and hasAnyAncestor(hasTestTag("studyflow.practice.runner"))
+        val answerMatcher = hasTestTag("studyflow.practice.runner.answer") and
+            hasText("True") and hasClickAction() and hasAnyAncestor(hasTestTag("studyflow.practice.runner"))
+        val roots = rule.onAllNodes(runner, useUnmergedTree = true)
+        val questions = rule.onAllNodes(questionMatcher, useUnmergedTree = true)
+        val answers = rule.onAllNodes(answerMatcher)
+        val scrollables = rule.onAllNodes(hasScrollToIndexAction(), useUnmergedTree = true)
+
+        // Resolve the lazy runner item first; one scroll attempt can occur
+        // before the Room observer finishes emitting the started test.
         try {
             rule.waitUntil(25_000L) {
-                question.fetchSemanticsNodes().size == 1 &&
-                    runCatching { question.onFirst().assertIsDisplayed() }.isSuccess &&
-                    answer.fetchSemanticsNodes().size == 1 &&
-                    runCatching { answer.onFirst().assertIsDisplayed().assertIsEnabled() }.isSuccess
+                if (roots.fetchSemanticsNodes().isEmpty() &&
+                    scrollables.fetchSemanticsNodes().isNotEmpty()) {
+                    runCatching { scrollables.onFirst().performScrollToNode(runner) }
+                }
+                roots.fetchSemanticsNodes().size == 1 &&
+                    questions.fetchSemanticsNodes().size == 1
             }
         } catch (failure: Throwable) {
-            val questions = question.fetchSemanticsNodes().size
-            val answers = answer.fetchSemanticsNodes().size
             val category = when {
-                questions == 0 -> "RUNNER_QUESTION_MISSING"
-                questions > 1 -> "RUNNER_QUESTION_AMBIGUOUS"
-                answers == 0 -> "RUNNER_ANSWER_MISSING"
-                answers > 1 -> "RUNNER_ANSWER_AMBIGUOUS"
+                roots.fetchSemanticsNodes().isEmpty() -> "RUNNER_ROOT_MISSING"
+                questions.fetchSemanticsNodes().isEmpty() -> "RUNNER_QUESTION_MISSING"
+                questions.fetchSemanticsNodes().size > 1 -> "RUNNER_QUESTION_AMBIGUOUS"
+                else -> "RUNNER_NOT_READY"
+            }
+            throw AssertionError("SFDT22_PRACTICE_DIAG_" + category, failure)
+        }
+        runCatching { questions.onFirst().performScrollTo() }
+        if (runCatching { questions.onFirst().assertIsDisplayed() }.isFailure) {
+            throw AssertionError("SFDT22_PRACTICE_DIAG_RUNNER_QUESTION_OFFSCREEN")
+        }
+
+        // The answer can lie below the question on a small phone. The two
+        // controls cannot always be displayed simultaneously, so never
+        // require that impossible conjunction as evidence.
+        try {
+            rule.waitUntil(25_000L) {
+                if (answers.fetchSemanticsNodes().isNotEmpty()) {
+                    runCatching { answers.onFirst().performScrollTo() }
+                } else if (scrollables.fetchSemanticsNodes().isNotEmpty()) {
+                    runCatching { scrollables.onFirst().performScrollToNode(answerMatcher) }
+                }
+                answers.fetchSemanticsNodes().size == 1 &&
+                    runCatching {
+                        answers.onFirst().assertIsDisplayed().assertIsEnabled()
+                    }.isSuccess
+            }
+        } catch (failure: Throwable) {
+            val size = answers.fetchSemanticsNodes().size
+            val category = when {
+                size == 0 -> "RUNNER_ANSWER_MISSING"
+                size > 1 -> "RUNNER_ANSWER_AMBIGUOUS"
+                runCatching { answers.onFirst().assertIsDisplayed() }.isFailure ->
+                    "RUNNER_ANSWER_OFFSCREEN"
+                runCatching { answers.onFirst().assertIsEnabled() }.isFailure ->
+                    "RUNNER_ANSWER_DISABLED"
                 else -> "RUNNER_NOT_READY"
             }
             throw AssertionError("SFDT22_PRACTICE_DIAG_" + category, failure)
@@ -1713,7 +1752,6 @@ class Sfdt22HostedStudyJourneyTest {
             awaitRealPracticeAttemptStarted()
         }
         stage("practice_runner_question") {
-            visible(questionStatement)
             awaitRunnerQuestionReady()
         }
         stage("practice_answer_true") { clickLabel("True") }

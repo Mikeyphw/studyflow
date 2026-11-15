@@ -11,6 +11,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
@@ -100,6 +101,7 @@ fun PracticeScreen(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val practiceListState = rememberLazyListState()
     // HF35: debug-only, app-private, outcome-only proof independent of Compose lifetime.
     val context = LocalContext.current
     val debugStartReceipt = remember(context) {
@@ -231,6 +233,14 @@ fun PracticeScreen(
     val activeTest = activeTestId?.let { id -> tests.firstOrNull { it.id.value == id } }
     val activeMock = activeMockId?.let { id -> mocks.firstOrNull { it.id.value == id } }
 
+    // HF39: starting a runner inserts it above the current list viewport.
+    // Scroll the actual production list so the attempt is visible to the user.
+    LaunchedEffect(activeTest?.id?.value, activeMock?.id?.value) {
+        if (activeTest != null || activeMock != null) {
+            practiceListState.scrollToItem(1)
+        }
+    }
+
     Scaffold(
         modifier = modifier.testTag("studyflow.practice.start.$startOutcome"),
         snackbarHost = { SnackbarHost(snackbar) },
@@ -254,6 +264,7 @@ fun PracticeScreen(
         },
     ) { padding ->
         LazyColumn(
+            state = practiceListState,
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
