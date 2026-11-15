@@ -69,6 +69,7 @@ class Sfdt22HostedStudyJourneyTest {
     private val flashcardFront = "SFDT22 review: what is ecology?"
     private val flashcardBack = "Relationships between organisms and their environment"
     private var startReceiptBaseline = -1L // HF35: instrumentation-local, read-only baseline
+    private var startRetryPerformed = false // HF36: one verified, real UI retry maximum
 
     /** Read-only SQLite inspection of the *actual* app database, never a test fixture. */
     private fun recordBoundary(point: String, state: String) {
@@ -972,6 +973,63 @@ class Sfdt22HostedStudyJourneyTest {
 
     /** HF34: inspect ONLY allowlisted Compose start-result tags, never private data.
      * A missing status falls back to the original read-only Room diagnostic. */
+    /** HF36: a newly-created test raises a transient snackbar at the bottom of the
+     * screen. Compose may still report the Start control displayed while that
+     * snackbar intercepts the actual touch. Never tap through it. */
+    private fun awaitPracticeCreateSnackbarGone() {
+        val message = hasText(text(PracticeR.string.practice_test_created))
+        try {
+            rule.waitUntil(12_000L) {
+                rule.onAllNodes(message, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isEmpty()
+            }
+        } catch (failure: Throwable) {
+            throw AssertionError("SFDT22_PRACTICE_DIAG_START_SNACKBAR_OBSTRUCTION", failure)
+        }
+    }
+
+    /** A missing delivery receipt can mean an obstructed touch, not a failed
+     * domain operation. Permit exactly ONE more production UI tap only when:
+     * - no new, durable callback receipt exists;
+     * - the exact practice attempt is still unstarted in read-only Room;
+     * - the live Practice screen still reports idle (not requested/rejected);
+     * - the creation snackbar is gone and the real Start control is actionable.
+     * Never repeat a received callback or an ambiguous database result. */
+    private fun retryOnlyUndeliveredPracticeStart() {
+        if (startReceiptBaseline < 0L) {
+            throw AssertionError("SFDT22_PRACTICE_DIAG_START_RECEIPT_BASELINE_MISSING")
+        }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val prefs = context.getSharedPreferences("sfdt35-practice-start", Context.MODE_PRIVATE)
+        if (expectedPracticeTestFingerprint() == null) {
+            throw AssertionError("SFDT22_PRACTICE_DIAG_START_RETRY_UNSAFE_ROW")
+        }
+        // Allow normal coroutine delivery to win before considering a second tap.
+        // No sleeps or test-only production writes.
+        runCatching {
+            rule.waitUntil(7_000L) {
+                persistedPracticeAttemptStartedCount() == 1L ||
+                    prefs.getLong("sequence", 0L) > startReceiptBaseline
+            }
+        }
+        val sequence = runCatching { prefs.getLong("sequence", 0L) }.getOrElse { failure ->
+            throw AssertionError("SFDT22_PRACTICE_DIAG_START_RECEIPT_LOOKUP_FAILED", failure)
+        }
+        if (sequence > startReceiptBaseline) return // callback delivered, regardless of outcome
+        when (persistedPracticeAttemptStartedCount()) {
+            1L -> return // committed; never press a second time
+            0L -> Unit // only this exact state allows considering a safe retry
+            else -> throw AssertionError("SFDT22_PRACTICE_DIAG_START_RETRY_UNSAFE_ROW")
+        }
+        if (startOutcomeCategory() != "START_ACTION_NOT_DELIVERED") return
+        awaitPracticeCreateSnackbarGone()
+        // A second check closes the window while the snackbar was clearing.
+        if (persistedPracticeAttemptStartedCount() != 0L ||
+            prefs.getLong("sequence", 0L) > startReceiptBaseline) return
+        startRetryPerformed = true
+        click(PracticeR.string.start_or_resume) // same real tagged UI control, not domain API
+    }
+
     /** Baseline before the real UI tap; the test never writes this preference. */
     private fun captureStartReceiptBaseline() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -1057,7 +1115,8 @@ class Sfdt22HostedStudyJourneyTest {
         }
         return when (observed.size) {
             0 -> null
-            1 -> if (observed.single().first == "requested") "START_RECEIPT_NOT_DURABLE"
+            1 -> if (observed.single().first == "idle" && startRetryPerformed) "START_RETRY_NOT_DELIVERED"
+                 else if (observed.single().first == "requested") "START_RECEIPT_NOT_DURABLE"
                  else if (observed.single().first == "receipt_write_failed") "START_RECEIPT_WRITE_FAILED"
                  else observed.single().second
             else -> "START_OUTCOME_AMBIGUOUS"
@@ -1648,7 +1707,9 @@ class Sfdt22HostedStudyJourneyTest {
         }
         stage("practice_start_test") {
             captureStartReceiptBaseline()
+            awaitPracticeCreateSnackbarGone()
             click(PracticeR.string.start_or_resume)
+            retryOnlyUndeliveredPracticeStart()
             awaitRealPracticeAttemptStarted()
         }
         stage("practice_runner_question") {

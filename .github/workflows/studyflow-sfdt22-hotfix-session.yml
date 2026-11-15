@@ -55,7 +55,7 @@ jobs:
   # PR-label opt-in or manual exact-SHA dispatch; never release qualifying.
   # Runs the first FOUR real hosted journeys, including Practice/review; NOT full qualification.
   session-diagnostic:
-    if: ${{ (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'sfdt22-hotfix-session' && github.event.pull_request.head.repo.full_name == 'Mikeyphw/studyflow') || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.repository == 'Mikeyphw/studyflow' && startsWith(github.ref, 'refs/heads/sfdt22-hotfix/')) }}
+    if: ${{ github.event_name == 'workflow_dispatch' && vars.STUDYFLOW_SFDT22_HOSTED_ENABLED == 'true' && (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'sfdt22-hotfix-session' && github.event.pull_request.head.repo.full_name == 'Mikeyphw/studyflow') || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.repository == 'Mikeyphw/studyflow' && startsWith(github.ref, 'refs/heads/sfdt22-hotfix/')) }}
     name: SFDT22 focused hotfix diagnosis (NOT full qualification)
     needs: source
     runs-on: ubuntu-24.04
