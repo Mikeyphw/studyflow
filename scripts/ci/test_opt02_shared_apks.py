@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""OPT02 P01 immutable artifact reuse contract: offline, adversarial, no Gradle/ADB."""
+"""OPT02 P02 immutable artifact reuse and bounded producer wait contract: offline, adversarial, no Gradle/ADB."""
 from __future__ import annotations
 import hashlib
 import importlib.util
@@ -149,6 +149,65 @@ class Opt02SharedAPKContracts(unittest.TestCase):
             self.assertTrue((root/opt.APP).is_file())
             self.assertTrue((root/opt.TEST).is_file())
             self.assertFalse((root/'app/build/outputs/apk/release/app-release.apk').exists())
+
+    def test_10_p02_pending_producer_becomes_verified_hit(self):
+        run=run_fixture();waiting={**run,'status':'in_progress','conclusion':None}
+        state={'clock':0.,'poll':0}
+        def timer():return state['clock']
+        def sleep(seconds):state['clock']+=seconds
+        def api(path):
+            if '/branches/' in path:return {'commit':{'sha':SHA}}
+            state['poll']+=1
+            return {'workflow_runs':[waiting if state['poll'] < 3 else run]}
+        with mock.patch.object(opt,'github_json',side_effect=api), \
+             mock.patch.object(opt.time,'monotonic',side_effect=timer), \
+             mock.patch.object(opt.time,'sleep',side_effect=sleep):
+            result=opt.find_producer(SHA,wait_seconds=100)
+        self.assertEqual(result,run)
+        self.assertEqual(state['poll'],3)
+        self.assertEqual(state['clock'],40)
+
+    def test_11_p02_bounded_timeout_and_failed_producer(self):
+        waiting={**run_fixture(),'status':'queued','conclusion':None}
+        clock={'t':0}
+        with mock.patch.object(opt,'github_json',side_effect=lambda p:
+                    {'commit':{'sha':SHA}} if '/branches/' in p else {'workflow_runs':[waiting]}), \
+             mock.patch.object(opt.time,'monotonic',side_effect=lambda:clock['t']), \
+             mock.patch.object(opt.time,'sleep',side_effect=lambda d:clock.__setitem__('t',clock['t']+d)):
+            self.assertIsNone(opt.find_producer(SHA,wait_seconds=41))
+            self.assertEqual(clock['t'],41)
+        failed={**run_fixture(),'status':'completed','conclusion':'failure'}
+        with mock.patch.object(opt,'github_json',return_value={'workflow_runs':[failed]}) as api:
+            self.assertIsNone(opt.find_producer(SHA,wait_seconds=300))
+            api.assert_called_once()  # no wait for an already terminal failure
+
+    def test_12_p02_superseded_branch_not_awaited(self):
+        def api(path):
+            if '/branches/' in path: return {'commit':{'sha':'c'*40}}
+            return {'workflow_runs':[]}
+        with mock.patch.object(opt,'github_json',side_effect=api) as calls, \
+             mock.patch.object(opt.time,'sleep',side_effect=AssertionError('unexpected sleep')):
+            self.assertIsNone(opt.find_producer(SHA,wait_seconds=300))
+            self.assertEqual(calls.call_count,2)
+
+    def test_13_p02_rejects_wrong_repo_and_invalid_wait(self):
+        waiting={**run_fixture(),'status':'in_progress','conclusion':None}
+        with mock.patch.object(opt,'github_json',return_value={'workflow_runs':[
+              {**waiting,'repository':{'full_name':'attacker/repo'}}]}):
+            with self.assertRaisesRegex(opt.Refused,'PRODUCER_REPOSITORY_MISMATCH'):
+                opt.find_producer(SHA,wait_seconds=30)
+        for limit in (-1,361,2.5,True):
+            with self.assertRaisesRegex(opt.Refused,'PRODUCER_WAIT_BUDGET_INVALID'):
+                opt.find_producer(SHA,wait_seconds=limit)
+
+    def test_14_p02_no_qualifications_or_unbounded_wait(self):
+        source=(ROOT/'scripts/ci/opt02_shared_apks.py').read_text()
+        self.assertIn('wait_seconds=a.wait_seconds',source)
+        self.assertIn('0 <= a.wait_seconds <= 360',source)
+        self.assertIn("'EXACT_SHA_SIGNED_APK_PAIR_VERIFIED'",source)
+        self.assertIn('verify_bundle(tmp, source, candidate, android_home)',source)
+        self.assertNotIn('physical_device_qualified=True',source)
+        self.assertNotIn('release_qualified=True',source)
 
     def test_09_cross_workflow_consumer_and_unchanged_mandatory_gates(self):
         wf=(ROOT/'.github/workflows/studyflow-targeted.yml').read_text()

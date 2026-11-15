@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""OPT02 P01: reuse exact-source SFDT22 hosted APK pair in targeted CI.
+"""OPT02 P02: coordinated reuse of exact-source signed APK pair in targeted CI.
 
 Fail-closed immutable artifact verification. A producer that is absent, pending,
 failed, or expired is a cache MISS: ordinary hosted Gradle compilation remains
@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 REPO = 'Mikeyphw/studyflow'
 PRODUCER = 'studyflow-sfdt22-physical-apks.yml'
@@ -172,15 +173,81 @@ def inspect_source(root: Path, source: str) -> None:
          'DIRTY_CHECKOUT')
     need(os.getenv('GH_TOKEN') is not None, 'GH_TOKEN_MISSING')
 
-def try_reuse(root: Path, source: str, android_home: Path) -> tuple[bool, str]:
-    # A missing producer is an ordinary cache miss. A present yet invalid
-    # producer is an error (do NOT silently green by compiling instead).
+def producer_activity(document: dict, source: str) -> str:
+    """Same-source push activity only; unrelated runs never justify a wait."""
+    runs = document.get('workflow_runs')
+    need(isinstance(runs, list) and len(runs) <= 40, 'RUN_LIST_INVALID')
+    relevant = []
+    for run in runs:
+        need(isinstance(run, dict), 'RUN_RECORD_INVALID')
+        if run.get('head_sha') != source or run.get('event') != 'push' or run.get('head_branch') != BRANCH:
+            continue
+        need(isinstance(run.get('repository'), dict) and
+             run['repository'].get('full_name') == REPO, 'PRODUCER_REPOSITORY_MISMATCH')
+        need(isinstance(run.get('id'), int) and run['id'] > 0 and
+             isinstance(run.get('run_attempt'), int) and run['run_attempt'] > 0,
+             'PRODUCER_RUN_ID_INVALID')
+        relevant.append(run)
+    if any(x.get('status') in ('in_progress', 'queued', 'pending', 'requested', 'waiting')
+           for x in relevant):
+        return 'pending'
+    return 'terminal' if relevant else 'not_discovered'
+
+
+def find_producer(source: str, *, wait_seconds: int = 0) -> dict | None:
+    """Coordinate separate GitHub workflows without weakening source identity.
+
+    Old P01 direct callers still do one read (wait_seconds=0). Only the hosted
+    CLI enables bounded waiting. A commit no longer at producer branch HEAD
+    is never awaited, so old or unrelated PRs do not waste CI minutes.
+    """
     from urllib.parse import quote
-    listing = github_json('repos/' + REPO + '/actions/workflows/' + PRODUCER +
-                          '/runs?branch=' + quote(BRANCH, safe='') + '&event=push&per_page=40')
-    candidate = select_run(listing, source)
+    need(type(wait_seconds) is int and 0 <= wait_seconds <= 360,
+         'PRODUCER_WAIT_BUDGET_INVALID')
+    need(SHA40.fullmatch(source) is not None, 'SOURCE_SHA_INVALID')
+    listing_path = ('repos/' + REPO + '/actions/workflows/' + PRODUCER +
+                    '/runs?branch=' + quote(BRANCH, safe='') + '&event=push&per_page=40')
+    listing = github_json(listing_path)
+    success = select_run(listing, source)
+    if success is not None or wait_seconds == 0:
+        return success
+    if producer_activity(listing, source) == 'terminal':
+        return None  # Completed failed/cancelled build: native Gradle fallback
+    branch = github_json('repos/' + REPO + '/branches/' + quote(BRANCH, safe=''))
+    identity = branch.get('commit')
+    need(isinstance(identity, dict) and
+         isinstance(identity.get('sha'), str) and SHA40.fullmatch(identity['sha']) is not None,
+         'PRODUCER_BRANCH_HEAD_UNVERIFIABLE')
+    if identity['sha'] != source:
+        return None  # No build will arrive for a superseded HEAD
+    deadline = time.monotonic() + wait_seconds
+    attempt = 0
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return None
+        attempt += 1
+        # Bounded polling, not an unbounded CI watcher or hidden background job.
+        delay = min(20.0, remaining)
+        print('OPT02_SHARED_APKS_INFO PRODUCER_PENDING poll=' + str(attempt) +
+              ' wait_s=' + str(round(delay)), flush=True)
+        time.sleep(delay)
+        listing = github_json(listing_path)
+        success = select_run(listing, source)
+        if success is not None:
+            return success
+        if producer_activity(listing, source) == 'terminal':
+            return None
+
+
+def try_reuse(root: Path, source: str, android_home: Path,
+              *, wait_seconds: int = 0) -> tuple[bool, str]:
+    # P02 waits for the separate exact-source producer before any Gradle fallback.
+    # An absent/failed producer remains a MISS, never a false qualification.
+    candidate = find_producer(source, wait_seconds=wait_seconds)
     if candidate is None:
-        return False, 'NO_SUCCESSFUL_EXACT_SHA_PRODUCER'
+        return False, ('NO_SUCCESSFUL_EXACT_SHA_PRODUCER' if wait_seconds == 0
+                       else 'NO_SUCCESSFUL_EXACT_SHA_PRODUCER_AFTER_BOUNDED_WAIT')
     run_id = candidate['id']
     artifact = select_artifact(github_json(f'repos/{REPO}/actions/runs/{run_id}/artifacts'), candidate)
     if artifact is None:
@@ -204,13 +271,17 @@ def main() -> int:
     p.add_argument('--reuse', action='store_true', required=True)
     p.add_argument('--expected-sha', required=True)
     p.add_argument('--github-output', type=Path, required=True)
+    p.add_argument('--wait-seconds', type=int, default=300,
+                   help='OPT02 P02: hosted wait for matching producer, 0..360 seconds')
     a = p.parse_args()
     try:
         root = Path(__file__).resolve().parents[2]
         inspect_source(root, a.expected_sha)
         home = os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT')
         need(bool(home), 'ANDROID_HOME_UNAVAILABLE')
-        yes, detail = try_reuse(root, a.expected_sha, Path(home))
+        need(0 <= a.wait_seconds <= 360, 'PRODUCER_WAIT_BUDGET_INVALID')
+        yes, detail = try_reuse(root, a.expected_sha, Path(home),
+                                wait_seconds=a.wait_seconds)
         append_output(a.github_output, yes)
         print('OPT02_SHARED_APKS_' + ('HIT' if yes else 'MISS') + ' ' + detail, flush=True)
         return 0
