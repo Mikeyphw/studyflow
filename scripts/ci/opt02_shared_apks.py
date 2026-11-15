@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""OPT02 P02 HF02: coordinated, diagnosable exact-source APK artifact reuse.
+"""OPT02 P02 HF03: robust bounded apksigner output, exact-source APK reuse.
 
 Fail-closed immutable artifact verification. A producer that is absent, pending,
 failed, or expired is a cache MISS: ordinary hosted Gradle compilation remains
@@ -28,6 +28,7 @@ TEST = 'app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk'
 SHA40 = re.compile(r'[0-9a-f]{40}\Z')
 SHA256 = re.compile(r'[0-9a-f]{64}\Z')
 CERT_PATTERN = re.compile(r'(?m)^Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]{64})\r?$')
+MAX_APKSIGNER_OUTPUT = 2_000_000  # Explicit size ceiling, not unlimited captured command output
 EXPECTED_KEYS = frozenset({'SFDT22_PHYSICAL_APKS.json', 'app-debug.apk', 'app-debug-androidTest.apk'})
 
 class Refused(Exception):
@@ -71,7 +72,9 @@ def command(argv: list[str], *, limit: int = 180_000, timeout: int = 45) -> byte
     if run.returncode != 0:
         # No raw stdout/stderr or GitHub auth tokens in job logs.
         raise classify_tool_failure(argv, run.returncode, run.stderr)
-    need(len(run.stdout) <= limit, 'COMMAND_OUTPUT_OVERSIZED')
+    if len(run.stdout) > limit:
+        stage = 'APK_SIGNER' if len(argv) > 1 and argv[1] == 'verify' else 'COMMAND'
+        raise Refused(stage + '_OUTPUT_OVERSIZED')
     return run.stdout
 
 def github_json(path: str) -> dict:
@@ -127,10 +130,18 @@ def sha(path: Path) -> str:
 def signer(apk: Path, android_home: Path) -> str:
     tool = android_home / 'build-tools/36.0.0/apksigner'
     need(tool.is_file() and not tool.is_symlink(), 'PINNED_APKSIGNER_MISSING')
-    data = command([str(tool), 'verify', '--print-certs', str(apk)], limit=15_000, timeout=60)
-    match = CERT_PATTERN.search(data.decode('utf-8', 'replace'))
-    need(match is not None, 'APK_SIGNER_UNAVAILABLE')
-    return match.group(1).lower()
+    # Real hosted API 36 APKs can emit >15 KiB of non-verbose verifier
+    # diagnostics even on success. Never reject an otherwise valid APK solely
+    # because signer stdout exceeded the old arbitrary 15 KB threshold.
+    # Keep a hard 2 MB cap, require exit 0 and independently parse the certificate.
+    data = command([str(tool), 'verify', '--print-certs', str(apk)],
+                   limit=MAX_APKSIGNER_OUTPUT, timeout=60)
+    output = data.decode('utf-8', 'replace')
+    matches = CERT_PATTERN.findall(output)
+    need(len(matches) == 1 and
+         re.search(r'(?m)^Signer #(?!1\b)[0-9]+ certificate SHA-256 digest:', output) is None,
+         'APK_SIGNER_CERT_COUNT_INVALID')
+    return matches[0].lower()
 
 def verify_bundle(directory: Path, source: str, run: dict, android_home: Path) -> tuple[Path, Path]:
     need(directory.is_dir() and not directory.is_symlink(), 'ARTIFACT_DIR_INVALID')

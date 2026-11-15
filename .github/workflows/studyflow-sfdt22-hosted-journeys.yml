@@ -207,10 +207,10 @@ jobs:
           echo "fa5703af5f07eaf2bebbe453f3fd84275c12095813d13dec065ac4ee068feea4  .github/workflows/studyflow-targeted.yml" | sha256sum --check --status
           echo "f46f69c197fdb72eb7af299462816dfe2b3e632c265c72229e6ff84d6972f277  docs/actions/STUDYFLOW_TARGETED_CI.md" | sha256sum --check --status
           python3 -B scripts/ci/test_studyflow_ci_policy.py
-          echo "32e239f18389f4d85a2362b4d8b492794ca1826b11c19c03ce3cb27c15166f01  scripts/ci/opt02_shared_apks.py" | sha256sum --check --status
-          echo "56c6024888cb31520f00a8e50fba8a416bdcfed9d80aa9e8c0ad36650e731743  scripts/ci/test_opt02_shared_apks.py" | sha256sum --check --status
+          echo "b0b1f7301366c20d919d51b5bb7b365be5522fba68b8eda411595055537836e3  scripts/ci/opt02_shared_apks.py" | sha256sum --check --status
+          echo "25769962ba0dfad6433011b8bdb659fd2633a6eb1ac94cd542e2f92e66a50dd5  scripts/ci/test_opt02_shared_apks.py" | sha256sum --check --status
           echo "570287c9348a43f18338ee4bed66d17220dea1590077eae4a995d2fd68e6bef9  docs/actions/STUDYFLOW_OPT02_P01_SHARED_ANDROID_APKS.md" | sha256sum --check --status
-          echo "49f1b46eb66596e36bc6acb6cd4c5bdc5a00965f78ca83dd2af0c0f20d4ac037  docs/actions/STUDYFLOW_OPT02_P02_PRODUCER_COORDINATION.md" | sha256sum --check --status
+          echo "69bd04c791dbdc7e807c8e36dc84cc8e2334827dfec834f460df6385ce250655  docs/actions/STUDYFLOW_OPT02_P02_PRODUCER_COORDINATION.md" | sha256sum --check --status
           python3 -B scripts/ci/test_opt02_shared_apks.py
           python3 -B scripts/ci/studyflow_ci_policy.py source-check
           python3 -B scripts/test_sfdt22_hf01_contract.py

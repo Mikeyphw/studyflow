@@ -84,3 +84,34 @@ pass. If still failing, use the category in `OPT02_SHARED_APKS_REFUSED` or
 re-run physical device tests merely for this CI-only fix. All Gradle on GitHub.
 
 Next: OPT02 P03 measurement, then OPT03 workflow optimization.
+
+## HF03 — Real hosted root cause, bounded apksigner output (15 Nov 2026)
+
+PR #16 source `b0a6ec70dccf1523d8dcc863cbade76df379aec2`:
+- Producer #43748364594: success, published exact-source APK pair.
+- Targeted #43748370863: failure in Android consumer, required gate failed.
+- 18:51:47 UTC `OPT02_SHARED_APKS_INFO DOWNLOAD_PASS attempts=1`.
+- 18:51:48 UTC `OPT02_SHARED_APKS_REFUSED COMMAND_OUTPUT_OVERSIZED`.
+
+After the successful artifact transfer, the only external command remaining
+in `verify_bundle` is the independent `apksigner verify --print-certs` check.
+The verifier's previous 15,000-byte stdout cap rejected a large-but-valid
+certificate-reporting response before the required SHA-256 certificate digest
+could be parsed; it was a local capture limit, not proof of a bad APK.
+
+HF03 raises **only the apksigner stdout allowance** to a hard maximum of
+2,000,000 bytes. It retains exit-code validation, bounded stderr redaction,
+source SHA, run/attempt, digest, and both real APK signatures. Exactly one
+Signer #1 certificate SHA-256 line must be present, with no different signer
+numbers. Zero, duplicate, multi-signer, oversized, mismatched, or nonzero
+verification still fails closed. Other subprocess output caps are unchanged.
+
+HF03 adds 3 offline regressions: >15,000-byte valid signer output, >2 MB and
+ambiguous-cert refusal, and forged-looking certificate with nonzero signer
+exit. It must pass the entire historical suite, current full source SHA
+manifest and exact Git checkout before application.
+
+Acceptance requires a NEW hosted Targeted CI run with
+`OPT02_SHARED_APKS_HIT EXACT_SHA_SIGNED_APK_PAIR_VERIFIED`, the native
+Gradle Android compilation **skipped**, and the required gate success.
+No physical Android device writes, no local Gradle, and no release inference.

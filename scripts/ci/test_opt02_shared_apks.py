@@ -308,6 +308,54 @@ class Opt02SharedAPKContracts(unittest.TestCase):
                 with self.assertRaises(opt.Refused):
                     opt.download_with_retry(123,bad,Path(td))
 
+    def test_22_hf03_signer_accepts_large_bounded_success_output(self):
+        # Real GitHub #43748370863: DOWNLOAD_PASS then COMMAND_OUTPUT_OVERSIZED
+        # while collecting the certificate. 15 KB was not a trust boundary.
+        from subprocess import CompletedProcess
+        stdout=(b'APK verifier details\n'*2000 +
+                b'Signer #1 certificate SHA-256 digest: '+b'b'*64+b'\n')
+        self.assertGreater(len(stdout), 15_000)
+        self.assertLess(len(stdout), opt.MAX_APKSIGNER_OUTPUT)
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)
+            tool=root/'build-tools/36.0.0/apksigner'
+            tool.parent.mkdir(parents=True)
+            tool.write_text('not executed')
+            with mock.patch.object(opt.subprocess,'run',return_value=CompletedProcess(['apksigner'],0,stdout,b'')) as proc:
+                actual=opt.signer(root/'app-debug.apk',root)
+            self.assertEqual(actual, 'b'*64)
+            self.assertEqual(proc.call_args.kwargs['timeout'],60)
+            self.assertEqual(proc.call_args.args[0][1:3], ['verify','--print-certs'])
+            self.assertIn('APK_SIGNER', (ROOT/'scripts/ci/opt02_shared_apks.py').read_text())
+
+    def test_23_hf03_hard_ceiling_and_duplicate_signer_rejected(self):
+        from subprocess import CompletedProcess
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td);tool=root/'build-tools/36.0.0/apksigner'
+            tool.parent.mkdir(parents=True);tool.write_text('not executed')
+            oversized=b'X'*(opt.MAX_APKSIGNER_OUTPUT+1)
+            with mock.patch.object(opt.subprocess,'run',return_value=CompletedProcess(['apksigner'],0,oversized,b'')):
+                with self.assertRaisesRegex(opt.Refused,'APK_SIGNER_OUTPUT_OVERSIZED'):
+                    opt.signer(root/'a.apk',root)
+            for out in (b'no certificate line\n',
+                        (b'Signer #1 certificate SHA-256 digest: '+b'b'*64+b'\n')*2,
+                        b'Signer #1 certificate SHA-256 digest: '+b'b'*64+b'\n'+
+                        b'Signer #2 certificate SHA-256 digest: '+b'c'*64+b'\n'):
+                with mock.patch.object(opt.subprocess,'run',return_value=CompletedProcess(['apksigner'],0,out,b'')):
+                    with self.assertRaisesRegex(opt.Refused,'APK_SIGNER_CERT_COUNT_INVALID'):
+                        opt.signer(root/'a.apk',root)
+
+    def test_24_hf03_nonzero_signer_is_still_a_hard_failure(self):
+        from subprocess import CompletedProcess
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td);tool=root/'build-tools/36.0.0/apksigner'
+            tool.parent.mkdir(parents=True);tool.write_text('not executed')
+            # A forged success-looking certificate cannot override apksigner's rc.
+            out=b'Signer #1 certificate SHA-256 digest: '+b'b'*64+b'\n'
+            with mock.patch.object(opt.subprocess,'run',return_value=CompletedProcess(['apksigner'],2,out,b'invalid signature')):
+                with self.assertRaisesRegex(opt.ToolFailure,'APK_SIGNER_'):
+                    opt.signer(root/'a.apk',root)
+
     def test_09_cross_workflow_consumer_and_unchanged_mandatory_gates(self):
         wf=(ROOT/'.github/workflows/studyflow-targeted.yml').read_text()
         full=(ROOT/'.github/workflows/studyflow-sfdt22-hosted-journeys.yml').read_text()
