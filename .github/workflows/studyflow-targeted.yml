@@ -84,6 +84,7 @@ jobs:
           python3 -B scripts/ci/studyflow_ci_policy.py run-targeted \
             --base "$BASE_SHA" --head "$EXPECTED_SHA"
           python3 -B scripts/ci/test_opt02_shared_apks.py
+          python3 -B scripts/ci/test_opt02_metrics.py
   android:
     name: Targeted Android APK and instrumentation compilation
     needs: [scope, source]
